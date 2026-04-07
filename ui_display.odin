@@ -19,8 +19,8 @@ player_ui_draw:: proc(game: Game) {
 
     player := game.player
     
-    ui_x_start := player.position.x +( PLAYER_SIZE.x / 2 ) + UI_PADDING.x - game.camera.offset.x / 4
-    ui_y_start := player.position.y + ( PLAYER_SIZE.y / 2 ) + UI_PADDING.y - game.camera.offset.y / 4
+    ui_x_start := player.body.position.x +( PLAYER_SIZE.x / 2 ) + UI_PADDING.x - game.camera.offset.x / 4
+    ui_y_start := player.body.position.y + ( PLAYER_SIZE.y / 2 ) + UI_PADDING.y - game.camera.offset.y / 4
 
     ui_width := f32(rl.GetScreenWidth() / 4) -( PLAYER_SIZE.x / 2 ) - UI_PADDING.x 
     ui_height := f32(rl.GetScreenHeight() / 4) - ( PLAYER_SIZE.y / 2 ) - UI_PADDING.y

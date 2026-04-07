@@ -10,16 +10,20 @@ Bullet_Countdown :: struct {
 
 
 Player :: struct {
-    position: rl.Vector2,
-    vel: rl.Vector2,
+    body: Body,
     direction: BULLET_DIRECTION,
     stats: Player_stats,
     spawn_pos: rl.Vector2,
     on_ground: bool,
-    size: rl.Vector2,
     is_flip: bool,
     bullet_cd: Bullet_Countdown,
     anim_controller: Animation_controller
+}
+
+Body :: struct {
+    size: rl.Vector2,
+    position: rl.Vector2,
+    vel: rl.Vector2,
 }
 
 Experience_controller:: struct {
@@ -80,12 +84,12 @@ EXPERIENCE_PER_LEVEL: [MAX_LEVEL]Experience_require = {
 
 
 player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Rectangle, dt: f32) {
-    player.vel.x = 0
+    player.body.vel.x = 0
 
     if rl.IsKeyDown(.LEFT) || rl.IsKeyDown(.A) {
         player.direction = .LEFT
         player.is_flip = true
-        player.vel.x = -PLAYER_MOVE_SPD
+        player.body.vel.x = -PLAYER_MOVE_SPD
          if player.anim_controller.animation_name != RUN {
             player.anim_controller.animation_name = RUN
             player.anim_controller.current_frame = 0
@@ -95,7 +99,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.direction = .RIGHT
         player.is_flip = false
 
-        player.vel.x = PLAYER_MOVE_SPD
+        player.body.vel.x = PLAYER_MOVE_SPD
         if player.anim_controller.animation_name != RUN {
             player.anim_controller.animation_name = RUN
             player.anim_controller.current_frame = 0
@@ -104,7 +108,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
         }
     } else {
-        player.vel.x = 0
+        player.body.vel.x = 0
         if player.anim_controller.animation_name != IDLE {
             player.anim_controller.animation_name = IDLE
             player.anim_controller.current_frame = 0
@@ -116,14 +120,14 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
   
     
-    player.position.x += player.vel.x * dt
+    player.body.position.x += player.body.vel.x * dt
 
-    player.position.x = clamp(player.position.x , 0, f32(SCREEN_WIDTH) - PLAYER_SIZE.x)
+    player.body.position.x = clamp(player.body.position.x , 0, f32(SCREEN_WIDTH) - PLAYER_SIZE.x)
    
     jump_pressed := rl.IsKeyPressed(.SPACE) || rl.IsKeyPressed(.UP) || rl.IsKeyPressed(.W)
 
     if jump_pressed && player.on_ground {
-        player.vel.y = PlAYER_JUMP_VEL
+        player.body.vel.y = PlAYER_JUMP_VEL
         player.on_ground = false
     }
     
@@ -132,10 +136,10 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 
 
-    player.vel.y = min(player.vel.y + (GRAVITY * dt), MAX_FALL_SPEED)
+    player.body.vel.y = min(player.body.vel.y + (GRAVITY * dt), MAX_FALL_SPEED)
     
     player.on_ground = false
-    player.position.y += player.vel.y * dt
+    player.body.position.y += player.body.vel.y * dt
 
     for block_collider in game_collider_block {
         resolve_vertical(player, block_collider)
@@ -148,7 +152,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     if rl.IsKeyPressed(.K) {
         if player.bullet_cd.current_time < 0.01 {
             player.bullet_cd.current_time = player.bullet_cd.max_time
-            bullet := Bullet {direction = player.direction, dmg = player.stats.dmg, position = player.position}
+            bullet := Bullet {direction = player.direction, dmg = player.stats.dmg, position = player.body.position}
             append(&game.player_bullets, bullet)
         }
 
@@ -175,7 +179,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 }
 
 player_draw :: proc(player: ^Player, game: Game, dt: f32) {
-    r := player_rect(player^)
+    r := get_body_rect(player.body)
 
     anim := Player_animations[player.anim_controller.animation_name]
 
@@ -183,11 +187,11 @@ player_draw :: proc(player: ^Player, game: Game, dt: f32) {
     if game.game_options.is_debug {
 
         frameheight :f32 = 10
-        rl.DrawRectangle(i32(player.position.x - 20), i32(player.position.y - 5), 5, i32(frameheight), rl.WHITE)
-        rl.DrawRectangle(i32(player.position.x - 20), i32(player.position.y - 5), 5, i32(player.anim_controller.current_timer / anim.frame_timer * frameheight), rl.BLUE)
+        rl.DrawRectangle(i32(player.body.position.x - 20), i32(player.body.position.y - 5), 5, i32(frameheight), rl.WHITE)
+        rl.DrawRectangle(i32(player.body.position.x - 20), i32(player.body.position.y - 5), 5, i32(player.anim_controller.current_timer / anim.frame_timer * frameheight), rl.BLUE)
             
 
-        rl.DrawCircleLinesV(player.position, 1, rl.BLACK)
+        rl.DrawCircleLinesV(player.body.position, 1, rl.BLACK)
     }
 
 }

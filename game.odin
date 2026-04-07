@@ -47,11 +47,9 @@ Game :: struct {
 
 Enemy_minion:: struct {
     id: f32,
-    size: rl.Vector2,
+    body: Body,
     status: Enemy_status,
     stats : Enemy_minion_stats,
-    position: rl.Vector2,
-    vel: rl.Vector2,
     direction: Enemy_directions,
     on_ground: bool,
     is_flip: bool,
@@ -78,9 +76,11 @@ game_init:: proc() -> Game {
     player_spawn_pos := rl.Vector2{50, 300}
     game.current_level = level
     game.player = Player {
-        position = player_spawn_pos,
+        body = Body {
+            position = player_spawn_pos,
+            size = PLAYER_SIZE,
+        },
         spawn_pos = player_spawn_pos,
-        size = PLAYER_SIZE,
         stats = player_stats,
         bullet_cd = Bullet_Countdown {max_time =  Inittal_bullet_countdown, current_time = Inittal_bullet_countdown}
 
@@ -150,7 +150,7 @@ game_draw:: proc(game: ^Game, dt: f32) {
     if game.game_options.is_debug {
         rl.DrawText(cld_len, 10, 10, 12, rl.BLACK)
         rl.DrawText(keys_collected, 10, 350, 12, rl.BLACK)
-        rl.DrawText(player_bullet_len, i32(game.player.position.x - 20), i32(game.player.position.y -20), 5, rl.BLACK)
+        rl.DrawText(player_bullet_len, i32(game.player.body.position.x - 20), i32(game.player.body.position.y -20), 5, rl.BLACK)
         for cld in colliders {
             rl.DrawRectangle(i32(cld.x), i32(cld.y), i32(cld.width), i32(cld.height), rl.BLACK)
         }
@@ -202,7 +202,7 @@ experience_buff_draw:: proc(atlas: rl.Texture2D, buffs: []Exp_buff) {
 }
 
 key_collect:: proc(player: Player, game: ^Game) {
-    pr := player_rect(player)
+    pr := get_body_rect(player.body)
    
     for &key in game.level_data.keys {
         if key.collected do continue
@@ -315,15 +315,15 @@ enemy_minions_update::proc (game: ^Game, dt: f32) {
 
         
 
-        dvel := enemy.vel.x * (direction == .RIGHT ? 1 : -1)
+        dvel := enemy.body.vel.x * (direction == .RIGHT ? 1 : -1)
 
-        if abs(enemy.vel.x) > 0 {
+        if abs(enemy.body.vel.x) > 0 {
             if enemy.anim_controller.animation_name != RUN {
                 enemy.anim_controller.animation_name = RUN
                 enemy.anim_controller.current_frame = 0
                 enemy.anim_controller.current_timer = Minion_animations[RUN].frame_timer
             }
-        } else if abs(enemy.vel.x) == 0 {
+        } else if abs(enemy.body.vel.x) == 0 {
             if enemy.anim_controller.animation_name != IDLE {
                 enemy.anim_controller.animation_name = IDLE
                 enemy.anim_controller.current_frame = 0
@@ -332,15 +332,15 @@ enemy_minions_update::proc (game: ^Game, dt: f32) {
         }
 
 
-        enemy.position.x += dt * dvel 
+        enemy.body.position.x += dt * dvel 
 
         for block_collider in game.level_data.colliders {
             resolve_minion_horizontal(enemy, block_collider)
         }
 
-        enemy.vel.y = min(enemy.vel.y + (GRAVITY * dt), MAX_FALL_SPEED)
+        enemy.body.vel.y = min(enemy.body.vel.y + (GRAVITY * dt), MAX_FALL_SPEED)
             
-        enemy.position.y += enemy.vel.y * dt
+        enemy.body.position.y += enemy.body.vel.y * dt
         for block_collider in game.level_data.colliders {
             resolve_minion_vertical(enemy, block_collider)
         }
@@ -356,7 +356,7 @@ enemy_take_dmg :: proc(enemy: ^Enemy_minion, bullet: Bullet) {
 
 enemy_minions_draw::proc (atlas: rl.Texture2D, is_debug: bool, minions: ^[dynamic]Enemy_minion, dt: f32) {
     for &minion in minions {
-        minion_rect := rl.Rectangle {x = minion.position.x - minion.size.x / 2, y = minion.position.y - minion.size.y / 2, width = minion.size.x, height = minion.size.y}
+        minion_rect := rl.Rectangle {x = minion.body.position.x - minion.body.size.x / 2, y = minion.body.position.y - minion.body.size.y / 2, width = minion.body.size.x, height = minion.body.size.y}
         is_flip := minion.direction == .LEFT
         
 
@@ -367,8 +367,8 @@ enemy_minions_draw::proc (atlas: rl.Texture2D, is_debug: bool, minions: ^[dynami
             rl.DrawTexturePro(
                 atlas, 
                 rl.Rectangle {x = dead_sprite.x, y= dead_sprite.y, width = dead_sprite.w * (is_flip ? -1 : 1), height = dead_sprite.h},
-                rl.Rectangle {x = minion.position.x, y = minion.position.y, width = minion.size.x, height = minion.size.y},
-                minion.size / 2,
+                rl.Rectangle {x = minion.body.position.x, y = minion.body.position.y, width = minion.body.size.x, height = minion.body.size.y},
+                minion.body.size / 2,
                 0,
                 rl.WHITE
             )
@@ -380,7 +380,7 @@ enemy_minions_draw::proc (atlas: rl.Texture2D, is_debug: bool, minions: ^[dynami
         if is_debug {
             full_health_width : f32 = 20
 
-            full_health_rect := rl.Rectangle {x = minion_rect.x + (minion.size.x / 2)- (full_health_width / 2), y = minion_rect.y - 7.5, width = full_health_width , height = 2.5}
+            full_health_rect := rl.Rectangle {x = minion_rect.x + (minion.body.size.x / 2)- (full_health_width / 2), y = minion_rect.y - 7.5, width = full_health_width , height = 2.5}
 
             health_rect := rl.Rectangle {x = full_health_rect.x, y = full_health_rect.y, width = minion.stats.health_stats.current_hp / minion.stats.health_stats.max_hp * full_health_width , height = full_health_rect.height}
             rl.DrawRectangleLinesEx(full_health_rect, 0.25, rl.WHITE)
@@ -406,10 +406,9 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
 
             enemy.status = .ALIVE
             enemy.direction = .RIGHT
-            enemy.position = enemy_spawner.position
+            enemy.body.position = enemy_spawner.position
             enemy.stats = stats
-            enemy.size = ENEMY_MINION_SIZE
-            enemy.vel = 20
+            enemy.body.vel = 20
 
             break
         }
@@ -419,11 +418,13 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
         enemy := Enemy_minion {
             id = enemy_spawner.enemy_id,
             status = .ALIVE,
-            position = enemy_spawner.position,
+            body = Body {
+                position = enemy_spawner.position,
+                size = ENEMY_MINION_SIZE,
+                vel = 20,
+            },
             direction = .RIGHT,
             stats = stats,
-            size = ENEMY_MINION_SIZE,
-            vel = 20,
         }
         append(&game.enemy_minions, enemy)
     }
