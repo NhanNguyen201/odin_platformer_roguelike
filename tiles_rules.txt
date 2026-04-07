@@ -1,0 +1,11 @@
+Layers:
+
+1 - Background
+2 - Visual low
+3 - Visual mid
+4 - Visual high
+5 - ForGround
+6 - Colliders
+7 - Keys
+8 - Enemy spawner 
+9 - Level gate
