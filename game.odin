@@ -22,7 +22,7 @@ BULLET_DIRECTION :: enum {
     RIGHT
 }
 
-GameOptions :: struct {
+Game_Options :: struct {
     is_debug: bool,
     is_paused: bool,
     ui_mouse_pos: rl.Vector2
@@ -33,7 +33,8 @@ Game :: struct {
     camera: rl.Camera2D,
     current_level: int,
     level_data: Level_data,
-    game_options: GameOptions,
+    game_options: Game_Options,
+    ui_controller: UI_Controller,
     game_sprite_atlas: rl.Texture2D,
     game_background: rl.Texture2D,
     game_cloud_background: rl.Texture2D,
@@ -68,6 +69,7 @@ Enemy_minion_stats :: struct {
 
 game_init:: proc() -> Game {
     level := 0
+    player_level := 0
     game: Game
 
     player_stats := Player_stats{health_stats = {max_hp = 100, current_hp = 100}, dmg = 25}
@@ -82,7 +84,12 @@ game_init:: proc() -> Game {
         },
         spawn_pos = player_spawn_pos,
         stats = player_stats,
-        bullet_cd = Bullet_Countdown {max_time =  Inittal_bullet_countdown, current_time = Inittal_bullet_countdown}
+        bullet_cd = Bullet_Countdown {max_time =  Inittal_bullet_countdown, current_time = Inittal_bullet_countdown},
+        exp_controller = Experience_controller {
+            current = 0,
+            level = player_level,
+            require = EXPERIENCE_PER_LEVEL[player_level]
+        }
 
     }
     load_atlas(&game)
@@ -100,6 +107,9 @@ game_update:: proc(game: ^Game, dt: f32) {
     }
     
     if rl.IsKeyPressed(.L){
+        if game.ui_controller.is_buff_pick {
+            game.ui_controller.is_buff_pick = false
+        }
         game.game_options.is_paused = !game.game_options.is_paused
     }
     
@@ -114,6 +124,8 @@ game_update:: proc(game: ^Game, dt: f32) {
     }
 
     key_collect(game.player, game)
+    // exp_buff_collect()
+    exp_buff_collect(&game.player, game)
 }
 
 
@@ -169,7 +181,7 @@ game_draw:: proc(game: ^Game, dt: f32) {
 
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_bullets[:])
 
-    player_ui_draw(game^)
+    player_ui_draw(game)
 
 
 }
@@ -194,9 +206,9 @@ experience_buff_draw:: proc(atlas: rl.Texture2D, buffs: []Exp_buff) {
 
     for b in buffs {
         if !b.collected {
-            dest := rl.Rectangle{x = b.position.x, y= b.position.y , width = exp_sprite.w, height = exp_sprite.h}
+            dest := rl.Rectangle{x = b.position.x, y= b.position.y , width = EXPERIENCE_BUFF_SIZE.x, height = EXPERIENCE_BUFF_SIZE.y}
 
-            rl.DrawTexturePro(atlas, exp_source, dest, rl.Vector2{exp_sprite.w / 2, exp_sprite.h /2}, 0,rl.WHITE)
+            rl.DrawTexturePro(atlas, exp_source, dest, rl.Vector2{EXPERIENCE_BUFF_SIZE.x / 2, EXPERIENCE_BUFF_SIZE.y / 2}, 0,rl.WHITE)
         }
     }
 }

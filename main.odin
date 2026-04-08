@@ -6,8 +6,8 @@ import "core:mem"
 import "core:fmt"
 
 
-SCREEN_HEIGHT :: 720
 SCREEN_WIDTH :: 1280
+SCREEN_HEIGHT :: 760
 PIXEL_WINDOW_HEIGHT :: 180
 
 
@@ -31,15 +31,17 @@ main :: proc() {
 
     }
 
-    rl.InitWindow(1280, 780, "My first game")
+    rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "My first game")
     rl.SetWindowPosition(30, 60)
     rl.SetWindowState({.WINDOW_RESIZABLE})
     rl.SetTargetFPS(60)
-
+    
+    
+    roboto := rl.LoadFont("Roboto")
 
 
     game := game_init()
-    
+
     game.camera = rl.Camera2D {
         zoom = SCREEN_HEIGHT / PIXEL_WINDOW_HEIGHT,
         offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)},

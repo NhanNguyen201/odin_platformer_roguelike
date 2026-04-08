@@ -3,6 +3,14 @@ import rl "vendor:raylib"
 
 Inittal_bullet_countdown :f32 : 1.
 
+STAT_BUFF:: enum {
+    HP,
+    AD,
+    ATS, 
+    MVSPD,
+    AR
+}
+
 Bullet_Countdown :: struct {
     max_time: f32,
     current_time: f32
@@ -17,7 +25,8 @@ Player :: struct {
     on_ground: bool,
     is_flip: bool,
     bullet_cd: Bullet_Countdown,
-    anim_controller: Animation_controller
+    anim_controller: Animation_controller,
+    exp_controller: Experience_controller
 }
 
 Body :: struct {
@@ -27,14 +36,14 @@ Body :: struct {
 }
 
 Experience_controller:: struct {
-    require: Experience_require,
+    require: Exp_require,
     current: f32,
     level: int
 }
 
 
-Experience_require:: struct {
-    v : f32
+Exp_require:: struct {
+    val : f32
 }
 
 
@@ -46,6 +55,7 @@ Bullet :: struct {
 
 
 Player_buffes :: struct {
+    hp: f32,
     damage: f32,
     armor: f32,
     mv_spd: f32,
@@ -66,19 +76,19 @@ Player_direction :: enum {
 
 MAX_LEVEL: int :10
 EXPERIENCE_BUFF_AMOUNT:f32 : 20
+EXPERIENCE_BUFF_SIZE: rl.Vector2: {12, 12}
 
-
-EXPERIENCE_PER_LEVEL: [MAX_LEVEL]Experience_require = {
-    {v = 20},
-    {v = 30},
-    {v = 45},
-    {v = 70},
-    {v = 90},
-    {v = 120},
-    {v = 160},
-    {v = 210},
-    {v = 250},
-    {v = 300},
+EXPERIENCE_PER_LEVEL: [MAX_LEVEL]Exp_require = {
+    {val = 20},
+    {val = 30},
+    {val = 45},
+    {val = 70},
+    {val = 90},
+    {val = 120},
+    {val = 160},
+    {val = 210},
+    {val = 250},
+    {val = 300},
 
 }
 
@@ -89,7 +99,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     if rl.IsKeyDown(.LEFT) || rl.IsKeyDown(.A) {
         player.direction = .LEFT
         player.is_flip = true
-        player.body.vel.x = -PLAYER_MOVE_SPD
+        player.body.vel.x = -(PLAYER_MOVE_SPD + player.stats.buffes.mv_spd)
          if player.anim_controller.animation_name != RUN {
             player.anim_controller.animation_name = RUN
             player.anim_controller.current_frame = 0
@@ -99,7 +109,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.direction = .RIGHT
         player.is_flip = false
 
-        player.body.vel.x = PLAYER_MOVE_SPD
+        player.body.vel.x = (PLAYER_MOVE_SPD + player.stats.buffes.mv_spd)
         if player.anim_controller.animation_name != RUN {
             player.anim_controller.animation_name = RUN
             player.anim_controller.current_frame = 0
@@ -120,7 +130,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
   
     
-    player.body.position.x += player.body.vel.x * dt
+    player.body.position.x += player.body.vel.x  * dt
 
     player.body.position.x = clamp(player.body.position.x , 0, f32(SCREEN_WIDTH) - PLAYER_SIZE.x)
    
@@ -194,4 +204,31 @@ player_draw :: proc(player: ^Player, game: Game, dt: f32) {
         rl.DrawCircleLinesV(player.body.position, 1, rl.BLACK)
     }
 
+}
+
+exp_buff_collect:: proc(player: ^Player, game: ^Game) {
+    player_rect := get_body_rect(player.body)
+    for &buff in game.level_data.exp_buffs {
+        if buff.collected do continue
+
+        buff_rect := rl.Rectangle {x = buff.position.x - EXPERIENCE_BUFF_SIZE.x / 2, y = buff.position.y - EXPERIENCE_BUFF_SIZE.y / 2, width = EXPERIENCE_BUFF_SIZE.x, height = EXPERIENCE_BUFF_SIZE.y}
+        if !rl.CheckCollisionRecs(player_rect, buff_rect) do continue
+
+
+        buff.collected = true
+
+        player.exp_controller.current += EXPERIENCE_BUFF_AMOUNT
+        
+        if player.exp_controller.current >= player.exp_controller.require.val {
+            game.ui_controller.is_buff_pick = true
+            game.game_options.is_paused = true
+
+            player.exp_controller.current -= player.exp_controller.require.val
+            player.exp_controller.level += 1
+            player.exp_controller.require = EXPERIENCE_PER_LEVEL[player.exp_controller.level]
+
+
+        }
+
+    }
 }

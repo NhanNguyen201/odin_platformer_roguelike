@@ -32,6 +32,11 @@ PLAYER_AVATAR_SPRITE :: "Player_avatar_sprite"
 HEALTH_BAR_SPRITE:: "Health_bar_sprite"
 HEALTH_BAR_FILL_SPRITE:: "Health_bar_fill_sprite"
 
+HP_BUFF_SPRITE :: "Hp_buff_sprite"
+AD_BUFF_SPRITE :: "Ad_buff_sprite"
+ATS_BUFF_SPRITE :: "Ats_buff_sprite"
+MVSP_BUFF_SPRITE :: "Mvspd_buff_sprite"
+AR_BUFF_SPRITE :: "Ar_buff_sprite"
 
 
 SPRITE_MAP := map[string]Sprite_desc {
@@ -45,8 +50,16 @@ SPRITE_MAP := map[string]Sprite_desc {
     BULLET_SPRITE = {x = 0, y = 64, w = 16, h = 16},
     EXPERIENCE_BUFF_SPRITE = {x = 32, y = 176, w = 32, h = 32},
     PLAYER_AVATAR_SPRITE = {x = 0, y = 208, w = 64, h = 64},
-    HEALTH_BAR_SPRITE = {x = 96, y = 64, w = 48, h = 16},
-    HEALTH_BAR_FILL_SPRITE = {x = 144, y = 64, w = 48, h = 16}
+
+    HEALTH_BAR_SPRITE = {x = 112, y = 64, w = 48, h = 16},
+    HEALTH_BAR_FILL_SPRITE = {x = 160, y = 64, w = 48, h = 16},
+
+    HP_BUFF_SPRITE = {x = 32, y = 64, w = 16, h = 16},
+    AD_BUFF_SPRITE = {x = 80, y = 64, w = 16, h = 16},
+    ATS_BUFF_SPRITE = {x = 64, y = 64, w = 16, h = 16},
+    MVSP_BUFF_SPRITE = {x = 48, y = 64, w = 16, h = 16},
+    AR_BUFF_SPRITE = {x = 96, y = 64, w = 16, h = 16},
+
 }
 
 load_atlas:: proc(game: ^Game) {
