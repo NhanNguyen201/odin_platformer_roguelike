@@ -161,8 +161,8 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
     if rl.IsKeyPressed(.K) {
         if player.bullet_cd.current_time < 0.01 {
-            player.bullet_cd.current_time = player.bullet_cd.max_time
-            bullet := Bullet {direction = player.direction, dmg = player.stats.dmg, position = player.body.position}
+            player.bullet_cd.current_time = player.bullet_cd.max_time * (1. - (player.stats.buffes.at_spd / 100))
+            bullet := Bullet {direction = player.direction, dmg = player.stats.dmg + player.stats.buffes.damage, position = player.body.position}
             append(&game.player_bullets, bullet)
         }
 

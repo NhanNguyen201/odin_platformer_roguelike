@@ -2,10 +2,13 @@
 
 package main
 import rl "vendor:raylib"
+import "core:math"
+import "core:container/small_array"
 
 IDLE :: "Idle"
 RUN :: "Run"
 
+MAX_PARTICLE:int : 200
 Animation_controller :: struct {
     animation_name : string,
 
@@ -13,7 +16,15 @@ Animation_controller :: struct {
     current_timer: f32,
 }
 
+Particle :: struct {
+    position: rl.Vector2,
+    duration: f32,
+    time_left: f32,
+}
 
+Particles_systems :: struct {
+    particles : small_array.Small_Array(MAX_PARTICLE, Particle)
+}
 
 
 Animation :: struct {
@@ -66,3 +77,32 @@ draw_animation :: proc (atlas: rl.Texture2D, anim_controller : ^Animation_contro
 
     rl.DrawTexturePro(atlas, source, dest, {0, 0}, 0, rl.WHITE)
 }
+
+add_particle:: proc(particle_sys: ^Particles_systems, new_particle: Particle) {
+    small_array.push(&particle_sys.particles, new_particle)
+    
+}
+
+particles_systems_update :: proc(particle_sys: ^Particles_systems, dt: f32) {
+    for i:= 0; i < particle_sys.particles.len; i += 1 {
+
+        if particle_sys.particles.data[i].time_left - dt <= 0 {
+            small_array.unordered_remove(&particle_sys.particles, i)
+            continue
+        } else {
+            particle_sys.particles.data[i].time_left -= dt
+        }
+    }
+}
+
+particls_systems_draw:: proc(atlas: rl.Texture2D, particle_sys: Particles_systems, dt: f32) {
+    particle_sprite := SPRITE_MAP[PARTICLE_SPRITE]
+    particle_soure := rl.Rectangle {x = particle_sprite.x, y = particle_sprite.y, width = particle_sprite.w, height = particle_sprite.h}
+    for i:= 0; i < particle_sys.particles.len; i += 1 {
+        p := small_array.get(particle_sys.particles, i)
+        scale := 5. * (p.duration - p.time_left)
+        dest := rl.Rectangle {x = p.position.x  , y = p.position.y - 50. * math.sin_f32( p.time_left ), width = particle_soure.width * scale, height = particle_soure.height * scale}
+        rl.DrawTexturePro(atlas, particle_soure, dest, {dest.width / 2, dest.height / 2}, 0. , rl.Color {255, 255, 255, u8(55 +  200 * p.time_left / p.duration)})
+    }
+}
+// math.sin_f32( (p.duration - p.time_left) / p.duration) * 90

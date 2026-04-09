@@ -47,6 +47,7 @@ resolve_vertical :: proc( player : ^Player, rect : rl.Rectangle) {
         player.body.vel.y = 0
     }
 }
+
 resolve_minion_vertical :: proc(minion: ^Enemy_minion, rect: rl.Rectangle) {
     pr := get_body_rect(minion.body)
 
@@ -74,6 +75,7 @@ resolve_enemy_and_bullet:: proc(minion: ^Enemy_minion, bullets: ^[dynamic]Bullet
 
         enemy_take_dmg(minion, bullet)
         unordered_remove(bullets, idx)
+
         break
     }
 
@@ -81,15 +83,16 @@ resolve_enemy_and_bullet:: proc(minion: ^Enemy_minion, bullets: ^[dynamic]Bullet
 }
 
 
-resolve_bullet_collider_collision:: proc(bullets: ^[dynamic] Bullet,  rect: rl.Rectangle) {
+resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic] Bullet,  rect: rl.Rectangle) {
     for bullet, idx in bullets {
         bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
 
         if !rl.CheckCollisionRecs(rect, bullet_rect)  {
             continue    
         }
-
+        // pos := rl.Collision
         unordered_remove(bullets, idx)
+        add_particle(&game.particle_system, Particle {duration = 0.3, time_left = 0.3, position = {bullet.position.x, bullet.position.y}})
         break
        
     }

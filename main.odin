@@ -37,16 +37,15 @@ main :: proc() {
     rl.SetTargetFPS(60)
     
     
-    roboto := rl.LoadFont("Roboto")
-
 
     game := game_init()
-
+    game.fonts = load_fonts()
     game.camera = rl.Camera2D {
         zoom = SCREEN_HEIGHT / PIXEL_WINDOW_HEIGHT,
         offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)},
         target = game.player.body.position
     }
+
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
@@ -76,4 +75,9 @@ main :: proc() {
     delete(game.level_data.enemy_spawners)
     delete(game.level_data.keys)
     delete(game.level_data.exp_buffs)
+    rl.UnloadFont(game.fonts[FONT_BOLD])
+    rl.UnloadFont(game.fonts[FONT_REG])
+    rl.UnloadFont(game.fonts[FONT_THIN])
+    delete(game.fonts)
+
 }

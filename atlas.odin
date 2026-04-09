@@ -37,7 +37,7 @@ AD_BUFF_SPRITE :: "Ad_buff_sprite"
 ATS_BUFF_SPRITE :: "Ats_buff_sprite"
 MVSP_BUFF_SPRITE :: "Mvspd_buff_sprite"
 AR_BUFF_SPRITE :: "Ar_buff_sprite"
-
+PARTICLE_SPRITE :: "Particle_sprite"
 
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
@@ -59,7 +59,7 @@ SPRITE_MAP := map[string]Sprite_desc {
     ATS_BUFF_SPRITE = {x = 64, y = 64, w = 16, h = 16},
     MVSP_BUFF_SPRITE = {x = 48, y = 64, w = 16, h = 16},
     AR_BUFF_SPRITE = {x = 96, y = 64, w = 16, h = 16},
-
+    PARTICLE_SPRITE = {x = 64, y = 176, w = 32, h = 32}
 }
 
 load_atlas:: proc(game: ^Game) {
