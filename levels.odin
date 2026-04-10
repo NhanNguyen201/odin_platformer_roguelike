@@ -40,6 +40,7 @@ Level_data :: struct {
     texture: rl.Texture2D,
     map_size: rl.Vector2,
     gate_position: rl.Vector2,
+    is_complete: bool,
     colliders: [dynamic] rl.Rectangle,
     keys: [dynamic] Key_pot,
     enemy_spawners: [dynamic] Enemy_spawner_pot,
@@ -95,6 +96,11 @@ Designed_Level : []Level = {
         map_image = "assets/map_images/map_1.png",
         map_data = "assets/map_tiles/map_1.json"
     },
+    Level {
+        level_size = rl.Vector2 {960, 720},
+        map_image = "assets/map_images/map_2.png",
+        map_data = "assets/map_tiles/map_2.json"
+    },
 }
 
 
@@ -103,7 +109,7 @@ get_level_data::proc (lvl: int) -> Level {
     level_data : Level
     switch lvl {
         case 0: level_data =  Designed_Level[0]
-        case 1: level_data = Designed_Level[0]
+        case 1: level_data = Designed_Level[1]
     }
     return level_data
 }
@@ -111,12 +117,22 @@ get_level_data::proc (lvl: int) -> Level {
 load_level :: proc(game: ^Game, lvl: int)  {
     level := get_level_data(lvl)
 
+    game.current_level = lvl
     game.level_data.map_size = level.level_size
     game.level_data.image = level.map_image
     game.level_data.texture = rl.LoadTexture(strings.clone_to_cstring(level.map_image, context.temp_allocator))
-
+    game.level_data.is_complete = false
+    game.level_data.collected_keys = 0
+    game.player.body.position = game.player.spawn_pos
+    clear(&game.level_data.colliders)
+    clear(&game.level_data.enemy_spawners)
+    clear(&game.level_data.keys)
+    clear(&game.enemy_bullets)
+    clear(&game.player_bullets)
+    clear(&game.enemy_minions)
     data, ok := os.read_entire_file_from_filename(level.map_data)
 
+    // clear(&game.)
     if !ok {
         fmt.eprintln("Failed to parse the json file.")
 
@@ -204,7 +220,7 @@ load_level :: proc(game: ^Game, lvl: int)  {
         append(&game.level_data.exp_buffs,  Exp_buff{ position = {x, y}})
     }
     // --> GATE <---
-    gate_container_wrapper := layer_data[EXP_LAYER]
+    gate_container_wrapper := layer_data[GATE_LAYER]
     gate_container := gate_container_wrapper.(json.Object)["objects"].(json.Array)
     gate_pos_parsed := gate_container[0].(json.Object)
 

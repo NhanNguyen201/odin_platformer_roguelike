@@ -38,15 +38,16 @@ ATS_BUFF_SPRITE :: "Ats_buff_sprite"
 MVSP_BUFF_SPRITE :: "Mvspd_buff_sprite"
 AR_BUFF_SPRITE :: "Ar_buff_sprite"
 PARTICLE_SPRITE :: "Particle_sprite"
+LEVEL_GATE_SPRITE :: "Level_gate_sprite"
 
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
     PORTAL_SPRITE = {x = 0, y = 144, w = 32, h = 32},
     PORTAL_SPRITE_1 = {x = 32, y = 144, w = 32, h = 32},
     PORTAL_SPRITE_2 = {x = 64, y = 144, w = 32, h = 32},
-    MINION_SPRITE = {x = 0, y = 80, w = 128, h = 32, count = 4},
-    MINION_DEAD_SPRITE = {x = 128, y = 80, w = 32, h = 32, count = 4},
-    PLAYER_SPRITE = {x = 0, y = 112, w = 128, h = 32, count = 4},
+    MINION_SPRITE = {x = 0, y = 80, w = 160, h = 32, count = 5},
+    MINION_DEAD_SPRITE = {x = 160, y = 80, w = 32, h = 32, count = 4},
+    PLAYER_SPRITE = {x = 0, y = 112, w = 160, h = 32, count = 5},
     BULLET_SPRITE = {x = 0, y = 64, w = 16, h = 16},
     EXPERIENCE_BUFF_SPRITE = {x = 32, y = 176, w = 32, h = 32},
     PLAYER_AVATAR_SPRITE = {x = 0, y = 208, w = 64, h = 64},
@@ -59,7 +60,8 @@ SPRITE_MAP := map[string]Sprite_desc {
     ATS_BUFF_SPRITE = {x = 64, y = 64, w = 16, h = 16},
     MVSP_BUFF_SPRITE = {x = 48, y = 64, w = 16, h = 16},
     AR_BUFF_SPRITE = {x = 96, y = 64, w = 16, h = 16},
-    PARTICLE_SPRITE = {x = 64, y = 176, w = 32, h = 32}
+    PARTICLE_SPRITE = {x = 64, y = 176, w = 32, h = 32},
+    LEVEL_GATE_SPRITE = {x = 0, y = 176, w = 32, h = 32}
 }
 
 load_atlas:: proc(game: ^Game) {

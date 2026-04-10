@@ -426,12 +426,12 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":539.333333333333,
-                 "y":182.666666666667
+                 "x":539.333,
+                 "y":182.667
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -481,7 +481,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -527,11 +527,11 @@
                  "visible":true,
                  "width":0,
                  "x":542.667,
-                 "y":453.999666666667
+                 "y":454
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -555,7 +555,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }],

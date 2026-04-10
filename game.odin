@@ -14,6 +14,9 @@ MAX_FALL_SPEED: f32: 300
 BULLET_SIZE: rl.Vector2 : {6, 6}
 ENEMY_MINION_SIZE : rl.Vector2 : {15, 15}
 
+LEVEL_GATE_SIZE : rl.Vector2 : {12, 12}
+
+
 BULLET_DIRECTION :: enum {
     UP, 
     DOWN,
@@ -60,9 +63,9 @@ Game :: struct {
     game_cloud_background: rl.Texture2D,
     player_bullets: [dynamic] Bullet,
     enemy_bullets: [dynamic] Bullet,
-    enemy_minions: [dynamic] Enemy_minion,
+    enemy_minions:[dynamic] Enemy_minion,
 }
-
+ 
 
 
 
@@ -93,8 +96,6 @@ game_init:: proc() -> Game {
     game: Game
 
     player_stats := Player_stats{health_stats = {max_hp = 100, current_hp = 100}, dmg = 25}
-
-
     player_spawn_pos := rl.Vector2{50, 300}
     game.current_level = level
     game.player = Player {
@@ -147,10 +148,27 @@ game_update:: proc(game: ^Game, dt: f32) {
     // exp_buff_collect()
     exp_buff_collect(&game.player, game)
 
+    level_gate_update(game)
+
     particles_systems_update(&game.particle_system, dt)
+
+
+
 }
+level_gate_update :: proc(game: ^Game) {
+    if game.level_data.collected_keys == len(game.level_data.keys) {
+        game.level_data.is_complete = true
+    }
 
+    if game.level_data.is_complete {
+        gate := rl.Rectangle {x = game.level_data.gate_position.x - LEVEL_GATE_SIZE.x / 2, y = game.level_data.gate_position.y - LEVEL_GATE_SIZE.y / 2, width = LEVEL_GATE_SIZE.x, height = LEVEL_GATE_SIZE.y}
+        player_rect := get_body_rect(game.player.body)
 
+        if rl.CheckCollisionRecs(gate, player_rect) {
+            load_level(game, game.current_level + 1)
+        }
+    }
+}
 
 bullets_draw :: proc(atlas: rl.Texture2D, player_bullets: []Bullet, enemy_bullets : []Bullet)  {
     sprite := SPRITE_MAP[BULLET_SPRITE]
@@ -204,8 +222,18 @@ game_draw:: proc(game: ^Game, dt: f32) {
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_bullets[:])
 
     particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
+    level_gate_draw(game.game_sprite_atlas, game.level_data)
     player_ui_draw(game)
 
+
+}
+
+level_gate_draw:: proc(atlas: rl.Texture2D, level_data: Level_data) {
+    sprite := SPRITE_MAP[LEVEL_GATE_SPRITE]
+    source := rl.Rectangle{x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
+    dest := rl.Rectangle {x = level_data.gate_position.x - LEVEL_GATE_SIZE.x / 2, y = level_data.gate_position.y - LEVEL_GATE_SIZE.y , width = LEVEL_GATE_SIZE.x, height = LEVEL_GATE_SIZE.y}
+
+    rl.DrawTexturePro(atlas, source, dest, {0, 0}, 0, level_data.is_complete ? rl.WHITE : rl.BLACK)
 
 }
 

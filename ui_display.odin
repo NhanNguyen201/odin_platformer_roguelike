@@ -3,12 +3,13 @@ import rl "vendor:raylib"
 import "core:fmt"
 
 UI_PADDING : rl.Vector2 : {15, 15}
-UI_BUFF_PICK_PADDING: rl.Vector2 : {5, 40}
-UI_BUFF_PICK_SLOT_WIDTH: f32 : 40
-UI_BUFF_PICK_SLOT_PADDING: rl.Vector2 : {5, 5}
-UI_BUFF_PICK_SLOT_ICON_PADDING: rl.Vector2 : {5, 5}
+UI_BUFF_PICK_PADDING: rl.Vector2 : {4, 40}
+UI_BUFF_PICK_SLOT_WIDTH: f32 : 50
+UI_BUFF_PICK_SLOT_PADDING: rl.Vector2 : {4, 4}
+UI_BUFF_PICK_SLOT_ICON_PADDING: rl.Vector2 : {3, 5}
 UI_BUFF_PICK_SIZE : rl.Vector2 :{12, 12}
-
+UI_BUFF_TITLE_SIZE :: 6
+UI_BUFF_DESCRIPTION_SIZE :: 4
 HEALTH_BAR_SIZE : rl.Vector2: {40, 7}
 EXPERIENCE_BAR_SIZE: rl.Vector2: {40, 5}
 
@@ -20,15 +21,18 @@ Buff_detail :: struct {
     sprite: string,
     buff : STAT_BUFF,
     val : f32,
-    description: string
+    description: string,
+    title: string
 }
-roboto_font := rl.Font{}
+
+
+
 BUFF_SLOTS :[5]Buff_detail :{
-    Buff_detail {buff = .HP, sprite = HP_BUFF_SPRITE, val = 30, description = "Heal you 25% max HP \nInscrease max HP by 30"},
-    Buff_detail {buff = .AD, sprite = AD_BUFF_SPRITE, val = 10, description = "Increase 10% dmg"},
-    Buff_detail {buff = .ATS, sprite = ATS_BUFF_SPRITE, val = 80, description = "Shoot 25% faster"},
-    Buff_detail {buff = .MVSPD, sprite = MVSP_BUFF_SPRITE, val = 25, description = "Move 25% faster"},
-    Buff_detail {buff = .AR, sprite = AR_BUFF_SPRITE, val = 10, description = "Reduce incoming damage by 10%"},
+    Buff_detail {buff = .HP, sprite = HP_BUFF_SPRITE, val = 30, title = "Oak Skin", description = "Heal you 25% max HP \nInscrease max HP by 30"},
+    Buff_detail {buff = .AD, sprite = AD_BUFF_SPRITE, val = 10, title = "Fire Fist", description = "Increase 10% dmg"},
+    Buff_detail {buff = .ATS, sprite = ATS_BUFF_SPRITE, val = 10, title = "Flame Gun", description = "Shoot 10% faster"},
+    Buff_detail {buff = .MVSPD, sprite = MVSP_BUFF_SPRITE, val = 15, title="The Wind", description = "Move 15% faster"},
+    Buff_detail {buff = .AR, sprite = AR_BUFF_SPRITE, val = 10, title = "Nut Shell", description = "Reduce damage taken \n by 10%"},
 }
 
 get_rect_center :: proc(rect: rl.Rectangle) -> rl.Vector2 {
@@ -99,26 +103,33 @@ player_ui_draw:: proc(game: ^Game) {
     rl.DrawTexturePro(game.game_sprite_atlas, key_source, key_dest, {key_source.width  / 2 , key_source.height / 2}, 0, rl.WHITE)
 
     key_text := fmt.ctprintf(":%d/%d", game.level_data.collected_keys, len(game.level_data.keys))
-    rl.DrawTextEx(game.fonts[FONT_THIN], key_text, {key_dest.x + 8, key_dest.y - 5}, 7.5, .5, rl.BLACK)
-//     rl.DrawRectangleRec( health_bar_rect, rl.GRAY )
-//     rl.DrawRectangleRec(rl.Rectangle {x = health_bar_rect.x, y= health_bar_rect.y, width = (game.player.stats.health_stats.current_hp / game.player.stats.health_stats.max_hp) * health_bar_size.x - 10, height = health_bar_size.y}, rl.RED)
+    rl.DrawTextEx(game.fonts[FONT_BOLD], key_text, {key_dest.x + 8, key_dest.y - 5}, 8, .5, rl.WHITE)
+    
+    // Draw experience
     rl.DrawRectangleRec(
-        rl.Rectangle{x = ui_x_start + 15, y = ui_y_start + HEALTH_BAR_SIZE.y + 2.5, width = EXPERIENCE_BAR_SIZE.x, height = EXPERIENCE_BAR_SIZE.y },
-        rl.DARKBLUE
+        rl.Rectangle{x = ui_x_start + 15, y = ui_y_start + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x, height = EXPERIENCE_BAR_SIZE.y },
+        rl.WHITE
     )
     rl.DrawRectangleRec(
-        rl.Rectangle{x = ui_x_start + 15, y = ui_y_start + HEALTH_BAR_SIZE.y + 2.5, width = EXPERIENCE_BAR_SIZE.x * (player.exp_controller.current / player.exp_controller.require.val), height = EXPERIENCE_BAR_SIZE.y },
-        rl.WHITE
+        rl.Rectangle{x = ui_x_start + 15, y = ui_y_start + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x * (player.exp_controller.current / player.exp_controller.require.val), height = EXPERIENCE_BAR_SIZE.y },
+        rl.Color {247, 161, 56, 220}
+    )
+    lvl_text := fmt.ctprintf("Level %d : %d / %d", player.exp_controller.level + 1, i32(player.exp_controller.current), i32(player.exp_controller.require.val))
+    rl.DrawTextEx(game.fonts[FONT_REG], lvl_text, {ui_x_start + 17, ui_y_start + HEALTH_BAR_SIZE.y + 1}, 5, 0.1, rl.BLACK)
+    rl.DrawRectangleLinesEx(
+        rl.Rectangle{x = ui_x_start + 15, y = ui_y_start + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x, height = EXPERIENCE_BAR_SIZE.y },
+        0.5,
+        rl.BLACK
     )
     if game.game_options.is_paused && game.ui_controller.is_buff_pick {
         rl.DrawRectangle(i32(ui_x_start), i32(ui_y_start), i32 (ui_width), i32(ui_height), rl.Color {184, 226, 217, 160})
-        player_buff_picking_scene_draw(game.game_sprite_atlas, ui_rect, &game.game_options, &game.ui_controller, &game.player)
+        player_buff_picking_scene_draw(game.game_sprite_atlas, game.fonts ,ui_rect, &game.game_options, &game.ui_controller, &game.player)
     }
 
 }
 
 
-player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, ui_rect : rl.Rectangle, game_options: ^Game_Options, ui_controller: ^UI_Controller, player: ^Player) {
+player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, fonts: map[string] rl.Font, ui_rect : rl.Rectangle, game_options: ^Game_Options, ui_controller: ^UI_Controller, player: ^Player) {
 
     inner_rect := rl.Rectangle {x = ui_rect.x + UI_BUFF_PICK_PADDING.x, y = ui_rect.y + UI_BUFF_PICK_PADDING.y, width = ui_rect.width - UI_BUFF_PICK_PADDING.x * 2, height = ui_rect.height - UI_BUFF_PICK_PADDING.y * 2}
     rl.DrawRectangleRec(inner_rect, rl.BLACK)
@@ -131,6 +142,10 @@ player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, ui_rect : rl.Rectangl
         source := rl.Rectangle {x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
         dest := rl.Rectangle {x = slot_rect.x + UI_BUFF_PICK_SLOT_ICON_PADDING.x, y = slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y, width = UI_BUFF_PICK_SIZE.x, height = UI_BUFF_PICK_SIZE.y}
         rl.DrawTexturePro(atlas, source, dest, {0, 0}, 0, rl.WHITE)
+
+        rl.DrawTextEx(fonts[FONT_BOLD], fmt.ctprintf(buff.title), {slot_rect.x + UI_BUFF_PICK_SLOT_ICON_PADDING.x +  UI_BUFF_PICK_SIZE.x + 2, slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y +  UI_BUFF_PICK_SIZE.y / 2  - UI_BUFF_TITLE_SIZE / 2}, UI_BUFF_TITLE_SIZE, 0.5, rl.BLACK)
+
+        rl.DrawTextEx(fonts[FONT_REG], fmt.ctprint(buff.description), {slot_rect.x + 2, slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y +  UI_BUFF_PICK_SIZE.y + 2}, UI_BUFF_DESCRIPTION_SIZE, 0.1, rl.BLACK)
         pick_buff_handle(game_options, ui_controller, dest, player, buff.buff, buff.val)
     }
 }

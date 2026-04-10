@@ -40,6 +40,7 @@ main :: proc() {
 
     game := game_init()
     game.fonts = load_fonts()
+  
     game.camera = rl.Camera2D {
         zoom = SCREEN_HEIGHT / PIXEL_WINDOW_HEIGHT,
         offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)},

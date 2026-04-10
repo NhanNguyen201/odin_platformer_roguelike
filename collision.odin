@@ -83,8 +83,9 @@ resolve_enemy_and_bullet:: proc(minion: ^Enemy_minion, bullets: ^[dynamic]Bullet
 }
 
 
-resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic] Bullet,  rect: rl.Rectangle) {
-    for bullet, idx in bullets {
+resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,  rect: rl.Rectangle) {
+    // bullets.data
+    for bullet, idx in bullets{
         bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
 
         if !rl.CheckCollisionRecs(rect, bullet_rect)  {

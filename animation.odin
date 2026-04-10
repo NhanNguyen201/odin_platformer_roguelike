@@ -38,12 +38,12 @@ Animation :: struct {
 
 Player_animations := map[string] Animation {
     IDLE = {name = IDLE, frame_start = 0, frame_end = 1, frame_timer = .5, count = 2 },
-    RUN = {name = RUN, frame_start = 2, frame_end = 3, frame_timer = .5, count = 2 },
+    RUN = {name = RUN, frame_start = 2, frame_end = 4, frame_timer = .25, count = 3 },
 }
 
 Minion_animations := map[string] Animation {
     IDLE = {name = IDLE, frame_start = 0, frame_end = 1, frame_timer = 0.5, count = 2 },
-    RUN = {name= RUN, frame_start = 2, frame_end = 3, frame_timer = .5, count = 2 },
+    RUN = {name= RUN, frame_start = 2, frame_end = 4, frame_timer = .25, count = 3 },
 }
 
 draw_animation :: proc (atlas: rl.Texture2D, anim_controller : ^Animation_controller, anim: Animation, sprite_name: string, is_flip: bool, dest: rl.Rectangle ,dt: f32) {
