@@ -24,7 +24,8 @@ COLLIDER_LAYER:int: 5
 EXP_LAYER:int: 6
 KEY_CONTAINER_LAYER:int: 7
 ENEMY_SPAWNERS_LAYER:int: 8
-GATE_LAYER:int: 9
+GATE_LAYER: int: 9
+PLAYER_SPAWN_POS_LAYER : int : 10
 
 KEY_POT_SIZE :: rl.Vector2 {10,10}
 
@@ -43,7 +44,6 @@ Level_data :: struct {
     is_complete: bool,
     colliders: [dynamic] rl.Rectangle,
     keys: [dynamic] Key_pot,
-    enemy_spawners: [dynamic] Enemy_spawner_pot,
     exp_buffs: [dynamic] Exp_buff
 }
 
@@ -101,6 +101,11 @@ Designed_Level : []Level = {
         map_image = "assets/map_images/map_2.png",
         map_data = "assets/map_tiles/map_2.json"
     },
+    Level {
+        level_size = rl.Vector2 {960, 960},
+        map_image = "assets/map_images/map_3.png",
+        map_data = "assets/map_tiles/map_3.json"
+    },
 }
 
 
@@ -110,6 +115,7 @@ get_level_data::proc (lvl: int) -> Level {
     switch lvl {
         case 0: level_data =  Designed_Level[0]
         case 1: level_data = Designed_Level[1]
+        case 2: level_data = Designed_Level[2]
     }
     return level_data
 }
@@ -123,13 +129,13 @@ load_level :: proc(game: ^Game, lvl: int)  {
     game.level_data.texture = rl.LoadTexture(strings.clone_to_cstring(level.map_image, context.temp_allocator))
     game.level_data.is_complete = false
     game.level_data.collected_keys = 0
-    game.player.body.position = game.player.spawn_pos
+    game.player.body.vel = {0, 0}    
     clear(&game.level_data.colliders)
-    clear(&game.level_data.enemy_spawners)
+    clear(&game.enemy_side.enemy_spawners)
     clear(&game.level_data.keys)
-    clear(&game.enemy_bullets)
+    clear(&game.enemy_side.enemy_bullets)
     clear(&game.player_bullets)
-    clear(&game.enemy_minions)
+    clear(&game.enemy_side.enemy_minions)
     data, ok := os.read_entire_file_from_filename(level.map_data)
 
     // clear(&game.)
@@ -204,7 +210,7 @@ load_level :: proc(game: ^Game, lvl: int)  {
             },
             enemy_id = rand.float32()
         } 
-        append(&game.level_data.enemy_spawners,  enemy_spawner_pot)
+        append(&game.enemy_side.enemy_spawners,  enemy_spawner_pot)
     }
 
     // Exprience buff
@@ -229,5 +235,15 @@ load_level :: proc(game: ^Game, lvl: int)  {
     gate_y := f32(gate_pos_parsed["y"].(json.Float))
     game.level_data.gate_position = {gate_x, gate_y}
     
+
+    player_spawn_pos_container_wrapper := layer_data[PLAYER_SPAWN_POS_LAYER]
+    spawn_pos := player_spawn_pos_container_wrapper.(json.Object)["objects"].(json.Array)
+    spawn_pos_parsed := spawn_pos[0].(json.Object)
+
+
+    spawn_pos_x := f32(spawn_pos_parsed["x"].(json.Float))
+    spawn_pos_y := f32(spawn_pos_parsed["y"].(json.Float))
+    game.player.spawn_pos = {spawn_pos_x, spawn_pos_y}
+    game.player.body.position = game.player.spawn_pos
 }
 

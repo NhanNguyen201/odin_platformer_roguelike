@@ -24,10 +24,17 @@ BULLET_DIRECTION :: enum {
     RIGHT
 }
 
+Enemy_side :: struct {
+    enemy_minions: [dynamic] Enemy_minion,
+    enemy_spawners: [dynamic] Enemy_spawner_pot,
+    enemy_bullets: [dynamic] Bullet
+} 
+
 Game_Options :: struct {
     is_debug: bool,
     is_paused: bool,
-    ui_mouse_pos: rl.Vector2
+    ui_mouse_pos: rl.Vector2,
+    is_hub_on : bool
 }
 
 FONT_THIN :: "Font_thin"
@@ -62,8 +69,7 @@ Game :: struct {
     game_background: rl.Texture2D,
     game_cloud_background: rl.Texture2D,
     player_bullets: [dynamic] Bullet,
-    enemy_bullets: [dynamic] Bullet,
-    enemy_minions:[dynamic] Enemy_minion,
+    enemy_side: Enemy_side
 }
  
 
@@ -96,14 +102,11 @@ game_init:: proc() -> Game {
     game: Game
 
     player_stats := Player_stats{health_stats = {max_hp = 100, current_hp = 100}, dmg = 25}
-    player_spawn_pos := rl.Vector2{50, 300}
     game.current_level = level
     game.player = Player {
         body = Body {
-            position = player_spawn_pos,
             size = PLAYER_SIZE,
         },
-        spawn_pos = player_spawn_pos,
         stats = player_stats,
         bullet_cd = Bullet_Countdown {max_time =  Inittal_bullet_countdown, current_time = Inittal_bullet_countdown},
         exp_controller = Experience_controller {
@@ -115,6 +118,7 @@ game_init:: proc() -> Game {
     }
     load_atlas(&game)
     load_level(&game, game.current_level)
+
 
     return game
 }
@@ -128,34 +132,37 @@ game_update:: proc(game: ^Game, dt: f32) {
     }
     
     if rl.IsKeyPressed(.L){
-        if game.ui_controller.is_buff_pick {
-            game.ui_controller.is_buff_pick = false
+        if game.ui_controller.is_ui_screen {
+            game.ui_controller.is_ui_screen = false
         }
         game.game_options.is_paused = !game.game_options.is_paused
     }
+    if !game.game_options.is_paused {
+        player_update(&game.player, game,  game.level_data.colliders[:], dt)
+        
+        enemies_update(game, dt)
+        enemy_minions_update(game, dt) 
     
-    player_update(&game.player, game,  game.level_data.colliders[:], dt)
+        for block_collider in game.level_data.colliders {
+            resolve_bullet_collider_collision(game, &game.player_bullets, block_collider)
+            resolve_bullet_collider_collision(game, &game.enemy_side.enemy_bullets, block_collider)
+        }
     
-    enemies_update(game, dt)
-    enemy_minions_update(game, dt) 
-
-    for block_collider in game.level_data.colliders {
-        resolve_bullet_collider_collision(game, &game.player_bullets, block_collider)
-        resolve_bullet_collider_collision(game, &game.enemy_bullets, block_collider)
+        key_collect(game.player, game)
+      
+        exp_buff_collect(&game.player, game)
+    
+        level_gate_update(game)
+    
+        particles_systems_update(&game.particle_system, dt)
     }
-
-    key_collect(game.player, game)
-    // exp_buff_collect()
-    exp_buff_collect(&game.player, game)
-
-    level_gate_update(game)
-
-    particles_systems_update(&game.particle_system, dt)
 
 
 
 }
 level_gate_update :: proc(game: ^Game) {
+    
+
     if game.level_data.collected_keys == len(game.level_data.keys) {
         game.level_data.is_complete = true
     }
@@ -167,6 +174,7 @@ level_gate_update :: proc(game: ^Game) {
         if rl.CheckCollisionRecs(gate, player_rect) {
             load_level(game, game.current_level + 1)
         }
+       
     }
 }
 
@@ -212,28 +220,36 @@ game_draw:: proc(game: ^Game, dt: f32) {
 
     keypot_draw(game.game_sprite_atlas,game.level_data.keys[:])
 
+    level_gate_draw(game.game_sprite_atlas, game.level_data)
+    
     enemies_draw(game^)
     
+    
+    enemy_minions_draw(game.game_sprite_atlas, game.game_options.is_debug, &game.enemy_side.enemy_minions, dt)
+    
+    bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_side.enemy_bullets[:])
+    
     player_draw(&game.player, game^, dt)
-    
-    
-    enemy_minions_draw(game.game_sprite_atlas, game.game_options.is_debug, &game.enemy_minions, dt)
 
-    bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_bullets[:])
-
+    
+   
+    
     particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
-    level_gate_draw(game.game_sprite_atlas, game.level_data)
     player_ui_draw(game)
-
-
+    
 }
 
 level_gate_draw:: proc(atlas: rl.Texture2D, level_data: Level_data) {
     sprite := SPRITE_MAP[LEVEL_GATE_SPRITE]
     source := rl.Rectangle{x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
-    dest := rl.Rectangle {x = level_data.gate_position.x - LEVEL_GATE_SIZE.x / 2, y = level_data.gate_position.y - LEVEL_GATE_SIZE.y , width = LEVEL_GATE_SIZE.x, height = LEVEL_GATE_SIZE.y}
+    dest := rl.Rectangle {x = level_data.gate_position.x - LEVEL_GATE_SIZE.x / 2, y = level_data.gate_position.y - LEVEL_GATE_SIZE.y / 2, width = LEVEL_GATE_SIZE.x, height = LEVEL_GATE_SIZE.y}
 
-    rl.DrawTexturePro(atlas, source, dest, {0, 0}, 0, level_data.is_complete ? rl.WHITE : rl.BLACK)
+    rl.DrawCircle(i32(level_data.gate_position.x), i32(level_data.gate_position.y), 15, rl.Color{220, 220,220, 180})
+    rl.DrawTexturePro(atlas, source, dest, {0,0}, 0, level_data.is_complete ? rl.WHITE : rl.Color {117, 116, 116, 150})
+    
+    for i:= 0; i < len(level_data.keys); i+= 1 {
+        rl.DrawCircle(i32(get_rect_center(dest).x) - i32(7 * (len(level_data.keys) - 1) / 2) + i32(i * 7), i32(level_data.gate_position.y - 15), 2, i < level_data.collected_keys ? rl.RED : rl.Color {118, 171, 252, 255})
+    } 
 
 }
 
@@ -245,7 +261,7 @@ keypot_draw :: proc(atlas: rl.Texture2D, keys: []Key_pot) {
         if !key.collected {
             dest := rl.Rectangle{x = key.position.x, y= key.position.y , width = key_atlas_sprite.w, height = key_atlas_sprite.h}
 
-            rl.DrawTexturePro(atlas, key_source, dest, rl.Vector2{key_atlas_sprite.w / 2, key_atlas_sprite.h /2}, 0,rl.WHITE)
+            rl.DrawTexturePro(atlas, key_source, dest, {dest.width / 2, dest.height /2}, 0,rl.WHITE)
         }
     }
 }

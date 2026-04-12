@@ -2,6 +2,7 @@ package main
 import rl "vendor:raylib"
 import "core:math"
 
+ENEMY_AIMING_TRIGGER_DUR : f32 : 0.5 
 
 enemies_update:: proc(game: ^Game, dt: f32) {
 
@@ -9,12 +10,12 @@ enemies_update:: proc(game: ^Game, dt: f32) {
         return
     }
 
-    for &enemy_spawner in game.level_data.enemy_spawners {
+    for &enemy_spawner in game.enemy_side.enemy_spawners {
         is_minion_dead := false
         found := false
 
 
-        for minion in game.enemy_minions {
+        for minion in game.enemy_side.enemy_minions {
             if minion.id == enemy_spawner.enemy_id  {
                 found = true
                 if minion.status == .DEAD {
@@ -43,7 +44,7 @@ enemies_draw:: proc(game: Game) {
     p_sprite := SPRITE_MAP[PORTAL_SPRITE]
     p_sprite_1 := SPRITE_MAP[PORTAL_SPRITE_1]
     p_sprite_2 := SPRITE_MAP[PORTAL_SPRITE_2]
-    for enemy_spawner in game.level_data.enemy_spawners {
+    for enemy_spawner in game.enemy_side.enemy_spawners {
         dest := rl.Rectangle {x = enemy_spawner.position.x, y = enemy_spawner.position.y, width = spawner_size.x, height = spawner_size.y}
         source_portal := rl.Rectangle {x = p_sprite.x, y = p_sprite.y, width = p_sprite.w, height = p_sprite.h}
         source_portal_1 := rl.Rectangle {x = p_sprite_1.x, y = p_sprite_1.y, width = p_sprite_1.w, height = p_sprite_1.h}
@@ -70,19 +71,16 @@ enemies_draw:: proc(game: Game) {
 }
 
 enemy_minions_update::proc (game: ^Game, dt: f32) {
-    if game.game_options.is_paused {
-        return
-    }
+    
 
-    for i:= len(game.enemy_minions) - 1; i >=0; i -= 1 {
-        enemy := &game.enemy_minions[i]
+    for i:= len(game.enemy_side.enemy_minions) - 1; i >=0; i -= 1 {
+        enemy := &game.enemy_side.enemy_minions[i]
 
         direction := enemy.direction
 
         if enemy.stats.health_stats.current_hp <= 0 {
             // unordered_remove(&game.enemy_minions, i)
             enemy.status = .DEAD    
-            continue
         } 
 
 
@@ -111,11 +109,13 @@ enemy_minions_update::proc (game: ^Game, dt: f32) {
             }
         }
 
-
-        enemy.body.position.x += dt * dvel 
-
-        for block_collider in game.level_data.colliders {
-            resolve_minion_horizontal(enemy, block_collider)
+        if enemy.status == .ALIVE {
+            resolve_enemy_and_bullet(enemy, &game.player_bullets)
+            enemy.body.position.x += dt * dvel 
+    
+            for block_collider in game.level_data.colliders {
+                resolve_minion_horizontal(enemy, block_collider)
+            }
         }
 
         enemy.body.vel.y = min(enemy.body.vel.y + (GRAVITY * dt), MAX_FALL_SPEED)
@@ -126,7 +126,6 @@ enemy_minions_update::proc (game: ^Game, dt: f32) {
         }
 
 
-        resolve_enemy_and_bullet(enemy, &game.player_bullets)
     }
 }
 
@@ -180,7 +179,7 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
     }
     found := false
 
-    for &enemy in game.enemy_minions {
+    for &enemy in game.enemy_side.enemy_minions {
         if enemy.id == enemy_spawner.enemy_id {
             found = true
 
@@ -206,7 +205,7 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
             direction = .RIGHT,
             stats = stats,
         }
-        append(&game.enemy_minions, enemy)
+        append(&game.enemy_side.enemy_minions, enemy)
     }
 }
 

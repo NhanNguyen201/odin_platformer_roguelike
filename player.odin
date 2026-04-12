@@ -1,5 +1,8 @@
+#+feature dynamic-literals
+
 package main
 import rl "vendor:raylib"
+import "core:fmt"
 
 Inittal_bullet_countdown :f32 : 1.
 
@@ -74,6 +77,11 @@ Player_direction :: enum {
     RIGHT
 }
 
+PLAYER_ACTION_SETTING :: enum {
+    SHOOT,
+    JUMP
+}
+
 MAX_LEVEL: int :10
 EXPERIENCE_BUFF_AMOUNT:f32 : 20
 EXPERIENCE_BUFF_SIZE: rl.Vector2: {12, 12}
@@ -92,6 +100,17 @@ EXPERIENCE_PER_LEVEL: [MAX_LEVEL]Exp_require = {
 
 }
 
+KEYBOARD_KEYS := map[string] rl.KeyboardKey{
+    "k" = .K ,
+}
+
+get_key_to_keycode :: proc (key: string) -> rl.KeyboardKey {
+    return KEYBOARD_KEYS[key]
+} 
+
+can_key_to_keycode :: proc(key: string) -> bool {
+    return type_of(KEYBOARD_KEYS[key]) == rl.KeyboardKey  
+}
 
 player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Rectangle, dt: f32) {
     player.body.vel.x = 0
@@ -220,7 +239,7 @@ exp_buff_collect:: proc(player: ^Player, game: ^Game) {
         player.exp_controller.current += EXPERIENCE_BUFF_AMOUNT
         
         if player.exp_controller.current >= player.exp_controller.require.val {
-            game.ui_controller.is_buff_pick = true
+            game.ui_controller.is_ui_screen = true
             game.game_options.is_paused = true
 
             player.exp_controller.current -= player.exp_controller.require.val

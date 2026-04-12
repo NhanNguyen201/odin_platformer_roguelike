@@ -1,5 +1,6 @@
 package main
 import rl "vendor:raylib"
+import "vendor:curl"
 import "core:fmt"
 
 UI_PADDING : rl.Vector2 : {15, 15}
@@ -8,8 +9,12 @@ UI_BUFF_PICK_SLOT_WIDTH: f32 : 50
 UI_BUFF_PICK_SLOT_PADDING: rl.Vector2 : {4, 4}
 UI_BUFF_PICK_SLOT_ICON_PADDING: rl.Vector2 : {3, 5}
 UI_BUFF_PICK_SIZE : rl.Vector2 :{12, 12}
-UI_BUFF_TITLE_SIZE :: 6
-UI_BUFF_DESCRIPTION_SIZE :: 4
+UI_BUFF_TITLE_SIZE: f32 : 6
+UI_BUFF_DESCRIPTION_SIZE: f32: 4
+
+UI_SKILL_HUB_SIZE: rl.Vector2 : {120, 20} 
+UI_SKILL_HUB_PADDING: rl.Vector2 : {2.5, 2.5}
+UI_SKILL_HUD_SLOT_SIZE : rl.Vector2: {15, 15}
 HEALTH_BAR_SIZE : rl.Vector2: {40, 7}
 EXPERIENCE_BAR_SIZE: rl.Vector2: {40, 5}
 
@@ -40,7 +45,7 @@ get_rect_center :: proc(rect: rl.Rectangle) -> rl.Vector2 {
 }
 
 UI_Controller :: struct {
-    is_buff_pick: bool
+    is_ui_screen: bool
 }
 
 is_ui_component_hover :: proc(game_options: Game_Options, rect : rl.Rectangle) -> bool { 
@@ -121,11 +126,11 @@ player_ui_draw:: proc(game: ^Game) {
         0.5,
         rl.BLACK
     )
-    if game.game_options.is_paused && game.ui_controller.is_buff_pick {
+    if game.game_options.is_paused && game.ui_controller.is_ui_screen {
         rl.DrawRectangle(i32(ui_x_start), i32(ui_y_start), i32 (ui_width), i32(ui_height), rl.Color {184, 226, 217, 160})
         player_buff_picking_scene_draw(game.game_sprite_atlas, game.fonts ,ui_rect, &game.game_options, &game.ui_controller, &game.player)
     }
-
+    skill_hud_draw(game.game_sprite_atlas, ui_rect, player)
 }
 
 
@@ -136,7 +141,7 @@ player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, fonts: map[string] rl
 
     for buff, idx in BUFF_SLOTS {
         slot_rect := rl.Rectangle {x = inner_rect.x + f32(idx) * ( 2 * UI_BUFF_PICK_SLOT_PADDING.x + UI_BUFF_PICK_SLOT_WIDTH) + UI_BUFF_PICK_SLOT_PADDING.x, y = inner_rect.y + UI_BUFF_PICK_SLOT_PADDING.y, width = UI_BUFF_PICK_SLOT_WIDTH, height = inner_rect.height - UI_BUFF_PICK_SLOT_PADDING.y * 2}
-        rl.DrawRectangleRec(slot_rect, rl.WHITE)
+        rl.DrawRectangleRec(slot_rect, rl.Color{255, 255, 255, 180})
         //  Buff 1
         sprite := SPRITE_MAP[buff.sprite]
         source := rl.Rectangle {x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
@@ -186,8 +191,52 @@ pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Control
 
             }
 
-            ui_controller.is_buff_pick = false
+            ui_controller.is_ui_screen = false
             game_options.is_paused = false
         }
     } 
+}
+
+
+skill_hud_draw :: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle, player: Player) {
+    bullet_cd := player.bullet_cd
+
+    shoot_sprite := SPRITE_MAP[SHOOT_SKILL_SPRITE]
+    jump_sprite := SPRITE_MAP[JUMP_SKILL_SPRITE]
+
+    hud_rect := rl.Rectangle{x = ui_rect.x + ui_rect.width / 2 - UI_SKILL_HUB_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_SKILL_HUB_SIZE.y, width = UI_SKILL_HUB_SIZE.x, height = UI_SKILL_HUB_SIZE.y}
+    rl.DrawRectangleRec(hud_rect, rl.Color{200,200,200, 200})
+    
+    shoot_source := rl.Rectangle{ x = shoot_sprite.x, y = shoot_sprite.y, height = shoot_sprite.h, width = shoot_sprite.w}
+    shoot_dest := rl.Rectangle { x = hud_rect.x + UI_SKILL_HUB_PADDING.x, y = hud_rect.y + UI_SKILL_HUB_PADDING.y, height = UI_SKILL_HUD_SLOT_SIZE.x, width = UI_SKILL_HUD_SLOT_SIZE.y}
+
+    rl.DrawTexturePro(atlas, shoot_source, shoot_dest, {0, 0}, 0, rl.WHITE)
+    rl.DrawRectangleLinesEx(shoot_dest, 0.5, rl.BLACK)
+
+    rl.DrawRectangleRec(rl.Rectangle{x = shoot_dest.x, y = shoot_dest.y + (bullet_cd.max_time - bullet_cd.current_time) / bullet_cd.max_time * shoot_dest.height, height = bullet_cd.current_time / bullet_cd.max_time * shoot_dest.height, width = shoot_dest.width}, rl.Color {0, 0, 0, 180 })
+
+
+
+    jump_source := rl.Rectangle{ x = jump_sprite.x, y = jump_sprite.y, height = jump_sprite.h, width = jump_sprite.w}
+    jump_dest := rl.Rectangle { x = hud_rect.x + UI_SKILL_HUB_PADDING.x + shoot_dest.width + 2.5, y = hud_rect.y + UI_SKILL_HUB_PADDING.y, height = UI_SKILL_HUD_SLOT_SIZE.x, width = UI_SKILL_HUD_SLOT_SIZE.y}
+
+    rl.DrawTexturePro(atlas, jump_source, jump_dest, {0, 0}, 0, rl.WHITE)
+    rl.DrawRectangleLinesEx(jump_dest, 0.5, rl.BLACK)
+
+    if !player.on_ground {
+        rl.DrawRectanglePro(
+            rl.Rectangle {x = get_rect_center(jump_dest). x , y = get_rect_center(jump_dest).y , width = 16, height = 2},
+            {8, 1},
+            45, 
+            rl.RED
+        )
+        rl.DrawRectanglePro(
+            rl.Rectangle {x = get_rect_center(jump_dest). x , y = get_rect_center(jump_dest).y , width = 16, height = 2},
+            {8, 1},
+
+            -45, 
+            rl.RED
+        )
+    } 
+
 }

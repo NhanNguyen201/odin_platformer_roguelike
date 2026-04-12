@@ -69,11 +69,11 @@ main :: proc() {
         rl.EndDrawing()
     }
 
-    delete(game.enemy_bullets)
+    delete(game.enemy_side.enemy_bullets)
     delete(game.player_bullets)
-    delete(game.enemy_minions)
+    delete(game.enemy_side.enemy_minions)
     delete(game.level_data.colliders)
-    delete(game.level_data.enemy_spawners)
+    delete(game.enemy_side.enemy_spawners)
     delete(game.level_data.keys)
     delete(game.level_data.exp_buffs)
     rl.UnloadFont(game.fonts[FONT_BOLD])
