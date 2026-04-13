@@ -34,7 +34,9 @@ Game_Options :: struct {
     is_debug: bool,
     is_paused: bool,
     ui_mouse_pos: rl.Vector2,
-    is_hub_on : bool
+    is_hub : bool,
+    is_menu: bool,
+    is_mini_map: bool
 }
 
 FONT_THIN :: "Font_thin"
@@ -116,6 +118,7 @@ game_init:: proc() -> Game {
         }
 
     }
+    game.game_options.is_hub = true
     load_atlas(&game)
     load_level(&game, game.current_level)
 
@@ -129,6 +132,13 @@ game_update:: proc(game: ^Game, dt: f32) {
 
     if rl.IsKeyPressed(.F2) {
         game.game_options.is_debug = !game.game_options.is_debug
+    }
+    
+    if rl.IsKeyPressed(.H) {
+        game.game_options.is_hub = !game.game_options.is_hub
+    }
+    if rl.IsKeyPressed(.M) {
+        game.game_options.is_mini_map = !game.game_options.is_mini_map
     }
     
     if rl.IsKeyPressed(.L){
@@ -218,7 +228,7 @@ game_draw:: proc(game: ^Game, dt: f32) {
 
     experience_buff_draw(game.game_sprite_atlas, game.level_data.exp_buffs[:])
 
-    keypot_draw(game.game_sprite_atlas,game.level_data.keys[:])
+    keypot_draw(game.game_sprite_atlas, game.game_options.is_debug, game.player.body.position, game.level_data.keys[:])
 
     level_gate_draw(game.game_sprite_atlas, game.level_data)
     
@@ -253,7 +263,7 @@ level_gate_draw:: proc(atlas: rl.Texture2D, level_data: Level_data) {
 
 }
 
-keypot_draw :: proc(atlas: rl.Texture2D, keys: []Key_pot) {
+keypot_draw :: proc(atlas: rl.Texture2D, is_debug: bool, player_pos: rl.Vector2, keys: []Key_pot) {
     key_atlas_sprite := SPRITE_MAP[KEY_SPRITE]
 
     key_source := rl.Rectangle{x = key_atlas_sprite.x, y= key_atlas_sprite.y , width = key_atlas_sprite.w, height = key_atlas_sprite.h}
@@ -262,6 +272,11 @@ keypot_draw :: proc(atlas: rl.Texture2D, keys: []Key_pot) {
             dest := rl.Rectangle{x = key.position.x, y= key.position.y , width = key_atlas_sprite.w, height = key_atlas_sprite.h}
 
             rl.DrawTexturePro(atlas, key_source, dest, {dest.width / 2, dest.height /2}, 0,rl.WHITE)
+            if is_debug {
+                distance := get_distance(player_pos, key.position)
+                distance_text := fmt.ctprint("%f", distance)
+                rl.DrawText(distance_text, i32(key.position.x), i32(key.position.y) + 10, 10, rl.WHITE)
+            }
         }
     }
 }

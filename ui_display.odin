@@ -1,9 +1,9 @@
 package main
 import rl "vendor:raylib"
-import "vendor:curl"
 import "core:fmt"
+import "core:math"
 
-UI_PADDING : rl.Vector2 : {15, 15}
+UI_PADDING : rl.Vector2 : {8, 8}
 UI_BUFF_PICK_PADDING: rl.Vector2 : {4, 40}
 UI_BUFF_PICK_SLOT_WIDTH: f32 : 50
 UI_BUFF_PICK_SLOT_PADDING: rl.Vector2 : {4, 4}
@@ -15,6 +15,9 @@ UI_BUFF_DESCRIPTION_SIZE: f32: 4
 UI_SKILL_HUB_SIZE: rl.Vector2 : {120, 20} 
 UI_SKILL_HUB_PADDING: rl.Vector2 : {2.5, 2.5}
 UI_SKILL_HUD_SLOT_SIZE : rl.Vector2: {15, 15}
+UI_MINI_MAP_SIZE: rl.Vector2 : {50, 45}
+UI_MINI_MAP_MAX_DISTANCE_DRAW: f32: 170
+UI_MINI_MAP_CIRCLE_RADIUS: f32 : 20 
 HEALTH_BAR_SIZE : rl.Vector2: {40, 7}
 EXPERIENCE_BAR_SIZE: rl.Vector2: {40, 5}
 
@@ -65,8 +68,8 @@ player_ui_draw:: proc(game: ^Game) {
     ui_x_start := player.body.position.x +  + UI_PADDING.x - game.camera.offset.x / 4
     ui_y_start := player.body.position.y +  + UI_PADDING.y - game.camera.offset.y / 4
 
-    ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x 
-    ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y
+    ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x / 2 
+    ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y / 2
     
     ui_rect := rl.Rectangle{x = ui_x_start, y = ui_y_start, width = ui_width, height = ui_height}
     
@@ -126,11 +129,17 @@ player_ui_draw:: proc(game: ^Game) {
         0.5,
         rl.BLACK
     )
+    if game.game_options.is_mini_map {
+        mini_map_draw(game.game_sprite_atlas, ui_rect, game.level_data.keys[:], player.body)
+    }
+
     if game.game_options.is_paused && game.ui_controller.is_ui_screen {
         rl.DrawRectangle(i32(ui_x_start), i32(ui_y_start), i32 (ui_width), i32(ui_height), rl.Color {184, 226, 217, 160})
         player_buff_picking_scene_draw(game.game_sprite_atlas, game.fonts ,ui_rect, &game.game_options, &game.ui_controller, &game.player)
     }
-    skill_hud_draw(game.game_sprite_atlas, ui_rect, player)
+    if game.game_options.is_hub {
+        skill_hud_draw(game.game_sprite_atlas, ui_rect, player)
+    }
 }
 
 
@@ -202,7 +211,6 @@ skill_hud_draw :: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle, player: Playe
     bullet_cd := player.bullet_cd
 
     shoot_sprite := SPRITE_MAP[SHOOT_SKILL_SPRITE]
-    jump_sprite := SPRITE_MAP[JUMP_SKILL_SPRITE]
 
     hud_rect := rl.Rectangle{x = ui_rect.x + ui_rect.width / 2 - UI_SKILL_HUB_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_SKILL_HUB_SIZE.y, width = UI_SKILL_HUB_SIZE.x, height = UI_SKILL_HUB_SIZE.y}
     rl.DrawRectangleRec(hud_rect, rl.Color{200,200,200, 200})
@@ -215,28 +223,48 @@ skill_hud_draw :: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle, player: Playe
 
     rl.DrawRectangleRec(rl.Rectangle{x = shoot_dest.x, y = shoot_dest.y + (bullet_cd.max_time - bullet_cd.current_time) / bullet_cd.max_time * shoot_dest.height, height = bullet_cd.current_time / bullet_cd.max_time * shoot_dest.height, width = shoot_dest.width}, rl.Color {0, 0, 0, 180 })
 
+}
 
+mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, keys: []Key_pot, player: Body) {
+    mini_map_rect := rl.Rectangle {x = ui_rect.x + ui_rect.width - UI_MINI_MAP_SIZE.x, y = ui_rect.y , width = UI_MINI_MAP_SIZE.x, height = UI_MINI_MAP_SIZE.y}
+    mini_map_center: rl.Vector2 = get_rect_center(mini_map_rect)
+    arrow_sprite := SPRITE_MAP[MINI_MAP_ARROW_SPRITE]
+    arrow_source := rl.Rectangle {x = arrow_sprite.x, y= arrow_sprite.y, width = arrow_sprite.w, height = arrow_sprite.h}
+    rl.DrawRectangleRec(mini_map_rect, rl.Color{200, 200, 200, 180})
+    player_icon_size : f32 = 4
+    key_icon_size : f32 = 1
+    rl.DrawRectanglePro(
+        rl.Rectangle{ x = mini_map_center.x, y= mini_map_center.y, width = player_icon_size, height = player_icon_size},
+        {player_icon_size / 2, player_icon_size / 2},
+        45, 
+        rl.Color{12,12, 255, 180}
+    )
+    rl.DrawCircleLinesV(mini_map_center, UI_MINI_MAP_CIRCLE_RADIUS, rl.BLACK)
+    for key in keys {
+        if !key.collected {
+            distance := get_distance(player.position, key.position)
+            if distance < UI_MINI_MAP_MAX_DISTANCE_DRAW {
+                mini_map_key_distance : f32 = distance / UI_MINI_MAP_MAX_DISTANCE_DRAW * UI_MINI_MAP_CIRCLE_RADIUS
+                icon_pos : rl.Vector2 = {
+                    mini_map_center.x + mini_map_key_distance * (key.position - player.position).x / distance,
+                    mini_map_center.y + mini_map_key_distance * (key.position - player.position).y / distance
+                } 
+                rl.DrawCircleV(icon_pos, key_icon_size, rl.RED)
+            } else {
+                angle := math.atan2_f32((key.position - player.position).y,  (key.position - player.position).x) * (180. / math.PI)
+                icon_pos : rl.Vector2 = {
+                    mini_map_center.x + UI_MINI_MAP_CIRCLE_RADIUS * (key.position - player.position).x / distance,
+                    mini_map_center.y + UI_MINI_MAP_CIRCLE_RADIUS * (key.position - player.position).y / distance
+                } 
+                arrow_dest := rl.Rectangle{x = icon_pos.x, y = icon_pos.y, width = 10, height = 10}
+                rl.DrawTexturePro(atlas, arrow_source, arrow_dest, {arrow_dest.width / 2, arrow_dest.height /2}, angle + 90, rl.WHITE)
+                // rl.DrawCircleV(icon_pos, key_icon_size, rl.RED)
 
-    jump_source := rl.Rectangle{ x = jump_sprite.x, y = jump_sprite.y, height = jump_sprite.h, width = jump_sprite.w}
-    jump_dest := rl.Rectangle { x = hud_rect.x + UI_SKILL_HUB_PADDING.x + shoot_dest.width + 2.5, y = hud_rect.y + UI_SKILL_HUB_PADDING.y, height = UI_SKILL_HUD_SLOT_SIZE.x, width = UI_SKILL_HUD_SLOT_SIZE.y}
+            }
+        }
+    }
+}
 
-    rl.DrawTexturePro(atlas, jump_source, jump_dest, {0, 0}, 0, rl.WHITE)
-    rl.DrawRectangleLinesEx(jump_dest, 0.5, rl.BLACK)
-
-    if !player.on_ground {
-        rl.DrawRectanglePro(
-            rl.Rectangle {x = get_rect_center(jump_dest). x , y = get_rect_center(jump_dest).y , width = 16, height = 2},
-            {8, 1},
-            45, 
-            rl.RED
-        )
-        rl.DrawRectanglePro(
-            rl.Rectangle {x = get_rect_center(jump_dest). x , y = get_rect_center(jump_dest).y , width = 16, height = 2},
-            {8, 1},
-
-            -45, 
-            rl.RED
-        )
-    } 
-
+get_distance:: proc(b1: rl.Vector2, b2: rl.Vector2) -> f32 {
+    return math.sqrt_f32(math.pow_f32(b2.x - b1.x, 2) + math.pow_f32(b2.y - b1.y, 2))
 }

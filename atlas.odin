@@ -40,7 +40,7 @@ AR_BUFF_SPRITE :: "Ar_buff_sprite"
 PARTICLE_SPRITE :: "Particle_sprite"
 LEVEL_GATE_SPRITE :: "Level_gate_sprite"
 SHOOT_SKILL_SPRITE :: "Shoot_skill_sprite"
-JUMP_SKILL_SPRITE :: "Jump_skill_sprite"
+MINI_MAP_ARROW_SPRITE :: "Minimap_arrow_sprite"
 
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
@@ -65,7 +65,7 @@ SPRITE_MAP := map[string]Sprite_desc {
     PARTICLE_SPRITE = {x = 64, y = 176, w = 32, h = 32},
     LEVEL_GATE_SPRITE = {x = 0, y = 176, w = 32, h = 32},
     SHOOT_SKILL_SPRITE = {x = 96, y = 176, w = 32, h = 32},
-    JUMP_SKILL_SPRITE = {x = 128, y = 176, w = 32, h = 32}
+    MINI_MAP_ARROW_SPRITE = {x = 160, y = 144, w = 32, h = 32}
 }
 
 load_atlas:: proc(game: ^Game) {
