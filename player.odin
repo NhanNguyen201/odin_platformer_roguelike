@@ -66,7 +66,7 @@ Player_buffes :: struct {
 }
 
 Player_stats :: struct {
-    health_stats: Heath_stats,
+    health_stats: Health_stats,
     dmg: f32,
     buffes: Player_buffes
 }
@@ -119,29 +119,29 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.direction = .LEFT
         player.is_flip = true
         player.body.vel.x = -(PLAYER_MOVE_SPD + player.stats.buffes.mv_spd)
-         if player.anim_controller.animation_name != RUN {
-            player.anim_controller.animation_name = RUN
+         if player.anim_controller.animation_name != RUN_ANI {
+            player.anim_controller.animation_name = RUN_ANI
             player.anim_controller.current_frame = 0
-            player.anim_controller.current_timer = Player_animations[RUN].frame_timer
+            player.anim_controller.current_timer = Player_animations[RUN_ANI].frame_timer
         }
     } else if rl.IsKeyDown(.RIGHT) || rl.IsKeyDown(.D) {
         player.direction = .RIGHT
         player.is_flip = false
 
         player.body.vel.x = (PLAYER_MOVE_SPD + player.stats.buffes.mv_spd)
-        if player.anim_controller.animation_name != RUN {
-            player.anim_controller.animation_name = RUN
+        if player.anim_controller.animation_name != RUN_ANI {
+            player.anim_controller.animation_name = RUN_ANI
             player.anim_controller.current_frame = 0
 
-            player.anim_controller.current_timer = Player_animations[RUN].frame_timer
+            player.anim_controller.current_timer = Player_animations[RUN_ANI].frame_timer
 
         }
     } else {
         player.body.vel.x = 0
-        if player.anim_controller.animation_name != IDLE {
-            player.anim_controller.animation_name = IDLE
+        if player.anim_controller.animation_name != IDLE_ANI {
+            player.anim_controller.animation_name = IDLE_ANI
             player.anim_controller.current_frame = 0
-            player.anim_controller.current_timer = Player_animations[IDLE].frame_timer
+            player.anim_controller.current_timer = Player_animations[IDLE_ANI].frame_timer
 
         }
     }
