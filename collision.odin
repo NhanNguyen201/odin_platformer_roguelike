@@ -21,17 +21,17 @@ resolve_horizontal :: proc(player: ^Player, rect: rl.Rectangle) {
     } 
 }
 
-resolve_minion_horizontal :: proc(minion: ^Enemy_minion, rect: rl.Rectangle) {
-    pr := get_body_rect(minion.body)
+resolve_minion_horizontal :: proc(body: ^Body, rect: rl.Rectangle) {
+    pr := get_body_rect(body^)
 
     if !rl.CheckCollisionRecs(pr, rect) do return
 
     if pr.x < rect.x {
-        minion.body.position.x = rect.x - pr.width / 2
+        body.position.x = rect.x - pr.width / 2
     } else {
-        minion.body.position.x = rect.x + rect.width  + pr.width / 2
+        body.position.x = rect.x + rect.width  + pr.width / 2
     } 
-    minion.direction = minion.direction == .LEFT ? .RIGHT : .LEFT
+    body.vel.x *= -1
 }
 
 resolve_vertical :: proc( player : ^Player, rect : rl.Rectangle) {
@@ -48,32 +48,32 @@ resolve_vertical :: proc( player : ^Player, rect : rl.Rectangle) {
     }
 }
 
-resolve_minion_vertical :: proc(minion: ^Enemy_minion, rect: rl.Rectangle) {
-    pr := get_body_rect(minion.body)
+resolve_minion_vertical :: proc(body: ^Body, rect: rl.Rectangle) {
+    pr := get_body_rect(body^)
 
 
     if !rl.CheckCollisionRecs(pr, rect) do return
 
      if pr.y < rect.y {
-        minion.body.position.y = rect.y - pr.height / 2
-        minion.body.vel.y = 0
+        body.position.y = rect.y - pr.height / 2
+        body.vel.y = 0
     } else {
-        minion.body.position.y = rect.y + rect.height + pr.height / 2
-        minion.body.vel.y = 0
+        body.position.y = rect.y + rect.height + pr.height / 2
+        body.vel.y = 0
     }
 }
 
 
 
-resolve_enemy_and_bullet:: proc(minion: ^Enemy_minion, bullets: ^[dynamic]Bullet) {
-    pr := get_body_rect(minion.body)
+resolve_enemy_and_bullet:: proc(e_body: Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
+    pr := get_body_rect(e_body)
 
     for bullet, idx in bullets {
         bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
 
         if !rl.CheckCollisionRecs(pr, bullet_rect) do continue 
 
-        enemy_take_dmg(minion, bullet)
+        enemy_take_dmg(health_stats, bullet)
         unordered_remove(bullets, idx)
 
         break
@@ -97,4 +97,25 @@ resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,
         break
        
     }
+}
+
+resolve_spawner_and_bullet :: proc( spawner : ^Enemy_spawner_pot, bullets: ^[dynamic]Bullet) {
+    for bullet, idx in bullets{
+        bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
+        spawner_rect := rl.Rectangle {x = spawner.position.x - ENEMY_SPAWNER_SIZE.x / 2, y = spawner.position.y - ENEMY_SPAWNER_SIZE.y / 2, width = ENEMY_SPAWNER_SIZE.x, height = ENEMY_SPAWNER_SIZE.y}
+        if !rl.CheckCollisionRecs(spawner_rect, bullet_rect)  {
+            continue    
+        }
+        // pos := rl.Collision
+        spawner.hp_stats.current_hp -= bullet.dmg
+        spawner.anim_controller.animation_name = HURT_ANI
+        unordered_remove(bullets, idx)
+        break
+       
+    }
+}
+
+
+enemy_take_dmg :: proc(health: ^Health_stats, bullet: Bullet) {
+    health.current_hp -= bullet.dmg
 }
