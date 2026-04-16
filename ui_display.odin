@@ -9,7 +9,7 @@ UI_BUFF_PICK_SLOT_WIDTH: f32 : 50
 UI_BUFF_PICK_SLOT_PADDING: rl.Vector2 : {4, 4}
 UI_BUFF_PICK_SLOT_ICON_PADDING: rl.Vector2 : {3, 5}
 UI_BUFF_PICK_SIZE : rl.Vector2 :{12, 12}
-UI_BUFF_TITLE_SIZE: f32 : 6
+UI_BUFF_TITLE_SIZE: f32 : 5
 UI_BUFF_DESCRIPTION_SIZE: f32: 4
 
 UI_SKILL_HUB_SIZE: rl.Vector2 : {120, 20} 
@@ -18,6 +18,9 @@ UI_SKILL_HUD_SLOT_SIZE : rl.Vector2: {15, 15}
 UI_MINI_MAP_SIZE: rl.Vector2 : {50, 45}
 UI_MINI_MAP_MAX_DISTANCE_DRAW: f32: 170
 UI_MINI_MAP_CIRCLE_RADIUS: f32 : 20 
+
+UI_PAUSED_SIGN_SIZE : rl.Vector2 : {80, 40}
+
 HEALTH_BAR_SIZE : rl.Vector2: {40, 7}
 EXPERIENCE_BAR_SIZE: rl.Vector2: {40, 5}
 
@@ -38,7 +41,7 @@ Buff_detail :: struct {
 BUFF_SLOTS :[5]Buff_detail :{
     Buff_detail {buff = .HP, sprite = HP_BUFF_SPRITE, val = 30, title = "Oak Skin", description = "Heal you 25% max HP \nInscrease max HP by 30"},
     Buff_detail {buff = .AD, sprite = AD_BUFF_SPRITE, val = 10, title = "Fire Fist", description = "Increase 10% dmg"},
-    Buff_detail {buff = .ATS, sprite = ATS_BUFF_SPRITE, val = 10, title = "Flame Gun", description = "Shoot 10% faster"},
+    Buff_detail {buff = .ATS, sprite = ATS_BUFF_SPRITE, val = 10, title = "Flame Thrower", description = "Shoot 10% faster"},
     Buff_detail {buff = .MVSPD, sprite = MVSP_BUFF_SPRITE, val = 15, title="The Wind", description = "Move 15% faster"},
     Buff_detail {buff = .AR, sprite = AR_BUFF_SPRITE, val = 10, title = "Nut Shell", description = "Reduce damage taken \n by 10%"},
 }
@@ -99,7 +102,7 @@ player_ui_draw:: proc(game: ^Game) {
 
 
     health_bar_dest := rl.Rectangle {x = ui_x_start + 15 , y = ui_y_start , width = HEALTH_BAR_SIZE.x, height = HEALTH_BAR_SIZE.y}
-    health_fill_dest := rl.Rectangle {x = ui_x_start + 15 , y = ui_y_start , width = HEALTH_BAR_SIZE.x * (player.stats.health_stats.current_hp / player.stats.health_stats.current_hp), height = HEALTH_BAR_SIZE.y}
+    health_fill_dest := rl.Rectangle {x = ui_x_start + 15 , y = ui_y_start , width = HEALTH_BAR_SIZE.x * (player.stats.health_stats.current_hp / player.stats.health_stats.max_hp), height = HEALTH_BAR_SIZE.y}
     
     rl.DrawTexturePro(game.game_sprite_atlas, health_bar_source, health_bar_dest, {0, 0}, 0, rl.WHITE)
     rl.DrawTexturePro(game.game_sprite_atlas, health_fill_source, health_fill_dest, {0, 0}, 0, rl.WHITE)
@@ -140,6 +143,9 @@ player_ui_draw:: proc(game: ^Game) {
     if game.game_options.is_hub {
         skill_hud_draw(game.game_sprite_atlas, ui_rect, player)
     }
+    if game.game_options.is_paused && !game.ui_controller.is_ui_screen && !game.game_options.is_menu {
+        paused_sign_draw(game.game_sprite_atlas, ui_rect)
+    }
 }
 
 
@@ -157,7 +163,7 @@ player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, fonts: map[string] rl
         dest := rl.Rectangle {x = slot_rect.x + UI_BUFF_PICK_SLOT_ICON_PADDING.x, y = slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y, width = UI_BUFF_PICK_SIZE.x, height = UI_BUFF_PICK_SIZE.y}
         rl.DrawTexturePro(atlas, source, dest, {0, 0}, 0, rl.WHITE)
 
-        rl.DrawTextEx(fonts[FONT_BOLD], fmt.ctprintf(buff.title), {slot_rect.x + UI_BUFF_PICK_SLOT_ICON_PADDING.x +  UI_BUFF_PICK_SIZE.x + 2, slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y +  UI_BUFF_PICK_SIZE.y / 2  - UI_BUFF_TITLE_SIZE / 2}, UI_BUFF_TITLE_SIZE, 0.5, rl.BLACK)
+        rl.DrawTextEx(fonts[FONT_BOLD], fmt.ctprintf(buff.title), {slot_rect.x + UI_BUFF_PICK_SLOT_ICON_PADDING.x +  UI_BUFF_PICK_SIZE.x + 2, slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y +  UI_BUFF_PICK_SIZE.y / 2  - UI_BUFF_TITLE_SIZE / 2}, UI_BUFF_TITLE_SIZE, 0.25, rl.BLACK)
 
         rl.DrawTextEx(fonts[FONT_REG], fmt.ctprint(buff.description), {slot_rect.x + 2, slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y +  UI_BUFF_PICK_SIZE.y + 2}, UI_BUFF_DESCRIPTION_SIZE, 0.1, rl.BLACK)
         pick_buff_handle(game_options, ui_controller, dest, player, buff.buff, buff.val)
@@ -264,7 +270,12 @@ mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, keys: []Key_po
         }
     }
 }
-
+paused_sign_draw:: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle) {
+    sprite := SPRITE_MAP[PAUSED_SIGN_SPRITE]
+    sign_source := rl.Rectangle {x = sprite.x, y = sprite.y, width = sprite.w, height = sprite.h}
+    sign_dest := rl.Rectangle { x = get_rect_center(ui_rect).x - UI_PAUSED_SIGN_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_PAUSED_SIGN_SIZE.y - 20., width = UI_PAUSED_SIGN_SIZE.x, height = UI_PAUSED_SIGN_SIZE.y}
+    rl.DrawTexturePro(atlas, sign_source, sign_dest, {0, 0}, 0, rl.WHITE)
+}
 get_distance:: proc(b1: rl.Vector2, b2: rl.Vector2) -> f32 {
     return math.sqrt_f32(math.pow_f32(b2.x - b1.x, 2) + math.pow_f32(b2.y - b1.y, 2))
 }

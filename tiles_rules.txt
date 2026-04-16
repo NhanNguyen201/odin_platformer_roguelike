@@ -6,6 +6,10 @@ Layers:
 4 - Visual high
 5 - ForGround
 6 - Colliders
-7 - Keys
-8 - Enemy spawner 
-9 - Level gate
+7 - Exp
+8 - Keys
+9 - Enemy minion spawner
+10 - Enemy Range spawner
+11 - Enemy sniper spawner
+12 - Level gate
+13 - Playe spawn position
