@@ -12,7 +12,7 @@ PLAYER_MOVE_SPD: f32 : 140
 PlAYER_JUMP_VEL: f32: -240
 MAX_FALL_SPEED: f32: 300
 BULLET_SIZE: rl.Vector2 : {6, 6}
-ENEMY_MINION_SIZE : rl.Vector2 : {15, 15}
+Enemy_melee_SIZE : rl.Vector2 : {15, 15}
 
 LEVEL_GATE_SIZE : rl.Vector2 : {12, 12}
 
@@ -25,7 +25,9 @@ BULLET_DIRECTION :: enum {
 }
 
 Enemy_side :: struct {
-    enemy_minions: [dynamic] Enemy_minion,
+    e_melee: [dynamic] Enemy_melee,
+    e_ranger: [dynamic] Enemy_melee,
+    e_sniper: [dynamic] Enemy_sniper,
     enemy_spawners: [dynamic] Enemy_spawner_pot,
     enemy_bullets: [dynamic] Bullet
 } 
@@ -36,7 +38,8 @@ Game_Options :: struct {
     ui_mouse_pos: rl.Vector2,
     is_hub : bool,
     is_menu: bool,
-    is_mini_map: bool
+    is_mini_map: bool,
+    is_health_bar: bool
 }
 
 FONT_THIN :: "Font_thin"
@@ -76,27 +79,6 @@ Game :: struct {
  
 
 
-
-Enemy_minion:: struct {
-    id: f32,
-    body: Body,
-    status: Enemy_status,
-    stats : Enemy_minion_stats,
-    direction: Enemy_directions,
-    on_ground: bool,
-    is_flip: bool,
-    anim_controller: Animation_controller
-}
-
-Enemy_status :: enum {
-    DEAD,
-    ALIVE
-}
-
-Enemy_minion_stats :: struct {
-    health_stats: Heath_stats,
-    dmg: f32,
-}
 
 game_init:: proc() -> Game {
     level := 0
@@ -150,9 +132,10 @@ game_update:: proc(game: ^Game, dt: f32) {
     if !game.game_options.is_paused {
         player_update(&game.player, game,  game.level_data.colliders[:], dt)
         
-        enemies_update(game, dt)
-        enemy_minions_update(game, dt) 
-    
+        enemies_spawner_update(game, dt)
+        Enemy_melees_update(game, dt) 
+        Enemy_sniper_update(game, dt)
+
         for block_collider in game.level_data.colliders {
             resolve_bullet_collider_collision(game, &game.player_bullets, block_collider)
             resolve_bullet_collider_collision(game, &game.enemy_side.enemy_bullets, block_collider)
@@ -232,10 +215,11 @@ game_draw:: proc(game: ^Game, dt: f32) {
 
     level_gate_draw(game.game_sprite_atlas, game.level_data)
     
-    enemies_draw(game^)
+    enemies_draw(game^, dt)
     
     
-    enemy_minions_draw(game.game_sprite_atlas, game.game_options.is_debug, &game.enemy_side.enemy_minions, dt)
+    Enemy_melees_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_melee, dt)
+    Enemy_sniper_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_sniper, dt)
     
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_side.enemy_bullets[:])
     
