@@ -50,7 +50,6 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
-        t := rl.GetTime()
 
         game_update(&game, dt)
 
@@ -71,7 +70,9 @@ main :: proc() {
 
     delete(game.enemy_side.enemy_bullets)
     delete(game.player_bullets)
-    delete(game.enemy_side.enemy_minions)
+    delete(game.enemy_side.e_melee)
+    delete(game.enemy_side.e_ranger)
+    delete(game.enemy_side.e_sniper)
     delete(game.level_data.colliders)
     delete(game.enemy_side.enemy_spawners)
     delete(game.level_data.keys)

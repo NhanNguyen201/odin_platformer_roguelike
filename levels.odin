@@ -5,6 +5,7 @@ import "core:fmt"
 import "core:encoding/json"
 import "core:os"
 import "core:strings"
+import "core:math"
 import "core:math/rand"
 Enemy_spawner_status :: enum {
     EXIST,
@@ -15,6 +16,12 @@ Enemy_directions :: enum {
     RIGHT
 }
 
+Enemy_types :: enum {
+    MELEE,
+    RANGER,
+    SNIPER
+}
+
 BACKGROUND_LAYER: int : 0
 VISIBLE_LAYER_LOW: int : 1
 VISIBLE_LAYER_MIDLE: int: 2
@@ -23,9 +30,11 @@ FORGROUND_LAYER:int: 4
 COLLIDER_LAYER:int: 5
 EXP_LAYER:int: 6
 KEY_CONTAINER_LAYER:int: 7
-ENEMY_SPAWNERS_LAYER:int: 8
-GATE_LAYER: int: 9
-PLAYER_SPAWN_POS_LAYER : int : 10
+ENEMY_MELEE_SPAWNERS_LAYER:int: 8
+ENEMY_RANGER_SPAWNERS_LAYER:int: 9
+ENEMY_SNIPER_SPAWNERS_LAYER:int: 10
+GATE_LAYER: int: 11
+PLAYER_SPAWN_POS_LAYER : int : 12
 
 KEY_POT_SIZE :: rl.Vector2 {10,10}
 
@@ -59,12 +68,16 @@ Key_pot :: struct {
 
 
 Enemy_spawner_pot :: struct {
-    hp_stats: Heath_stats,
+    hp_stats: Health_stats,
     position: rl.Vector2,
+    spawn_offset : rl.Vector2,
     destination: rl.Vector2,
     re_contruct: Enemy_reconstruct,
     re_spawn: Enemy_respawn,
-    enemy_id: f32
+    enemy_id: f32,
+    enemy_type: Enemy_types,
+    anim_controller: Animation_controller
+
 }
 
 Enemy_reconstruct :: struct {
@@ -78,14 +91,14 @@ Enemy_respawn:: struct {
     status: Enemy_spawner_status
 }
 
-Heath_stats :: struct {
+Health_stats :: struct {
     max_hp: f32,
     current_hp: f32
 }
 
 Enemy :: struct {
     id: f32,
-    hp_stats: Heath_stats,
+    hp_stats: Health_stats,
     dmg: f32,
     direction: Enemy_directions
 }
@@ -135,7 +148,9 @@ load_level :: proc(game: ^Game, lvl: int)  {
     clear(&game.level_data.keys)
     clear(&game.enemy_side.enemy_bullets)
     clear(&game.player_bullets)
-    clear(&game.enemy_side.enemy_minions)
+    clear(&game.enemy_side.e_melee)
+    clear(&game.enemy_side.e_ranger)
+    clear(&game.enemy_side.e_sniper)
     data, ok := os.read_entire_file_from_filename(level.map_data)
 
     // clear(&game.)
@@ -185,15 +200,17 @@ load_level :: proc(game: ^Game, lvl: int)  {
         append(&game.level_data.keys,  Key_pot{ position = {x, y}})
     }
 
-    enemy_spawners_wrapper := layer_data[ENEMY_SPAWNERS_LAYER]
-    enemy_spawners := enemy_spawners_wrapper.(json.Object)["objects"].(json.Array)
+    // Enemy MELEE spaawner
+    enemy_melee_spawners_wrapper := layer_data[ENEMY_MELEE_SPAWNERS_LAYER]
+    enemy_melee_spawners := enemy_melee_spawners_wrapper.(json.Object)["objects"].(json.Array)
 
-    for enemy_spw in enemy_spawners {
-        parsed := enemy_spw.(json.Object)
+    for enemy_melee_spw in enemy_melee_spawners {
+        parsed := enemy_melee_spw.(json.Object)
         x := f32(parsed["x"].(json.Float))
         y := f32(parsed["y"].(json.Float))
         // key_pos := rl.Vector2 {x_pos, y_pos}
         enemy_spawner_pot := Enemy_spawner_pot {
+            enemy_type = .MELEE,
             position = {x, y}, 
             hp_stats = {
                 max_hp = 150, 
@@ -208,11 +225,86 @@ load_level :: proc(game: ^Game, lvl: int)  {
                 max_time = 5.,
                 time = 5.
             },
+            anim_controller =  {
+                animation_name = IDLE_ANI,
+                default_ani = IDLE_ANI
+            },
             enemy_id = rand.float32()
         } 
         append(&game.enemy_side.enemy_spawners,  enemy_spawner_pot)
     }
 
+    // Enemy RANGER spaawner
+    enemy_ranger_spawners_wrapper := layer_data[ENEMY_RANGER_SPAWNERS_LAYER]
+    enemy_ranger_spawners := enemy_ranger_spawners_wrapper.(json.Object)["objects"].(json.Array)
+
+    for enemy_ranger_spw in enemy_ranger_spawners {
+        parsed := enemy_ranger_spw.(json.Object)
+        x := f32(parsed["x"].(json.Float))
+        y := f32(parsed["y"].(json.Float))
+        // key_pos := rl.Vector2 {x_pos, y_pos}
+        enemy_spawner_pot := Enemy_spawner_pot {
+            enemy_type = .RANGER,
+            position = {x, y}, 
+            hp_stats = {
+                max_hp = 150, 
+                current_hp = 150
+            },
+            re_spawn = {
+                max_time = 10.,
+                status = .EXIST,
+                time = 3. 
+            },
+            re_contruct ={
+                max_time = 5.,
+                time = 5.
+            },
+            anim_controller =  {
+                animation_name = IDLE_ANI,
+                default_ani = IDLE_ANI
+
+            },
+            enemy_id = rand.float32()
+        } 
+        append(&game.enemy_side.enemy_spawners,  enemy_spawner_pot)
+    }
+    // Enemy SNIPER spaawner
+    enemy_sniper_spawners_wrapper := layer_data[ENEMY_SNIPER_SPAWNERS_LAYER]
+    enemy_sniper_spawners := enemy_sniper_spawners_wrapper.(json.Object)["objects"].(json.Array)
+
+    for enemy_sniper_spw in enemy_sniper_spawners {
+        parsed := enemy_sniper_spw.(json.Object)
+        x := f32(parsed["x"].(json.Float))
+        y := f32(parsed["y"].(json.Float))
+        spawn_offset_angle := rand.float32() * 360
+        spawn_offset := rl.Vector2 {2 * math.sin_f32(spawn_offset_angle), 2 * math.cos_f32(spawn_offset_angle)}
+        // key_pos := rl.Vector2 {x_pos, y_pos}
+        enemy_spawner_pot := Enemy_spawner_pot {
+            enemy_type = .SNIPER,
+            position = {x, y}, 
+            hp_stats = {
+                max_hp = 150, 
+                current_hp = 150
+            },
+            re_spawn = {
+                max_time = 10.,
+                status = .EXIST,
+                time = 3. 
+            },
+            re_contruct ={
+                max_time = 3.,
+                time = 3.
+            },
+            anim_controller =  {
+                animation_name = IDLE_ANI,
+                default_ani = IDLE_ANI
+
+            },
+            spawn_offset = spawn_offset,
+            enemy_id = rand.float32()
+        } 
+        append(&game.enemy_side.enemy_spawners,  enemy_spawner_pot)
+    }
     // Exprience buff
 
     exps_container_wrapper := layer_data[EXP_LAYER]
