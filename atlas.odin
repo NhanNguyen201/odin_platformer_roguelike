@@ -20,12 +20,20 @@ Sprite_desc :: struct {
 
 
 KEY_SPRITE :: "Key_sprite"
-MINION_SPRITE :: "Minion_sprite"
-MINION_DEAD_SPRITE :: "Minion_dead_sprite"
+
+E_MELEE_SPRITE :: "E_melee_sprite"
+E_MELLY_DEAD_SPRITE :: "E_melee_dead_sprite"
+E_SNIPER_SPRITE :: "E_sniper_sprite"
+E_SINPER_DEAD_SPIPER :: "E_sniper_dead_sprite"
+E_SNIPER_TRIGGER_SPRITE :: "E_sniper_targeting_sprite"
+E_SNIPER_AIMING_SPRITE :: "E_sniper_aiming_sprite"
+E_SNIPER_RELOAD_SPRITE :: "E_sniper_reload_sprite"
 PLAYER_SPRITE :: "Player_sprite"
 PORTAL_SPRITE :: "Portal_sprite"
+PORTAL_DEAD_SPRITE :: "Portad_dead_sprite"
 PORTAL_SPRITE_1 :: "Portal_sprite_a1"
 PORTAL_SPRITE_2 :: "Portal_sprite_a2"
+PORTAL_STATUS_SPRITE :: "Portal_sattus_sprite"
 BULLET_SPRITE :: "Bullet_sprite"
 EXPERIENCE_BUFF_SPRITE :: "Experience_sprite"
 PLAYER_AVATAR_SPRITE :: "Player_avatar_sprite"
@@ -41,14 +49,22 @@ PARTICLE_SPRITE :: "Particle_sprite"
 LEVEL_GATE_SPRITE :: "Level_gate_sprite"
 SHOOT_SKILL_SPRITE :: "Shoot_skill_sprite"
 MINI_MAP_ARROW_SPRITE :: "Minimap_arrow_sprite"
+PAUSED_SIGN_SPRITE :: "Paused_sign_sprite"
 
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
-    PORTAL_SPRITE = {x = 0, y = 144, w = 32, h = 32},
-    PORTAL_SPRITE_1 = {x = 32, y = 144, w = 32, h = 32},
-    PORTAL_SPRITE_2 = {x = 64, y = 144, w = 32, h = 32},
-    MINION_SPRITE = {x = 0, y = 80, w = 160, h = 32, count = 5},
-    MINION_DEAD_SPRITE = {x = 160, y = 80, w = 32, h = 32, count = 4},
+    PORTAL_SPRITE = {x = 0, y = 144, w = 96, h = 32, count = 3},
+    PORTAL_DEAD_SPRITE = {x = 96, y = 144, w = 32, h = 32},
+    PORTAL_SPRITE_1 = {x = 128, y = 144, w = 32, h = 32},
+    PORTAL_SPRITE_2 = {x = 160, y = 144, w = 32, h = 32},
+    PORTAL_STATUS_SPRITE = {x = 320, y= 144, w = 32, h = 32},
+    E_MELEE_SPRITE = {x = 0, y = 368, w = 432, h = 48, count = 9},
+    E_MELLY_DEAD_SPRITE = {x = 0, y = 416, w = 48, h = 48, count = 1},
+    E_SNIPER_SPRITE = {x= 0, y= 320, w = 96, h = 48, count = 2},
+    E_SINPER_DEAD_SPIPER = {x = 48, y = 416, w = 48, h = 48},
+    E_SNIPER_AIMING_SPRITE = {x = 192, y = 144, w = 32, h =32},
+    E_SNIPER_TRIGGER_SPRITE = {x = 224,y = 144, w = 32, h =32},
+    E_SNIPER_RELOAD_SPRITE = {x = 256, y = 144, w = 32, h =32},
     PLAYER_SPRITE = {x = 0, y = 112, w = 160, h = 32, count = 5},
     BULLET_SPRITE = {x = 0, y = 64, w = 16, h = 16},
     EXPERIENCE_BUFF_SPRITE = {x = 32, y = 176, w = 32, h = 32},
@@ -64,8 +80,9 @@ SPRITE_MAP := map[string]Sprite_desc {
     AR_BUFF_SPRITE = {x = 96, y = 64, w = 16, h = 16},
     PARTICLE_SPRITE = {x = 64, y = 176, w = 32, h = 32},
     LEVEL_GATE_SPRITE = {x = 0, y = 176, w = 32, h = 32},
-    SHOOT_SKILL_SPRITE = {x = 96, y = 176, w = 32, h = 32},
-    MINI_MAP_ARROW_SPRITE = {x = 160, y = 144, w = 32, h = 32}
+    SHOOT_SKILL_SPRITE = {x = 128, y = 176, w = 32, h = 32},
+    MINI_MAP_ARROW_SPRITE = {x = 288, y = 144, w = 32, h = 32},
+    PAUSED_SIGN_SPRITE = {x = 0, y = 464, w = 96, h = 48}
 }
 
 load_atlas:: proc(game: ^Game) {
