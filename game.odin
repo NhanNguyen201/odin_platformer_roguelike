@@ -33,6 +33,7 @@ Enemy_side :: struct {
 } 
 
 Game_Options :: struct {
+    cursor_controler: UI_Cursor_Controller,
     is_debug: bool,
     is_paused: bool,
     ui_mouse_pos: rl.Vector2,
@@ -84,7 +85,7 @@ game_init:: proc() -> Game {
     level := 0
     player_level := 0
     game: Game
-
+    rl.HideCursor()
     player_stats := Player_stats{health_stats = {max_hp = 100, current_hp = 100}, dmg = 25}
     game.current_level = level
     game.player = Player {
@@ -192,8 +193,6 @@ bullets_draw :: proc(atlas: rl.Texture2D, player_bullets: []Bullet, enemy_bullet
 game_draw:: proc(game: ^Game, dt: f32) {
     rl.ClearBackground({135,206,235,255})
     colliders := game.level_data.colliders
-    cld_len := fmt.ctprintf("colliders count: %d", len(colliders))
-    keys_collected := fmt.ctprintf("key collected count: %d", game.level_data.collected_keys)
     player_bullet_len := fmt.ctprintf("Player bullets: %d", len(game.player_bullets))
 
     rl.DrawTexturePro(game.game_background, {x =0, y= 0, width = f32(game.game_background.width), height= f32(game.game_background.height)}, {x= 0, y= 0, width = game.level_data.map_size.x, height = game.level_data.map_size.y}, {0,0}, 0, rl.WHITE)
@@ -201,8 +200,6 @@ game_draw:: proc(game: ^Game, dt: f32) {
     rl.DrawTextureV(game.level_data.texture, rl.Vector2 {0,0}, rl.WHITE)
     
     if game.game_options.is_debug {
-        rl.DrawText(cld_len, 10, 10, 12, rl.BLACK)
-        rl.DrawText(keys_collected, 10, 350, 12, rl.BLACK)
         rl.DrawText(player_bullet_len, i32(game.player.body.position.x - 20), i32(game.player.body.position.y -20), 5, rl.BLACK)
         for cld in colliders {
             rl.DrawRectangle(i32(cld.x), i32(cld.y), i32(cld.width), i32(cld.height), rl.BLACK)
@@ -230,7 +227,7 @@ game_draw:: proc(game: ^Game, dt: f32) {
     
     particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
     player_ui_draw(game)
-    
+    render_cursor(game.game_sprite_atlas, game.game_options)
 }
 
 level_gate_draw:: proc(atlas: rl.Texture2D, level_data: Level_data) {
@@ -256,11 +253,7 @@ keypot_draw :: proc(atlas: rl.Texture2D, is_debug: bool, player_pos: rl.Vector2,
             dest := rl.Rectangle{x = key.position.x, y= key.position.y , width = key_atlas_sprite.w, height = key_atlas_sprite.h}
 
             rl.DrawTexturePro(atlas, key_source, dest, {dest.width / 2, dest.height /2}, 0,rl.WHITE)
-            if is_debug {
-                distance := get_distance(player_pos, key.position)
-                distance_text := fmt.ctprint("%f", distance)
-                rl.DrawText(distance_text, i32(key.position.x), i32(key.position.y) + 10, 10, rl.WHITE)
-            }
+           
         }
     }
 }

@@ -70,7 +70,6 @@ Key_pot :: struct {
 Enemy_spawner_pot :: struct {
     hp_stats: Health_stats,
     position: rl.Vector2,
-    spawn_offset : rl.Vector2,
     destination: rl.Vector2,
     re_contruct: Enemy_reconstruct,
     re_spawn: Enemy_respawn,
@@ -276,8 +275,7 @@ load_level :: proc(game: ^Game, lvl: int)  {
         parsed := enemy_sniper_spw.(json.Object)
         x := f32(parsed["x"].(json.Float))
         y := f32(parsed["y"].(json.Float))
-        spawn_offset_angle := rand.float32() * 360
-        spawn_offset := rl.Vector2 {2 * math.sin_f32(spawn_offset_angle), 2 * math.cos_f32(spawn_offset_angle)}
+        
         // key_pos := rl.Vector2 {x_pos, y_pos}
         enemy_spawner_pot := Enemy_spawner_pot {
             enemy_type = .SNIPER,
@@ -300,7 +298,6 @@ load_level :: proc(game: ^Game, lvl: int)  {
                 default_ani = IDLE_ANI
 
             },
-            spawn_offset = spawn_offset,
             enemy_id = rand.float32()
         } 
         append(&game.enemy_side.enemy_spawners,  enemy_spawner_pot)

@@ -4,8 +4,9 @@ import "core:fmt"
 import "core:math"
 
 UI_PADDING : rl.Vector2 : {8, 8}
-UI_BUFF_PICK_PADDING: rl.Vector2 : {4, 40}
-UI_BUFF_PICK_SLOT_WIDTH: f32 : 50
+UI_BUFF_PICK_PADDING: rl.Vector2 : {4, 25}
+UI_BUFF_PICK_ROW_HEIGHT :f32: 60 
+UI_BUFF_PICK_SLOT_SIZE: rl.Vector2 : {50, 60}
 UI_BUFF_PICK_SLOT_PADDING: rl.Vector2 : {4, 4}
 UI_BUFF_PICK_SLOT_ICON_PADDING: rl.Vector2 : {3, 5}
 UI_BUFF_PICK_SIZE : rl.Vector2 :{12, 12}
@@ -20,6 +21,8 @@ UI_MINI_MAP_MAX_DISTANCE_DRAW: f32: 170
 UI_MINI_MAP_CIRCLE_RADIUS: f32 : 20 
 
 UI_PAUSED_SIGN_SIZE : rl.Vector2 : {80, 40}
+
+UI_CURSIR_SIZE : rl.Vector2: { 16 , 16}
 
 HEALTH_BAR_SIZE : rl.Vector2: {40, 7}
 EXPERIENCE_BAR_SIZE: rl.Vector2: {40, 5}
@@ -37,7 +40,6 @@ Buff_detail :: struct {
 }
 
 
-
 BUFF_SLOTS :[5]Buff_detail :{
     Buff_detail {buff = .HP, sprite = HP_BUFF_SPRITE, val = 30, title = "Oak Skin", description = "Heal you 25% max HP \nInscrease max HP by 30"},
     Buff_detail {buff = .AD, sprite = AD_BUFF_SPRITE, val = 10, title = "Fire Fist", description = "Increase 10% dmg"},
@@ -52,6 +54,41 @@ get_rect_center :: proc(rect: rl.Rectangle) -> rl.Vector2 {
 
 UI_Controller :: struct {
     is_ui_screen: bool
+}
+
+UI_Cursor_Controller :: struct {
+    draw_cursor : bool,
+    current_cursor : UI_Cursor_types
+}
+
+UI_Cursor_types :: enum {
+    DEFAULT,
+    NONE,
+    HOVER
+}
+
+render_cursor :: proc (atlas: rl.Texture2D, game_options: Game_Options) {
+    sprite_desc : Sprite_desc
+    cursor := game_options.cursor_controler.current_cursor
+    if cursor != .NONE  && game_options.cursor_controler.draw_cursor{
+        if cursor == .DEFAULT {
+            sprite_desc = SPRITE_MAP[UI_CURSIR_SPRITE_1]
+            source := rl.Rectangle {x = sprite_desc.x, y = sprite_desc.y, width = sprite_desc.w, height = sprite_desc.h}
+            dest := rl.Rectangle {x = game_options.ui_mouse_pos.x, y = game_options.ui_mouse_pos.y, width = UI_CURSIR_SIZE.x, height = UI_CURSIR_SIZE.y}
+            rl.DrawTexturePro(atlas, source, dest, {dest.width / 2, dest.height / 2}, 0, rl.WHITE)
+        } else if cursor == .HOVER {
+            sprite_desc = SPRITE_MAP[UI_CURSIR_SPRITE_2]
+            source := rl.Rectangle {x = sprite_desc.x, y = sprite_desc.y, width = sprite_desc.w, height = sprite_desc.h}
+            dest := rl.Rectangle {x = game_options.ui_mouse_pos.x, y = game_options.ui_mouse_pos.y, width = UI_CURSIR_SIZE.x, height = UI_CURSIR_SIZE.y}
+            rl.DrawTexturePro(atlas, source, dest, {dest.width / 2, dest.height / 2}, 0, rl.WHITE)
+        }
+    }
+}
+
+render_temp_cursor :: proc(atlas: rl.Texture2D, sprite_desc : Sprite_desc,  game_options: Game_Options) {
+    source := rl.Rectangle {x = sprite_desc.x, y = sprite_desc.y, width = sprite_desc.w, height = sprite_desc.h}
+    dest := rl.Rectangle {x = game_options.ui_mouse_pos.x, y = game_options.ui_mouse_pos.y, width = UI_CURSIR_SIZE.x, height = UI_CURSIR_SIZE.y}
+    rl.DrawTexturePro(atlas, source, dest, {dest.width / 2, dest.height / 2}, 0, rl.WHITE)
 }
 
 is_ui_component_hover :: proc(game_options: Game_Options, rect : rl.Rectangle) -> bool { 
@@ -150,30 +187,57 @@ player_ui_draw:: proc(game: ^Game) {
 
 
 player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, fonts: map[string] rl.Font, ui_rect : rl.Rectangle, game_options: ^Game_Options, ui_controller: ^UI_Controller, player: ^Player) {
+    buff_picking_text := fmt.ctprintf("Please pick a buff for you")
+    choose_text := fmt.ctprintf("Choose")
+
 
     inner_rect := rl.Rectangle {x = ui_rect.x + UI_BUFF_PICK_PADDING.x, y = ui_rect.y + UI_BUFF_PICK_PADDING.y, width = ui_rect.width - UI_BUFF_PICK_PADDING.x * 2, height = ui_rect.height - UI_BUFF_PICK_PADDING.y * 2}
     rl.DrawRectangleRec(inner_rect, rl.BLACK)
+    rl.DrawTextPro(fonts[FONT_REG], buff_picking_text, {inner_rect.x + 15, inner_rect.y + 5}, {0, 0}, 0, 12, 0.25, rl.WHITE)
+    col_width := 2 * UI_BUFF_PICK_SLOT_PADDING.x + UI_BUFF_PICK_SLOT_SIZE.x
+    items_per_row := math.floor_f32(inner_rect.width / col_width)
 
     for buff, idx in BUFF_SLOTS {
-        slot_rect := rl.Rectangle {x = inner_rect.x + f32(idx) * ( 2 * UI_BUFF_PICK_SLOT_PADDING.x + UI_BUFF_PICK_SLOT_WIDTH) + UI_BUFF_PICK_SLOT_PADDING.x, y = inner_rect.y + UI_BUFF_PICK_SLOT_PADDING.y, width = UI_BUFF_PICK_SLOT_WIDTH, height = inner_rect.height - UI_BUFF_PICK_SLOT_PADDING.y * 2}
+        row := math.floor_f32(f32(idx) / items_per_row)
+        col := idx % int(items_per_row)
+
+        slot_rect := rl.Rectangle {x = inner_rect.x + f32(col) * col_width + UI_BUFF_PICK_SLOT_PADDING.x, y = inner_rect.y + f32(row) *  UI_BUFF_PICK_ROW_HEIGHT + UI_BUFF_PICK_SLOT_PADDING.y + UI_BUFF_PICK_PADDING.y, width = UI_BUFF_PICK_SLOT_SIZE.x, height = UI_BUFF_PICK_SLOT_SIZE.y}
         rl.DrawRectangleRec(slot_rect, rl.Color{255, 255, 255, 180})
         //  Buff 1
         sprite := SPRITE_MAP[buff.sprite]
         source := rl.Rectangle {x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
         dest := rl.Rectangle {x = slot_rect.x + UI_BUFF_PICK_SLOT_ICON_PADDING.x, y = slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y, width = UI_BUFF_PICK_SIZE.x, height = UI_BUFF_PICK_SIZE.y}
-        rl.DrawTexturePro(atlas, source, dest, {0, 0}, 0, rl.WHITE)
+        rl.DrawTexturePro(atlas, source, dest, {0, 0}, 0, is_ui_component_hover(game_options^, dest) ? rl.RED : rl.WHITE)
 
         rl.DrawTextEx(fonts[FONT_BOLD], fmt.ctprintf(buff.title), {slot_rect.x + UI_BUFF_PICK_SLOT_ICON_PADDING.x +  UI_BUFF_PICK_SIZE.x + 2, slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y +  UI_BUFF_PICK_SIZE.y / 2  - UI_BUFF_TITLE_SIZE / 2}, UI_BUFF_TITLE_SIZE, 0.25, rl.BLACK)
 
         rl.DrawTextEx(fonts[FONT_REG], fmt.ctprint(buff.description), {slot_rect.x + 2, slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y +  UI_BUFF_PICK_SIZE.y + 2}, UI_BUFF_DESCRIPTION_SIZE, 0.1, rl.BLACK)
-        pick_buff_handle(game_options, ui_controller, dest, player, buff.buff, buff.val)
+        
+        pick_rect := rl.Rectangle {x = get_rect_center(slot_rect).x - 10, y = slot_rect.y + slot_rect.height - 15, width = 20, height = 10}
+        rl.DrawRectangleRec(pick_rect, is_ui_component_hover(game_options^, pick_rect) ? rl.BLUE : rl.WHITE)
+        rl.DrawTextPro(fonts[FONT_REG], choose_text, {pick_rect.x + 3, pick_rect.y + 3}, {0, 0}, 0, 5, 0.01, rl.BLACK)
+
+        if rl.CheckCollisionPointRec(game_options.ui_mouse_pos, pick_rect) {
+            if rl.IsMouseButtonDown(.LEFT) {
+                pick_buff_handle(game_options, ui_controller, player, buff.buff, buff.val)
+
+            }
+        }
+
+
+        // is_hover := is_ui_component_hover(game_options^, slot_rect)
+        // if is_hover {
+        //     if game_options.cursor_controler.current_cursor != .HOVER {
+        //         // game_options.cursor_controler.current_cursor = .HOVER
+        //         render_temp_cursor(atlas, SPRITE_MAP[UI_CURSIR_SPRITE_2], game_options^)
+        //     }
+        // } 
+
     }
 }
 
-pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Controller, buff_rect : rl.Rectangle, player: ^Player, buff: STAT_BUFF, amount: f32) {
-    if rl.CheckCollisionPointRec(game_options.ui_mouse_pos, buff_rect) {
-        if rl.IsMouseButtonDown(.LEFT) {
-            switch buff {
+pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Controller, player: ^Player, buff: STAT_BUFF, amount: f32) {
+        switch buff {
                 case .HP: {
                     player.stats.health_stats.max_hp += amount
                     player.stats.health_stats.current_hp += 0.25 * player.stats.health_stats.max_hp
@@ -208,9 +272,8 @@ pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Control
 
             ui_controller.is_ui_screen = false
             game_options.is_paused = false
-        }
-    } 
 }
+
 
 
 skill_hud_draw :: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle, player: Player) {

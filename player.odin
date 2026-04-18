@@ -36,6 +36,7 @@ Body :: struct {
     size: rl.Vector2,
     position: rl.Vector2,
     vel: rl.Vector2,
+    direction : Player_direction
 }
 
 Experience_controller:: struct {
@@ -113,7 +114,7 @@ can_key_to_keycode :: proc(key: string) -> bool {
 }
 
 player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Rectangle, dt: f32) {
-    player.body.vel.x = 0
+    // player.body.vel.x = 0
 
     if rl.IsKeyDown(.LEFT) || rl.IsKeyDown(.A) {
         player.direction = .LEFT
@@ -137,7 +138,9 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
         }
     } else {
-        player.body.vel.x = 0
+        if player.on_ground {
+            player.body.vel.x  *= 0.8
+        }
         if player.anim_controller.animation_name != IDLE_ANI {
             player.anim_controller.animation_name = IDLE_ANI
             player.anim_controller.current_frame = 0

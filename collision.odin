@@ -8,6 +8,10 @@ get_body_rect :: proc(body: Body) -> rl.Rectangle {
     return {body.position.x -  body.size.x / 2, body.position.y -  body.size.y / 2, body.size.x, body.size.y}
 
 }
+get_enemy_body_rect :: proc(body: Enemy_Body) -> rl.Rectangle {
+    return {body.position.x -  body.size.x / 2, body.position.y -  body.size.y / 2, body.size.x, body.size.y}
+
+}
 
 resolve_horizontal :: proc(player: ^Player, rect: rl.Rectangle) {
     pr := get_body_rect(player.body)
@@ -21,16 +25,19 @@ resolve_horizontal :: proc(player: ^Player, rect: rl.Rectangle) {
     } 
 }
 
-resolve_minion_horizontal :: proc(body: ^Body, rect: rl.Rectangle) {
-    pr := get_body_rect(body^)
+resolve_minion_horizontal :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
+    pr := get_enemy_body_rect(body^)
 
     if !rl.CheckCollisionRecs(pr, rect) do return
 
+
     if pr.x < rect.x {
         body.position.x = rect.x - pr.width / 2
+        
     } else {
         body.position.x = rect.x + rect.width  + pr.width / 2
     } 
+    body.direction = body.direction == .LEFT ? .RIGHT : .LEFT 
     body.vel.x *= -1
 }
 
@@ -48,8 +55,8 @@ resolve_vertical :: proc( player : ^Player, rect : rl.Rectangle) {
     }
 }
 
-resolve_minion_vertical :: proc(body: ^Body, rect: rl.Rectangle) {
-    pr := get_body_rect(body^)
+resolve_minion_vertical :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
+    pr := get_enemy_body_rect(body^)
 
 
     if !rl.CheckCollisionRecs(pr, rect) do return
@@ -63,10 +70,19 @@ resolve_minion_vertical :: proc(body: ^Body, rect: rl.Rectangle) {
     }
 }
 
+resolve_e_mele_attack:: proc(player: ^Player, enemy: ^Enemy_melee, force: f32, dt: f32) {
+    player_rect := get_body_rect(player.body)
+    enemy_rect := get_enemy_body_rect(enemy.body)
+    if !rl.CheckCollisionRecs(player_rect, enemy_rect) do return
 
+    enemy.combat_state = .PARTROL
 
-resolve_enemy_and_bullet:: proc(e_body: Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
-    pr := get_body_rect(e_body)
+    player.body.vel += (-enemy.body.position + player.body.position) * force 
+
+}
+
+resolve_enemy_and_bullet:: proc(e_body: Enemy_Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
+    pr := get_enemy_body_rect(e_body)
 
     for bullet, idx in bullets {
         bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
@@ -84,7 +100,8 @@ resolve_enemy_and_bullet:: proc(e_body: Body, health_stats: ^Health_stats, bulle
 
 
 resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,  rect: rl.Rectangle) {
-    // bullets.data
+    sprite := SPRITE_MAP[PARTICLE_SPRITE]
+    sprite_source := rl.Rectangle {x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
     for bullet, idx in bullets{
         bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
 
@@ -93,7 +110,11 @@ resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,
         }
         // pos := rl.Collision
         unordered_remove(bullets, idx)
-        add_particle(&game.particle_system, Particle {duration = 0.3, time_left = 0.3, position = {bullet.position.x, bullet.position.y}})
+        add_particle(&game.particle_system, Particle {
+            duration = 0.3, time_left = 0.3, 
+            position = {bullet.position.x, bullet.position.y},
+            sprite_source = sprite_source
+        })
         break
        
     }
@@ -118,4 +139,12 @@ resolve_spawner_and_bullet :: proc( spawner : ^Enemy_spawner_pot, bullets: ^[dyn
 
 enemy_take_dmg :: proc(health: ^Health_stats, bullet: Bullet) {
     health.current_hp -= bullet.dmg
+}
+
+player_take_dmg :: proc(health: ^Health_stats, dmg: f32) {
+    if health.current_hp > dmg {
+        health.current_hp -= dmg
+    } else {
+        health.current_hp = 0
+    }
 }

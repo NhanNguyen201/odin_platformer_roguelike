@@ -8,7 +8,7 @@ import "core:container/small_array"
 IDLE_ANI :: "Idle_ani"
 RUN_ANI :: "Run_ani"
 HURT_ANI :: "Hurt_ani"
-
+ATTACK_ANI :: "Attack_ani"
 MAX_PARTICLE:int : 200
 
 Animation_controller :: struct {
@@ -21,6 +21,7 @@ Animation_controller :: struct {
 
 Particle :: struct {
     position: rl.Vector2,
+    sprite_source: rl.Rectangle,
     duration: f32,
     time_left: f32,
 }
@@ -53,6 +54,12 @@ Portal_animations := map[string] Animation {
 E_melee_animations := map[string] Animation {
     IDLE_ANI = {name = IDLE_ANI, frame_start = 0, frame_end = 1, frame_timer = 0.5, count = 2, is_loop = true },
     RUN_ANI = {name= RUN_ANI, frame_start = 2, frame_end = 5, frame_timer = .25, count = 4, is_loop = true },
+    ATTACK_ANI = {name= RUN_ANI, frame_start = 6, frame_end = 8, frame_timer = .25, count = 3, is_loop = true }
+}
+
+E_ranger_animations := map[string] Animation {
+    IDLE_ANI = {name = IDLE_ANI, frame_start = 0, frame_end = 1, frame_timer = 0.5, count = 2, is_loop = true },
+    RUN_ANI = {name= RUN_ANI, frame_start = 0, frame_end = 1, frame_timer = .25, count = 2, is_loop = true },
 }
 
 E_sniper_animations := map[string] Animation {
@@ -113,13 +120,13 @@ particles_systems_update :: proc(particle_sys: ^Particles_systems, dt: f32) {
 }
 
 particls_systems_draw:: proc(atlas: rl.Texture2D, particle_sys: Particles_systems, dt: f32) {
-    particle_sprite := SPRITE_MAP[PARTICLE_SPRITE]
-    particle_soure := rl.Rectangle {x = particle_sprite.x, y = particle_sprite.y, width = particle_sprite.w, height = particle_sprite.h}
+    // particle_sprite := SPRITE_MAP[PARTICLE_SPRITE]
+    // particle_soure := rl.Rectangle {x = particle_sprite.x, y = particle_sprite.y, width = particle_sprite.w, height = particle_sprite.h}
     for i:= 0; i < particle_sys.particles.len; i += 1 {
         p := small_array.get(particle_sys.particles, i)
-        scale := 5. * (p.duration - p.time_left)
-        dest := rl.Rectangle {x = p.position.x  , y = p.position.y - 50. * math.sin_f32( p.time_left ), width = particle_soure.width * scale, height = particle_soure.height * scale}
-        rl.DrawTexturePro(atlas, particle_soure, dest, {dest.width / 2, dest.height / 2}, 0. , rl.Color {255, 255, 255, u8(55 +  200 * p.time_left / p.duration)})
+        scale :=  1. + .5 * (p.duration - p.time_left) / p.duration
+        dest := rl.Rectangle {x = p.position.x  , y = p.position.y , width = p.sprite_source.width * scale, height = p.sprite_source.height * scale}
+        rl.DrawTexturePro(atlas, p.sprite_source, dest, {dest.width / 2, dest.height / 2}, 0. , rl.Color {255, 255, 255, u8(55 +  200 * p.time_left / p.duration)})
     }
 }
 // math.sin_f32( (p.duration - p.time_left) / p.duration) * 90
