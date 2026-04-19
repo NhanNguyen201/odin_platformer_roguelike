@@ -10,12 +10,13 @@ ENEMY_AIMING_RELOAD_DUR :f32 : 3.
 
 ENEMY_RANGER_RELOAD_TIME : f32 : 2.
 ENEMY_RANGER_RANGE: f32 : 100.
+ENEMY_RANGER_TAUNTED_DUR: f32: .5
 
 ENEMY_MELEE_TAUNTED_RANGE: f32 : 60
 ENEMY_MELEE_PULSE_FORCE: f32 : 200
 ENEMY_MELEE_ATTACK_TIME: f32 : 0.7
 ENEMY_MELEE_PUSH_FORCE: f32: 60
-ENEMY_TAUNTED_DUR: f32: .8
+ENEMY_MELEE_TAUNTED_DUR: f32: .8
 
 ENEMY_SPAWNER_SIZE: rl.Vector2 : {8, 16}
 ENEMY_SPAWN_OFFSET_RANGE : f32 : 25
@@ -38,6 +39,7 @@ Enemy_melee_attack :: struct {
 
 Enemy_range_states :: enum {
     PATROL,
+    TAUNTED,
     RELOAD // Tired
 }
 
@@ -74,7 +76,6 @@ Enemy_melee:: struct {
     body: Enemy_Body,
     status: Enemy_status,
     stats : Enemy_unit_stats,
-    direction: Enemy_directions,
     on_ground: bool,
     is_flip: bool,
     anim_controller: Animation_controller,
@@ -89,10 +90,10 @@ Enemy_ranger:: struct {
     body: Enemy_Body,
     status: Enemy_status,
     stats : Enemy_unit_stats,
-    direction: Enemy_directions,
     on_ground: bool,
     is_flip: bool,
     anim_controller: Animation_controller,
+    taunted_stats : Enemy_taunted_stats,
     reload: Enemy_ranger_reload,
     combat_state : Enemy_range_states
 
@@ -103,7 +104,6 @@ Enemy_sniper :: struct  {
     body: Enemy_Body,
     status: Enemy_status,
     stats : Enemy_unit_stats,
-    direction: Enemy_directions,
     on_ground: bool,
     is_flip: bool,
     targeting: Enemy_targeting_controller,
@@ -298,31 +298,32 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
 
             resolve_enemy_and_bullet(enemy.body, &enemy.stats.health_stats, &game.player_bullets)
             
-            
+            taunted_rect := rl.Rectangle{
+                x = enemy.body.direction ==.RIGHT ? enemy.body.position.x + enemy.body.size.x / 2  : enemy.body.position.x - enemy.body.size.x / 2  - ENEMY_MELEE_TAUNTED_RANGE,
+                y  = enemy.body.position.y - 20, 
+                width = ENEMY_MELEE_TAUNTED_RANGE , 
+                height = 30
+            }
+
             switch enemy.combat_state {
                 case .PARTROL : {
                     enemy.body.vel.x = 20 * (enemy.body.direction == .RIGHT ? 1 : -1)
                     enemy.body.position.x += dt * enemy.body.vel.x 
-
-                
                     
-                    taunted_rect := rl.Rectangle{
-                        x = enemy.body.direction ==.RIGHT ? enemy.body.position.x + enemy.body.size.x  : enemy.body.position.x - enemy.body.size.x  - ENEMY_MELEE_TAUNTED_RANGE,
-                        y  = enemy.body.position.y - 20, 
-                        width = ENEMY_MELEE_TAUNTED_RANGE , 
-                        height = 30
-                    }
                     if rl.CheckCollisionPointRec(game.player.body.position, taunted_rect) {
                         enemy.taunted_stats.current = enemy.taunted_stats.max_time
                         enemy.combat_state = .TAUNTED
                     }
+                    
+                
+                    
                 }
                 case .TAUNTED : {
                     enemy.body.direction = game.player.body.position.x - enemy.body.position.x > 0 ? .RIGHT : .LEFT
                     enemy.taunted_stats.current -= dt
                     
-                    if enemy.taunted_stats.current > 0  && !rl.CheckCollisionPointRec(game.player.body.position, rl.Rectangle{x = enemy.body.position.x - ENEMY_MELEE_TAUNTED_RANGE, y  = enemy.body.position.y - 20, width = ENEMY_MELEE_TAUNTED_RANGE * 2, height = 30}) {
-                        if enemy.taunted_stats.current < enemy.taunted_stats.max_time - 0.5 {
+                    if enemy.taunted_stats.current > dt  && !rl.CheckCollisionPointRec(game.player.body.position, taunted_rect) {
+                        if enemy.taunted_stats.current + 0.5 < enemy.taunted_stats.max_time  {
 
                             enemy.taunted_stats.current = enemy.taunted_stats.max_time
                             enemy.combat_state = .PARTROL
@@ -343,7 +344,7 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
 
                     if rl.CheckCollisionRecs(get_body_rect(game.player.body), get_enemy_body_rect(enemy.body)) {
                         player_take_dmg(&game.player.stats.health_stats, enemy.stats.dmg)
-                        resolve_e_mele_attack(&game.player, enemy, ENEMY_MELEE_PUSH_FORCE , dt)
+                        resolve_e_mele_attack(&game.player, enemy, ENEMY_MELEE_PUSH_FORCE * remain_scale, dt)
                     }
                     
                     if enemy.attack.current <= 0 {
@@ -407,10 +408,10 @@ Enemy_melees_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_mele
                 taunted_aura_sprite := SPRITE_MAP[E_TAUNTED_AURA_SPRITE]
                 taunted_sprite := SPRITE_MAP[E_MELEE_TAUNTED_SPRITE]
                 taunted_source := rl.Rectangle {x = taunted_sprite.x, y= taunted_sprite.y, width = taunted_sprite.w * (is_flip ? -1 : 1), height = taunted_sprite.h}
-                taunted_auta_sprte_source := rl.Rectangle {x = taunted_aura_sprite.x, y= taunted_aura_sprite.y, width = taunted_aura_sprite.w, height = taunted_aura_sprite.h}
+                taunted_aura_sprte_source := rl.Rectangle {x = taunted_aura_sprite.x, y= taunted_aura_sprite.y, width = taunted_aura_sprite.w, height = taunted_aura_sprite.h}
                 taunted_aura_sprite_dest := rl.Rectangle {x = minion_rect.x + minion_rect.width - 10, y = minion_rect.y - 10, width = 16, height = 16}
                 rl.DrawTexturePro(atlas, taunted_source, minion_rect, {0, 0}, 0, rl.WHITE)
-                rl.DrawTexturePro(atlas, taunted_auta_sprte_source, taunted_aura_sprite_dest, {0, 0}, 0, rl.WHITE)
+                rl.DrawTexturePro(atlas, taunted_aura_sprte_source, taunted_aura_sprite_dest, {0, 0}, 0, rl.WHITE)
                 // draw_animation(atlas, &minion.anim_controller, anim, E_MELEE_SPRITE, is_flip, minion_rect, dt)
             }
         }
@@ -530,10 +531,13 @@ Enemy_sniper_draw:: proc(atlas: rl.Texture2D, game_options: Game_Options, e_snip
         }
         switch enemy.combat_state {
             case .RELOAD : {
-                sprite := SPRITE_MAP[E_SNIPER_RELOAD_SPRITE]
-                sprite_source := rl.Rectangle{x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
-                sprite_dest := rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y - 15, width = 15, height = 15}
-                rl.DrawTexturePro(atlas, sprite_source, sprite_dest, {7.5, 7.5}, 0, rl.WHITE)
+                reload_aura_sprite := SPRITE_MAP[E_RELOAD_AURA_SPRITE]
+
+                reload_aura_sprte_source := rl.Rectangle {x = reload_aura_sprite.x, y= reload_aura_sprite.y, width = reload_aura_sprite.w, height = reload_aura_sprite.h}
+
+                reload_aura_sprite_dest := rl.Rectangle {x = enemy_rect.x + enemy_rect.width - 10, y = enemy_rect.y - 10, width = 16, height = 16}
+                rl.DrawTexturePro(atlas, reload_aura_sprte_source, reload_aura_sprite_dest, {0, 0}, 0, rl.WHITE)
+
             }
             case .AIMING : {
                 sprite := SPRITE_MAP[E_SNIPER_AIMING_SPRITE]
@@ -584,6 +588,7 @@ Enemy_ranger_update :: proc (game: ^Game, dt: f32) {
                         if !rl.CheckCollisionRecs(front_rect, block_collider) {
                             enemy.body.direction = enemy.body.direction == .RIGHT ? .LEFT : .RIGHT
                         } 
+                        resolve_minion_horizontal(&enemy.body, block_collider)
                     }
                     velx := enemy.body.vel.x * (enemy.body.direction == .RIGHT ? 1 : -1)
                     enemy.body.position.x += velx * dt
@@ -591,12 +596,20 @@ Enemy_ranger_update :: proc (game: ^Game, dt: f32) {
                     detected_rect := rl.Rectangle {width = ENEMY_RANGER_RANGE, height = 10, x = enemy.body.position.x + (enemy.body.direction == .RIGHT ? enemy.body.size.x / 2 : -enemy.body.size.x / 2 - ENEMY_RANGER_RANGE), y = enemy.body.position.y - 5}
 
                     if rl.CheckCollisionRecs(get_body_rect(game.player.body), detected_rect) {
+                        enemy.taunted_stats.current = enemy.taunted_stats.max_time
+                        enemy.combat_state = .TAUNTED
+                    }
+
+
+                }
+                case .TAUNTED : {
+                    enemy.taunted_stats.current -= dt 
+                    if enemy.taunted_stats.current <= 0 {
                         e_ranger_shoot(&game.enemy_side.enemy_bullets, enemy.body, enemy.stats.dmg)
                         enemy.reload.current = enemy.reload.max_time
                         enemy.combat_state = .RELOAD
                     }
                 }
-         
 
                 case .RELOAD : {
                     enemy.reload.current -= dt
@@ -606,9 +619,7 @@ Enemy_ranger_update :: proc (game: ^Game, dt: f32) {
                 }
             }
 
-            for block_collider in game.level_data.colliders {
-                resolve_minion_horizontal(&enemy.body, block_collider)
-            }
+           
         }
 
         enemy.body.vel.y = min(enemy.body.vel.y + (GRAVITY * dt), MAX_FALL_SPEED)
@@ -625,9 +636,7 @@ Enemy_ranger_draw :: proc(atlas: rl.Texture2D, game_options: Game_Options, e_ran
         enemy_rect := rl.Rectangle {x = enemy.body.position.x - enemy.body.size.x / 2, y = enemy.body.position.y - enemy.body.size.y / 2, width = enemy.body.size.x, height = enemy.body.size.y}
         is_flip := enemy.body.direction != .RIGHT
         anim := E_ranger_animations[enemy.anim_controller.animation_name]
-        if game_options.is_debug {
-            rl.DrawRectangleRec(enemy_rect, rl.BLUE)
-        }
+      
         
         if enemy.status == .DEAD {
             dead_sprite := SPRITE_MAP[E_RANGER_DEAD_SPRITE]
@@ -648,12 +657,31 @@ Enemy_ranger_draw :: proc(atlas: rl.Texture2D, game_options: Game_Options, e_ran
                 }
                 draw_animation(atlas, &enemy.anim_controller, anim, E_RANGER_SPRITE, is_flip, enemy_rect, dt)
 
-            } else if enemy.combat_state == .RELOAD {
+            } else if enemy.combat_state == .TAUNTED {
+                taunted_sprite := SPRITE_MAP[E_RANGER_TAUNTED_SPRITE]
+                taunted_aura_sprite := SPRITE_MAP[E_TAUNTED_AURA_SPRITE]
+
+                taunted_aura_sprte_source := rl.Rectangle {x = taunted_aura_sprite.x, y= taunted_aura_sprite.y, width = taunted_aura_sprite.w, height = taunted_aura_sprite.h}
+                taunted_aura_sprite_dest := rl.Rectangle {x = enemy_rect.x + enemy_rect.width - 10, y = enemy_rect.y - 10, width = 16, height = 16}
+
+                
+                taunted_sprite_source := rl.Rectangle {x = taunted_sprite.x, y= taunted_sprite.y, width = taunted_sprite.w * (is_flip ? -1 : 1), height = taunted_sprite.h}
+                rl.DrawTexturePro(atlas, taunted_aura_sprte_source, taunted_aura_sprite_dest, {0, 0}, 0, rl.WHITE)
+                rl.DrawTexturePro(atlas, taunted_sprite_source, enemy_rect, 0, 0, rl.WHITE)
+
+            } else if enemy.combat_state == .RELOAD{
                 if enemy.anim_controller.animation_name != RELOAD_ANI {
                     enemy.anim_controller.animation_name = RELOAD_ANI
                     enemy.anim_controller.current_frame = 0
                     enemy.anim_controller.current_timer = E_melee_animations[RELOAD_ANI].frame_timer
                 }
+                reload_aura_sprite := SPRITE_MAP[E_RELOAD_AURA_SPRITE]
+
+                reload_aura_sprte_source := rl.Rectangle {x = reload_aura_sprite.x, y= reload_aura_sprite.y, width = reload_aura_sprite.w, height = reload_aura_sprite.h}
+
+                reload_aura_sprite_dest := rl.Rectangle {x = enemy_rect.x + enemy_rect.width - 10, y = enemy_rect.y - 10, width = 16, height = 16}
+                rl.DrawTexturePro(atlas, reload_aura_sprte_source, reload_aura_sprite_dest, {0, 0}, 0, rl.WHITE)
+
                 draw_animation(atlas, &enemy.anim_controller, anim, E_RANGER_SPRITE, is_flip, enemy_rect, dt)
             }
         }
@@ -678,8 +706,9 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                     found = true
         
                     enemy.status = .ALIVE
-                    enemy.direction = .RIGHT
+               
                     enemy.body.position = enemy_spawner.position
+                    enemy.body.direction = .RIGHT
                     enemy.stats = stats
                     enemy.body.vel = 20
         
@@ -694,17 +723,18 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                     body = {
                         position = enemy_spawner.position,
                         size = Enemy_melee_SIZE,
+                        direction = .RIGHT,
                         vel = 20,
                     },
                     taunted_stats = {
-                        max_time = ENEMY_TAUNTED_DUR,
-                        current = ENEMY_TAUNTED_DUR
+                        max_time = ENEMY_MELEE_TAUNTED_DUR,
+                        current = ENEMY_MELEE_TAUNTED_DUR
                     },
                     attack = {
                         current = ENEMY_MELEE_ATTACK_TIME,
                         max_time = ENEMY_MELEE_ATTACK_TIME,
                     },
-                    direction = .RIGHT,
+                    combat_state = .PARTROL,
                     stats = stats,
                 }
                 append(&game.enemy_side.e_melee, enemy)
@@ -722,7 +752,6 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                     found = true
         
                     enemy.status = .ALIVE
-                    enemy.direction = .RIGHT
                     enemy.body.position = enemy_spawner.position + spawn_offset
                     enemy.stats = stats
                     enemy.body.vel = 0
@@ -741,9 +770,10 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                         direction = .RIGHT,
                         vel = 0,
                     },
-                    direction = .RIGHT,
+                 
                     stats = stats,
                     combat_state = .RELOAD,
+                    
                     targeting = {
                         aiming_radius = ENEMY_AIMING_RADIUS,
                         reload = {
@@ -788,6 +818,10 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                         direction = .RIGHT
                     },
                     stats = stats,
+                    taunted_stats = {
+                        max_time = ENEMY_RANGER_TAUNTED_DUR,
+                        current = ENEMY_RANGER_TAUNTED_DUR
+                    },
                     reload = {
                         current = ENEMY_RANGER_RELOAD_TIME,
                         max_time = ENEMY_RANGER_RELOAD_TIME
