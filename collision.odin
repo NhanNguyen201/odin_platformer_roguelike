@@ -77,7 +77,7 @@ resolve_e_mele_attack:: proc(player: ^Player, enemy: ^Enemy_melee, force: f32, d
 
     enemy.combat_state = .PARTROL
 
-    player.body.vel += (-enemy.body.position + player.body.position) * force 
+    player.body.vel.x += (-enemy.body.position.x + player.body.position.x) * force 
 
 }
 
