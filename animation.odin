@@ -2,13 +2,14 @@
 
 package main
 import rl "vendor:raylib"
-import "core:math"
+
 import "core:container/small_array"
 
 IDLE_ANI :: "Idle_ani"
 RUN_ANI :: "Run_ani"
 HURT_ANI :: "Hurt_ani"
 ATTACK_ANI :: "Attack_ani"
+RELOAD_ANI :: "Reload_ani"
 MAX_PARTICLE:int : 200
 
 Animation_controller :: struct {
@@ -59,7 +60,8 @@ E_melee_animations := map[string] Animation {
 
 E_ranger_animations := map[string] Animation {
     IDLE_ANI = {name = IDLE_ANI, frame_start = 0, frame_end = 1, frame_timer = 0.5, count = 2, is_loop = true },
-    RUN_ANI = {name= RUN_ANI, frame_start = 0, frame_end = 1, frame_timer = .25, count = 2, is_loop = true },
+    RUN_ANI = {name= RUN_ANI, frame_start = 2, frame_end = 5, frame_timer = .25, count = 4, is_loop = true },
+    RELOAD_ANI  = {name= RELOAD_ANI ,frame_start = 6, frame_end = 7, frame_timer = .25, count = 2, is_loop = true}
 }
 
 E_sniper_animations := map[string] Animation {

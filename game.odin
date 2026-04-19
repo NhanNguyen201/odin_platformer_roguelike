@@ -26,7 +26,7 @@ BULLET_DIRECTION :: enum {
 
 Enemy_side :: struct {
     e_melee: [dynamic] Enemy_melee,
-    e_ranger: [dynamic] Enemy_melee,
+    e_ranger: [dynamic] Enemy_ranger,
     e_sniper: [dynamic] Enemy_sniper,
     enemy_spawners: [dynamic] Enemy_spawner_pot,
     enemy_bullets: [dynamic] Bullet
@@ -135,6 +135,7 @@ game_update:: proc(game: ^Game, dt: f32) {
         
         enemies_spawner_update(game, dt)
         Enemy_melees_update(game, dt) 
+        Enemy_ranger_update(game, dt)
         Enemy_sniper_update(game, dt)
 
         for block_collider in game.level_data.colliders {
@@ -147,7 +148,8 @@ game_update:: proc(game: ^Game, dt: f32) {
         exp_buff_collect(&game.player, game)
     
         level_gate_update(game)
-    
+        
+        bullets_update(game, dt)
         particles_systems_update(&game.particle_system, dt)
     }
 
@@ -212,11 +214,12 @@ game_draw:: proc(game: ^Game, dt: f32) {
 
     level_gate_draw(game.game_sprite_atlas, game.level_data)
     
-    enemies_draw(game^, dt)
+    enemies_spawner_draw(game^, dt)
     
     
     Enemy_melees_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_melee, dt)
     Enemy_sniper_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_sniper, dt)
+    Enemy_ranger_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_ranger, dt)
     
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_side.enemy_bullets[:])
     
@@ -290,3 +293,38 @@ key_collect:: proc(player: Player, game: ^Game) {
     }
 }
 
+
+bullets_update :: proc (game: ^Game, dt: f32) {
+
+    for &bullet in game.player_bullets {
+        direction_vel : rl.Vector2
+
+        switch bullet.direction {
+            case .UP: direction_vel = {0, -200}
+            case .DOWN: direction_vel = {0, 200}
+            case .RIGHT: direction_vel = {200, 0}
+            case .LEFT: direction_vel = {-200, 0}
+            case : direction_vel = {0, 0}
+        }
+
+        bullet.position += direction_vel * dt
+
+
+    }
+
+    for &bullet in game.enemy_side.enemy_bullets {
+        direction_vel : rl.Vector2
+
+        switch bullet.direction {
+            case .UP: direction_vel = {0, -200}
+            case .DOWN: direction_vel = {0, 200}
+            case .RIGHT: direction_vel = {200, 0}
+            case .LEFT: direction_vel = {-200, 0}
+            case : direction_vel = {0, 0}
+        }
+
+        bullet.position += direction_vel * dt
+
+
+    }
+}

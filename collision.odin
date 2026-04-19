@@ -98,6 +98,23 @@ resolve_enemy_and_bullet:: proc(e_body: Enemy_Body, health_stats: ^Health_stats,
 
 }
 
+resolve_player_and_bullet:: proc(body: Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
+    pr := get_body_rect(body)
+
+    for bullet, idx in bullets {
+        bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
+
+        if !rl.CheckCollisionRecs(pr, bullet_rect) do continue 
+
+        player_take_dmg(health_stats, bullet.dmg)
+        unordered_remove(bullets, idx)
+
+        break
+    }
+
+
+}
+
 
 resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,  rect: rl.Rectangle) {
     sprite := SPRITE_MAP[PARTICLE_SPRITE]

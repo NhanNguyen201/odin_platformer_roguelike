@@ -31,6 +31,8 @@ E_SNIPER_AIMING_SPRITE :: "E_sniper_aiming_sprite"
 E_SNIPER_RELOAD_SPRITE :: "E_sniper_reload_sprite"
 E_SNIPER_PARTICLE_SPRITE :: "E_sniper_particle_sprite"
 E_TAUNTED_AURA_SPRITE :: "E_taunted_aura_sprite"
+E_RANGER_SPRITE :: "E_ranger_sprite"
+E_RANGER_DEAD_SPRITE :: "E_ranger_dead_sprite"
 PLAYER_SPRITE :: "Player_sprite"
 PORTAL_SPRITE :: "Portal_sprite"
 PORTAL_DEAD_SPRITE :: "Portad_dead_sprite"
@@ -64,16 +66,24 @@ SPRITE_MAP := map[string]Sprite_desc {
     PORTAL_SPRITE_1 = {x = 128, y = 144, w = 32, h = 32},
     PORTAL_SPRITE_2 = {x = 160, y = 144, w = 32, h = 32},
     PORTAL_STATUS_SPRITE = {x = 320, y= 144, w = 32, h = 32},
+    //
     E_TAUNTED_AURA_SPRITE = {x = 224, y = 176, w =32, h= 32},
+    // Enemy melee
     E_MELEE_SPRITE = {x = 0, y = 368, w = 432, h = 48, count = 9},
     E_MELEE_TAUNTED_SPRITE = {x = 144, y = 416, w = 48, h = 48},
     E_MELEE_DEAD_SPRITE = {x = 0, y = 416, w = 48, h = 48, count = 1},
+    // Enemy sniper
     E_SNIPER_SPRITE = {x= 0, y= 320, w = 96, h = 48, count = 2},
     E_SINPER_DEAD_SPIPER = {x = 48, y = 416, w = 48, h = 48},
     E_SNIPER_AIMING_SPRITE = {x = 192, y = 144, w = 32, h =32},
     E_SNIPER_TRIGGER_SPRITE = {x = 224,y = 144, w = 32, h =32},
     E_SNIPER_RELOAD_SPRITE = {x = 256, y = 144, w = 32, h =32},
     E_SNIPER_PARTICLE_SPRITE = {x = 96, y = 176, w = 32, h = 32},
+
+    // Enemy ranger
+    E_RANGER_SPRITE = {x = 0, y = 272, w = 384, h = 48, count = 8},
+    E_RANGER_DEAD_SPRITE = {x = 96, y = 416, w = 48, h = 48},
+
     PLAYER_SPRITE = {x = 0, y = 112, w = 160, h = 32, count = 5},
     BULLET_SPRITE = {x = 0, y = 64, w = 16, h = 16},
     EXPERIENCE_BUFF_SPRITE = {x = 32, y = 176, w = 32, h = 32},

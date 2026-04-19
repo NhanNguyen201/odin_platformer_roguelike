@@ -54,7 +54,8 @@ Exp_require:: struct {
 Bullet :: struct {
     position: rl.Vector2,
     direction: BULLET_DIRECTION,
-    dmg: f32
+    dmg: f32,
+    is_exploded: bool
 }
 
 
@@ -191,22 +192,8 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
     }
 
-
-    for &bullet in game.player_bullets {
-        direction_vel : rl.Vector2
-
-        switch bullet.direction {
-            case .UP: direction_vel = {0, -200}
-            case .DOWN: direction_vel = {0, 200}
-            case .RIGHT: direction_vel = {200, 0}
-            case .LEFT: direction_vel = {-200, 0}
-            case : direction_vel = {0, 0}
-        }
-
-        bullet.position += direction_vel * dt
-
-
-    }
+    resolve_player_and_bullet(player.body, &player.stats.health_stats, &game.enemy_side.enemy_bullets)
+    
 
 }
 

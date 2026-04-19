@@ -8,10 +8,13 @@ ENEMY_AIMING_SPD: f32: 0.12
 ENEMY_AIMING_RADIUS: f32: 20.
 ENEMY_AIMING_RELOAD_DUR :f32 : 3.
 
+ENEMY_RANGER_RELOAD_TIME : f32 : 2.
+ENEMY_RANGER_RANGE: f32 : 100.
+
 ENEMY_MELEE_TAUNTED_RANGE: f32 : 60
 ENEMY_MELEE_PULSE_FORCE: f32 : 200
 ENEMY_MELEE_ATTACK_TIME: f32 : 0.7
-
+ENEMY_MELEE_PUSH_FORCE: f32: 60
 ENEMY_TAUNTED_DUR: f32: .8
 
 ENEMY_SPAWNER_SIZE: rl.Vector2 : {8, 16}
@@ -35,8 +38,12 @@ Enemy_melee_attack :: struct {
 
 Enemy_range_states :: enum {
     PATROL,
-    TAUNTED,
-    ATTACK,
+    RELOAD // Tired
+}
+
+Enemy_ranger_reload :: struct {
+    max_time: f32,
+    current : f32
 }
 
 Enemy_sniper_targeting_states :: enum {
@@ -86,6 +93,7 @@ Enemy_ranger:: struct {
     on_ground: bool,
     is_flip: bool,
     anim_controller: Animation_controller,
+    reload: Enemy_ranger_reload,
     combat_state : Enemy_range_states
 
 }
@@ -190,7 +198,29 @@ enemies_spawner_update:: proc(game: ^Game, dt: f32) {
                 }
 
                 case .RANGER: {
-
+                    is_minion_dead := false
+                    found := false
+            
+            
+                    for minion in game.enemy_side.e_ranger {
+                        if minion.id == enemy_spawner.enemy_id  {
+                            found = true
+                            if minion.status == .DEAD {
+                                is_minion_dead = true
+                                break
+                            }
+                        } 
+                    }
+            
+                    if is_minion_dead  || !found {
+                        enemy_spawner.re_spawn.time -= dt
+            
+                        if enemy_spawner.re_spawn.time < 0 {
+                            enemy_spawner.re_spawn.time =  enemy_spawner.re_spawn.max_time
+                            spawn_minion(game, enemy_spawner)
+                        }
+            
+                    }
                 }
             }
 
@@ -207,7 +237,7 @@ enemies_spawner_update:: proc(game: ^Game, dt: f32) {
 
 }
 
-enemies_draw:: proc(game: Game, dt: f32) {
+enemies_spawner_draw:: proc(game: Game, dt: f32) {
     spawner_size := rl.Vector2 {13, 13}
     p_sprite := SPRITE_MAP[PORTAL_SPRITE]
     p_sprite_1 := SPRITE_MAP[PORTAL_SPRITE_1]
@@ -261,15 +291,7 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
             // unordered_remove(&game.Enemy_melees, i)
             enemy.status = .DEAD    
         } 
-        if abs(enemy.body.vel.x) > 0 {
-           
-        } else if abs(enemy.body.vel.x) == 0 {
-            if enemy.anim_controller.animation_name != IDLE_ANI {
-                enemy.anim_controller.animation_name = IDLE_ANI
-                enemy.anim_controller.current_frame = 0
-                enemy.anim_controller.current_timer = E_melee_animations[IDLE_ANI].frame_timer
-            }
-        }
+        
 
         if enemy.status == .ALIVE {
 
@@ -282,9 +304,7 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
                     enemy.body.vel.x = 20 * (enemy.body.direction == .RIGHT ? 1 : -1)
                     enemy.body.position.x += dt * enemy.body.vel.x 
 
-                    for block_collider in game.level_data.colliders {
-                        resolve_minion_horizontal(&enemy.body, block_collider)
-                    }
+                
                     
                     taunted_rect := rl.Rectangle{
                         x = enemy.body.direction ==.RIGHT ? enemy.body.position.x + enemy.body.size.x  : enemy.body.position.x - enemy.body.size.x  - ENEMY_MELEE_TAUNTED_RANGE,
@@ -300,11 +320,13 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
                 case .TAUNTED : {
                     enemy.body.direction = game.player.body.position.x - enemy.body.position.x > 0 ? .RIGHT : .LEFT
                     enemy.taunted_stats.current -= dt
-                    for block_collider in game.level_data.colliders {
-                        resolve_minion_horizontal(&enemy.body, block_collider)
-                    }
-                    if enemy.taunted_stats.current > 0 && !rl.CheckCollisionPointRec(game.player.body.position, rl.Rectangle{x = enemy.body.position.x - ENEMY_MELEE_TAUNTED_RANGE, y  = enemy.body.position.y - 20, width = ENEMY_MELEE_TAUNTED_RANGE * 2, height = 30}) {
-                        enemy.combat_state = .PARTROL
+                    
+                    if enemy.taunted_stats.current > 0  && !rl.CheckCollisionPointRec(game.player.body.position, rl.Rectangle{x = enemy.body.position.x - ENEMY_MELEE_TAUNTED_RANGE, y  = enemy.body.position.y - 20, width = ENEMY_MELEE_TAUNTED_RANGE * 2, height = 30}) {
+                        if enemy.taunted_stats.current < enemy.taunted_stats.max_time - 0.5 {
+
+                            enemy.taunted_stats.current = enemy.taunted_stats.max_time
+                            enemy.combat_state = .PARTROL
+                        }
                     }
                     if enemy.taunted_stats.current <= 0 {
                         enemy.attack.current = enemy.attack.max_time
@@ -321,18 +343,20 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
 
                     if rl.CheckCollisionRecs(get_body_rect(game.player.body), get_enemy_body_rect(enemy.body)) {
                         player_take_dmg(&game.player.stats.health_stats, enemy.stats.dmg)
-                        resolve_e_mele_attack(&game.player, enemy, remain_force, dt)
+                        resolve_e_mele_attack(&game.player, enemy, ENEMY_MELEE_PUSH_FORCE , dt)
                     }
-                    for block_collider in game.level_data.colliders {
-                        resolve_minion_horizontal(&enemy.body, block_collider)
-                    }
+                    
                     if enemy.attack.current <= 0 {
+                        enemy.taunted_stats.current = enemy.taunted_stats.max_time
                         enemy.combat_state = .PARTROL
                     }
                 }
             }
-        }
+            for block_collider in game.level_data.colliders {
+                resolve_minion_horizontal(&enemy.body, block_collider)
+            }
 
+        }
         enemy.body.vel.y = min(enemy.body.vel.y + (GRAVITY * dt), MAX_FALL_SPEED)
             
         enemy.body.position.y += enemy.body.vel.y * dt
@@ -375,7 +399,7 @@ Enemy_melees_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_mele
                 if minion.anim_controller.animation_name != ATTACK_ANI {
                     minion.anim_controller.animation_name = ATTACK_ANI
                     minion.anim_controller.current_frame = 0
-                    minion.anim_controller.current_timer = E_melee_animations[RUN_ANI].frame_timer
+                    minion.anim_controller.current_timer = E_melee_animations[ATTACK_ANI].frame_timer
                 }
                 draw_animation(atlas, &minion.anim_controller, anim, E_MELEE_SPRITE, is_flip, minion_rect, dt)
             } else if minion.combat_state == .TAUNTED {
@@ -414,28 +438,10 @@ Enemy_sniper_update:: proc(game: ^Game, dt: f32) {
             // unordered_remove(&game.Enemy_melees, i)
             enemy.status = .DEAD    
         } 
-        if abs(enemy.body.vel.x) > 0 {
-            if enemy.anim_controller.animation_name != RUN_ANI {
-                enemy.anim_controller.animation_name = RUN_ANI
-                enemy.anim_controller.current_frame = 0
-                enemy.anim_controller.current_timer = E_melee_animations[RUN_ANI].frame_timer
-            }
-        } else if abs(enemy.body.vel.x) == 0 {
-            if enemy.anim_controller.animation_name != IDLE_ANI {
-                enemy.anim_controller.animation_name = IDLE_ANI
-                enemy.anim_controller.current_frame = 0
-                enemy.anim_controller.current_timer = E_melee_animations[IDLE_ANI].frame_timer
-            }
-        }
+       
 
         if enemy.status == .ALIVE {
             resolve_enemy_and_bullet(enemy.body, &enemy.stats.health_stats, &game.player_bullets)
-
-            // enemy.body.position.x += dt * enemy.body.vel.x 
-    
-            // for block_collider in game.level_data.colliders {
-            //     resolve_minion_horizontal(&enemy.body, block_collider)
-            // }
             if enemy.combat_state == .AIMING {
                 enemy.targeting.target = game.player.body.position
                 // player_pos := game.player.body.position
@@ -485,69 +491,175 @@ Enemy_sniper_update:: proc(game: ^Game, dt: f32) {
 }
 
 Enemy_sniper_draw:: proc(atlas: rl.Texture2D, game_options: Game_Options, e_sniper: ^[dynamic]Enemy_sniper, dt: f32) {
-    for &minion in e_sniper {
-        minion_rect := rl.Rectangle {x = minion.body.position.x - minion.body.size.x / 2, y = minion.body.position.y - minion.body.size.y / 2, width = minion.body.size.x, height = minion.body.size.y}
-        is_flip := minion.body.vel.x < 0
+    for &enemy in e_sniper {
+        enemy_rect := rl.Rectangle {x = enemy.body.position.x - enemy.body.size.x / 2, y = enemy.body.position.y - enemy.body.size.y / 2, width = enemy.body.size.x, height = enemy.body.size.y}
+        is_flip := enemy.body.vel.x < 0
         
 
-        anim := E_sniper_animations[minion.anim_controller.animation_name]
-
-        if minion.status == .DEAD {
+        anim := E_sniper_animations[enemy.anim_controller.animation_name]
+        if enemy.status == .DEAD {
             dead_sprite := SPRITE_MAP[E_SINPER_DEAD_SPIPER]
             rl.DrawTexturePro(
                 atlas, 
                 rl.Rectangle {x = dead_sprite.x, y= dead_sprite.y, width = dead_sprite.w * (is_flip ? -1 : 1), height = dead_sprite.h},
-                rl.Rectangle {x = minion.body.position.x, y = minion.body.position.y, width = minion.body.size.x, height = minion.body.size.y},
-                minion.body.size / 2,
+                rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y, width = enemy.body.size.x, height = enemy.body.size.y},
+                enemy.body.size / 2,
                 0,
                 rl.WHITE
             )
         } else {
-            draw_animation(atlas, &minion.anim_controller, anim, E_SNIPER_SPRITE, is_flip, minion_rect, dt)
+            if abs(enemy.body.vel.x) == 0 {
+                if enemy.anim_controller.animation_name != IDLE_ANI {
+                    enemy.anim_controller.animation_name = IDLE_ANI
+                    enemy.anim_controller.current_frame = 0
+                    enemy.anim_controller.current_timer = E_sniper_animations[IDLE_ANI].frame_timer
+                }
+            }
+            draw_animation(atlas, &enemy.anim_controller, anim, E_SNIPER_SPRITE, is_flip, enemy_rect, dt)
         }
 
 
         if game_options.is_debug || game_options.is_health_bar {
             full_health_width : f32 = 20
 
-            full_health_rect := rl.Rectangle {x = minion_rect.x + (minion.body.size.x / 2)- (full_health_width / 2), y = minion_rect.y - 7.5, width = full_health_width , height = 2.5}
+            full_health_rect := rl.Rectangle {x = enemy_rect.x + (enemy.body.size.x / 2)- (full_health_width / 2), y = enemy_rect.y - 7.5, width = full_health_width , height = 2.5}
 
-            health_rect := rl.Rectangle {x = full_health_rect.x, y = full_health_rect.y, width = minion.stats.health_stats.current_hp / minion.stats.health_stats.max_hp * full_health_width , height = full_health_rect.height}
+            health_rect := rl.Rectangle {x = full_health_rect.x, y = full_health_rect.y, width = enemy.stats.health_stats.current_hp / enemy.stats.health_stats.max_hp * full_health_width , height = full_health_rect.height}
             rl.DrawRectangleLinesEx(full_health_rect, 0.25, rl.WHITE)
             rl.DrawRectangleRec(health_rect, rl.RED)
         }
-        switch minion.combat_state {
+        switch enemy.combat_state {
             case .RELOAD : {
                 sprite := SPRITE_MAP[E_SNIPER_RELOAD_SPRITE]
                 sprite_source := rl.Rectangle{x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
-                sprite_dest := rl.Rectangle {x = minion.body.position.x, y = minion.body.position.y - 15, width = 15, height = 15}
+                sprite_dest := rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y - 15, width = 15, height = 15}
                 rl.DrawTexturePro(atlas, sprite_source, sprite_dest, {7.5, 7.5}, 0, rl.WHITE)
             }
             case .AIMING : {
                 sprite := SPRITE_MAP[E_SNIPER_AIMING_SPRITE]
                 sprite_source := rl.Rectangle{x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
-                sprite_dest := rl.Rectangle {x = minion.targeting.current_aiming_point.x, y = minion.targeting.current_aiming_point.y, width = ENEMY_AIMING_RADIUS, height = ENEMY_AIMING_RADIUS}
+                sprite_dest := rl.Rectangle {x = enemy.targeting.current_aiming_point.x, y = enemy.targeting.current_aiming_point.y, width = ENEMY_AIMING_RADIUS, height = ENEMY_AIMING_RADIUS}
                 rl.DrawTexturePro(atlas, sprite_source, sprite_dest, {ENEMY_AIMING_RADIUS / 2, ENEMY_AIMING_RADIUS / 2}, 0, rl.WHITE)
             }
             case .TRIGGER : {
                 sprite := SPRITE_MAP[E_SNIPER_TRIGGER_SPRITE]
                 sprite_source := rl.Rectangle{x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
-                sprite_scale :f32 = 1. +  0.6 * (minion.targeting.trigger.current / minion.targeting.trigger.max_time)
-                sprite_dest := rl.Rectangle {x = minion.targeting.current_aiming_point.x, y = minion.targeting.current_aiming_point.y, width = ENEMY_AIMING_RADIUS * sprite_scale, height = ENEMY_AIMING_RADIUS * sprite_scale}
+                sprite_scale :f32 = 1. +  0.6 * (enemy.targeting.trigger.current / enemy.targeting.trigger.max_time)
+                sprite_dest := rl.Rectangle {x = enemy.targeting.current_aiming_point.x, y = enemy.targeting.current_aiming_point.y, width = ENEMY_AIMING_RADIUS * sprite_scale, height = ENEMY_AIMING_RADIUS * sprite_scale}
                 rl.DrawTexturePro(atlas, sprite_source, sprite_dest, {ENEMY_AIMING_RADIUS * sprite_scale / 2, ENEMY_AIMING_RADIUS * sprite_scale / 2}, 0, rl.WHITE)
             }
         }
          if game_options.is_debug || game_options.is_health_bar {
             full_health_width : f32 = 20
 
-            full_health_rect := rl.Rectangle {x = minion_rect.x + (minion.body.size.x / 2)- (full_health_width / 2), y = minion_rect.y - 7.5, width = full_health_width , height = 2.5}
+            full_health_rect := rl.Rectangle {x = enemy_rect.x + (enemy.body.size.x / 2)- (full_health_width / 2), y = enemy_rect.y - 7.5, width = full_health_width , height = 2.5}
 
-            health_rect := rl.Rectangle {x = full_health_rect.x, y = full_health_rect.y, width = minion.stats.health_stats.current_hp / minion.stats.health_stats.max_hp * full_health_width , height = full_health_rect.height}
+            health_rect := rl.Rectangle {x = full_health_rect.x, y = full_health_rect.y, width = enemy.stats.health_stats.current_hp / enemy.stats.health_stats.max_hp * full_health_width , height = full_health_rect.height}
             rl.DrawRectangleLinesEx(full_health_rect, 0.25, rl.WHITE)
             rl.DrawRectangleRec(health_rect, rl.RED)
         }
         // rl.DrawCircleV(minion.targeting.current_aiming_point, minion.targeting.aiming_radius, rl.RED)
     } 
+}
+Enemy_ranger_update :: proc (game: ^Game, dt: f32) {
+    for i:= len(game.enemy_side.e_ranger) - 1; i >=0; i -= 1 {
+         enemy := &game.enemy_side.e_ranger[i]
+
+
+        if enemy.stats.health_stats.current_hp <= 0 {
+            // unordered_remove(&game.Enemy_melees, i)
+            enemy.status = .DEAD    
+        } 
+        if enemy.status == .ALIVE {
+
+
+            resolve_enemy_and_bullet(enemy.body, &enemy.stats.health_stats, &game.player_bullets)
+
+            switch enemy.combat_state {
+                case .PATROL : {
+                    under_rect := rl.Rectangle {x = get_rect_center(get_enemy_body_rect(enemy.body)).x - 10, y = enemy.body.position.y + enemy.body.size.y + 2, width = 20, height = 3}
+                    front_rect := rl.Rectangle {x = get_rect_center(get_enemy_body_rect(enemy.body)).x + (enemy.body.direction == .RIGHT ? enemy.body.size.x / 2 + 2 : - enemy.body.size.x / 2 - 10 - 2 ), y = enemy.body.position.y + enemy.body.size.y + 2, width = 10, height = 3}
+                    for block_collider in game.level_data.colliders {
+                        if !rl.CheckCollisionRecs(under_rect, block_collider) do continue
+                        if !rl.CheckCollisionRecs(front_rect, block_collider) {
+                            enemy.body.direction = enemy.body.direction == .RIGHT ? .LEFT : .RIGHT
+                        } 
+                    }
+                    velx := enemy.body.vel.x * (enemy.body.direction == .RIGHT ? 1 : -1)
+                    enemy.body.position.x += velx * dt
+                    
+                    detected_rect := rl.Rectangle {width = ENEMY_RANGER_RANGE, height = 10, x = enemy.body.position.x + (enemy.body.direction == .RIGHT ? enemy.body.size.x / 2 : -enemy.body.size.x / 2 - ENEMY_RANGER_RANGE), y = enemy.body.position.y - 5}
+
+                    if rl.CheckCollisionRecs(get_body_rect(game.player.body), detected_rect) {
+                        e_ranger_shoot(&game.enemy_side.enemy_bullets, enemy.body, enemy.stats.dmg)
+                        enemy.reload.current = enemy.reload.max_time
+                        enemy.combat_state = .RELOAD
+                    }
+                }
+         
+
+                case .RELOAD : {
+                    enemy.reload.current -= dt
+                    if enemy.reload.current <= 0 {
+                        enemy.combat_state = .PATROL
+                    }
+                }
+            }
+
+            for block_collider in game.level_data.colliders {
+                resolve_minion_horizontal(&enemy.body, block_collider)
+            }
+        }
+
+        enemy.body.vel.y = min(enemy.body.vel.y + (GRAVITY * dt), MAX_FALL_SPEED)
+            
+        enemy.body.position.y += enemy.body.vel.y * dt
+        for block_collider in game.level_data.colliders {
+            resolve_minion_vertical(&enemy.body, block_collider)
+        }
+    }
+}
+
+Enemy_ranger_draw :: proc(atlas: rl.Texture2D, game_options: Game_Options, e_rangers: ^[dynamic]Enemy_ranger, dt: f32) {
+    for &enemy in e_rangers {
+        enemy_rect := rl.Rectangle {x = enemy.body.position.x - enemy.body.size.x / 2, y = enemy.body.position.y - enemy.body.size.y / 2, width = enemy.body.size.x, height = enemy.body.size.y}
+        is_flip := enemy.body.direction != .RIGHT
+        anim := E_ranger_animations[enemy.anim_controller.animation_name]
+        if game_options.is_debug {
+            rl.DrawRectangleRec(enemy_rect, rl.BLUE)
+        }
+        
+        if enemy.status == .DEAD {
+            dead_sprite := SPRITE_MAP[E_RANGER_DEAD_SPRITE]
+            rl.DrawTexturePro(
+                atlas, 
+                rl.Rectangle {x = dead_sprite.x, y= dead_sprite.y, width = dead_sprite.w * (is_flip ? -1 : 1), height = dead_sprite.h},
+                rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y, width = enemy.body.size.x, height = enemy.body.size.y},
+                enemy.body.size / 2,
+                0,
+                rl.WHITE
+            )
+        } else {
+            if enemy.combat_state == .PATROL {
+                if enemy.anim_controller.animation_name != RUN_ANI {
+                    enemy.anim_controller.animation_name = RUN_ANI
+                    enemy.anim_controller.current_frame = 0
+                    enemy.anim_controller.current_timer = E_melee_animations[RUN_ANI].frame_timer
+                }
+                draw_animation(atlas, &enemy.anim_controller, anim, E_RANGER_SPRITE, is_flip, enemy_rect, dt)
+
+            } else if enemy.combat_state == .RELOAD {
+                if enemy.anim_controller.animation_name != RELOAD_ANI {
+                    enemy.anim_controller.animation_name = RELOAD_ANI
+                    enemy.anim_controller.current_frame = 0
+                    enemy.anim_controller.current_timer = E_melee_animations[RELOAD_ANI].frame_timer
+                }
+                draw_animation(atlas, &enemy.anim_controller, anim, E_RANGER_SPRITE, is_flip, enemy_rect, dt)
+            }
+        }
+
+    }
+
 }
 
 spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
@@ -626,6 +738,7 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                     body = Enemy_Body {
                         position = enemy_spawner.position + spawn_offset,
                         size = Enemy_melee_SIZE,
+                        direction = .RIGHT,
                         vel = 0,
                     },
                     direction = .RIGHT,
@@ -650,9 +763,49 @@ spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
             }
         }
         case .RANGER : {
-
+            for &enemy in game.enemy_side.e_ranger {
+                if enemy.id == enemy_spawner.enemy_id {
+                    
+                    found = true
+        
+                    enemy.status = .ALIVE
+                    enemy.body.position = enemy_spawner.position 
+                    enemy.stats = stats
+                    enemy.body.vel = 20
+        
+                    break
+                }
+            }
+        
+            if !found {
+                enemy := Enemy_ranger {
+                    id = enemy_spawner.enemy_id,
+                    status = .ALIVE,
+                    body = Enemy_Body {
+                        position = enemy_spawner.position ,
+                        size = Enemy_melee_SIZE,
+                        vel = 20,
+                        direction = .RIGHT
+                    },
+                    stats = stats,
+                    reload = {
+                        current = ENEMY_RANGER_RELOAD_TIME,
+                        max_time = ENEMY_RANGER_RELOAD_TIME
+                    },
+                    combat_state = .PATROL,
+                   
+                }
+                append(&game.enemy_side.e_ranger, enemy)
+            }
         }
     }
 }
 
-
+e_ranger_shoot :: proc(enemy_bullet : ^[dynamic]Bullet, enemy_body: Enemy_Body, dmg: f32) {
+    append(enemy_bullet, Bullet {
+        direction = enemy_body.direction == .RIGHT ? .RIGHT : .LEFT,
+        dmg = dmg,
+        position = enemy_body.position,
+        is_exploded = true
+    })
+}
