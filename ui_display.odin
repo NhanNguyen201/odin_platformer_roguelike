@@ -23,6 +23,7 @@ UI_MINI_MAP_CIRCLE_RADIUS: f32 : 20
 UI_PAUSED_SIGN_SIZE : rl.Vector2 : {80, 40}
 
 UI_CURSIR_SIZE : rl.Vector2: { 16 , 16}
+UI_UNIT_EXPRESSION_SIZE : rl.Vector2 : {16, 16}
 
 HEALTH_BAR_SIZE : rl.Vector2: {40, 7}
 EXPERIENCE_BAR_SIZE: rl.Vector2: {40, 5}
@@ -170,7 +171,7 @@ player_ui_draw:: proc(game: ^Game) {
         rl.BLACK
     )
     if game.game_options.is_mini_map {
-        mini_map_draw(game.game_sprite_atlas, ui_rect, game.level_data.keys[:], player.body)
+        mini_map_draw(game.game_sprite_atlas, ui_rect, game.level_data, player.body)
     }
 
     if game.game_options.is_paused && game.ui_controller.is_ui_screen {
@@ -294,14 +295,14 @@ skill_hud_draw :: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle, player: Playe
 
 }
 
-mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, keys: []Key_pot, player: Body) {
+mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, level_data: Level_data, player: Body) {
     mini_map_rect := rl.Rectangle {x = ui_rect.x + ui_rect.width - UI_MINI_MAP_SIZE.x, y = ui_rect.y , width = UI_MINI_MAP_SIZE.x, height = UI_MINI_MAP_SIZE.y}
     mini_map_center: rl.Vector2 = get_rect_center(mini_map_rect)
     arrow_sprite := SPRITE_MAP[MINI_MAP_ARROW_SPRITE]
     arrow_source := rl.Rectangle {x = arrow_sprite.x, y= arrow_sprite.y, width = arrow_sprite.w, height = arrow_sprite.h}
     rl.DrawRectangleRec(mini_map_rect, rl.Color{200, 200, 200, 180})
     player_icon_size : f32 = 4
-    key_icon_size : f32 = 1
+    item_icon_size : f32 = 1
     rl.DrawRectanglePro(
         rl.Rectangle{ x = mini_map_center.x, y= mini_map_center.y, width = player_icon_size, height = player_icon_size},
         {player_icon_size / 2, player_icon_size / 2},
@@ -309,7 +310,7 @@ mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, keys: []Key_po
         rl.Color{12,12, 255, 180}
     )
     rl.DrawCircleLinesV(mini_map_center, UI_MINI_MAP_CIRCLE_RADIUS, rl.BLACK)
-    for key in keys {
+    for key in level_data.keys {
         if !key.collected {
             distance := get_distance(player.position, key.position)
             if distance < UI_MINI_MAP_MAX_DISTANCE_DRAW {
@@ -318,7 +319,7 @@ mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, keys: []Key_po
                     mini_map_center.x + mini_map_key_distance * (key.position - player.position).x / distance,
                     mini_map_center.y + mini_map_key_distance * (key.position - player.position).y / distance
                 } 
-                rl.DrawCircleV(icon_pos, key_icon_size, rl.RED)
+                rl.DrawCircleV(icon_pos, item_icon_size, rl.RED)
             } else {
                 angle := math.atan2_f32((key.position - player.position).y,  (key.position - player.position).x) * (180. / math.PI)
                 icon_pos : rl.Vector2 = {
@@ -326,19 +327,74 @@ mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, keys: []Key_po
                     mini_map_center.y + UI_MINI_MAP_CIRCLE_RADIUS * (key.position - player.position).y / distance
                 } 
                 arrow_dest := rl.Rectangle{x = icon_pos.x, y = icon_pos.y, width = 10, height = 10}
-                rl.DrawTexturePro(atlas, arrow_source, arrow_dest, {arrow_dest.width / 2, arrow_dest.height /2}, angle + 90, rl.WHITE)
+                rl.DrawTexturePro(atlas, arrow_source, arrow_dest, {arrow_dest.width / 2, arrow_dest.height /2}, angle + 90, rl.RED)
                 // rl.DrawCircleV(icon_pos, key_icon_size, rl.RED)
 
             }
         }
     }
+    for exp in level_data.exp_buffs {
+        if !exp.collected {
+            distance := get_distance(player.position, exp.position)
+            if distance < UI_MINI_MAP_MAX_DISTANCE_DRAW {
+                mini_map_exp_distance : f32 = distance / UI_MINI_MAP_MAX_DISTANCE_DRAW * UI_MINI_MAP_CIRCLE_RADIUS
+                icon_pos : rl.Vector2 = {
+                    mini_map_center.x + mini_map_exp_distance * (exp.position - player.position).x / distance,
+                    mini_map_center.y + mini_map_exp_distance * (exp.position - player.position).y / distance
+                } 
+                rl.DrawCircleV(icon_pos, item_icon_size, rl.YELLOW)
+            } else {
+                angle := math.atan2_f32((exp.position - player.position).y,  (exp.position - player.position).x) * (180. / math.PI)
+                icon_pos : rl.Vector2 = {
+                    mini_map_center.x + UI_MINI_MAP_CIRCLE_RADIUS * (exp.position - player.position).x / distance,
+                    mini_map_center.y + UI_MINI_MAP_CIRCLE_RADIUS * (exp.position - player.position).y / distance
+                } 
+                arrow_dest := rl.Rectangle{x = icon_pos.x, y = icon_pos.y, width = 10, height = 10}
+                rl.DrawTexturePro(atlas, arrow_source, arrow_dest, {arrow_dest.width / 2, arrow_dest.height /2}, angle + 90, rl.YELLOW)
+                // rl.DrawCircleV(icon_pos, key_icon_size, rl.RED)
+
+            }
+        }
+    }
+
+    gate_distance := get_distance(player.position, level_data.gate_position)
+    if gate_distance < UI_MINI_MAP_MAX_DISTANCE_DRAW {
+        mini_map_gate_distance : f32 = gate_distance / UI_MINI_MAP_MAX_DISTANCE_DRAW * UI_MINI_MAP_CIRCLE_RADIUS
+        icon_pos : rl.Vector2 = {
+            mini_map_center.x + mini_map_gate_distance * (level_data.gate_position - player.position).x / gate_distance,
+            mini_map_center.y + mini_map_gate_distance * (level_data.gate_position - player.position).y / gate_distance
+        } 
+        rl.DrawCircleV(icon_pos, item_icon_size, rl.BLUE)
+    } else {
+        angle := math.atan2_f32((level_data.gate_position - player.position).y,  (level_data.gate_position - player.position).x) * (180. / math.PI)
+        icon_pos : rl.Vector2 = {
+            mini_map_center.x + UI_MINI_MAP_CIRCLE_RADIUS * (level_data.gate_position - player.position).x / gate_distance,
+            mini_map_center.y + UI_MINI_MAP_CIRCLE_RADIUS * (level_data.gate_position - player.position).y / gate_distance
+        } 
+        arrow_dest := rl.Rectangle{x = icon_pos.x, y = icon_pos.y, width = 10, height = 10}
+        rl.DrawTexturePro(atlas, arrow_source, arrow_dest, {arrow_dest.width / 2, arrow_dest.height /2}, angle + 90, rl.BLUE)
+        // rl.DrawCircleV(icon_pos, key_icon_size, rl.RED)
+
+    }
 }
+
 paused_sign_draw:: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle) {
     sprite := SPRITE_MAP[PAUSED_SIGN_SPRITE]
     sign_source := rl.Rectangle {x = sprite.x, y = sprite.y, width = sprite.w, height = sprite.h}
     sign_dest := rl.Rectangle { x = get_rect_center(ui_rect).x - UI_PAUSED_SIGN_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_PAUSED_SIGN_SIZE.y - 20., width = UI_PAUSED_SIGN_SIZE.x, height = UI_PAUSED_SIGN_SIZE.y}
     rl.DrawTexturePro(atlas, sign_source, sign_dest, {0, 0}, 0, rl.WHITE)
 }
+
 get_distance:: proc(b1: rl.Vector2, b2: rl.Vector2) -> f32 {
     return math.sqrt_f32(math.pow_f32(b2.x - b1.x, 2) + math.pow_f32(b2.y - b1.y, 2))
+}
+
+unit_expression_draw:: proc(atlas: rl.Texture2D, sprite_desc: Sprite_desc, position: rl.Vector2) {
+    sprite_source := rl.Rectangle {x = sprite_desc.x, y= sprite_desc.y, width = sprite_desc.w, height = sprite_desc.h}
+    sprite_dest := rl.Rectangle {x = position.x, y= position.y, width = UI_UNIT_EXPRESSION_SIZE.x, height = UI_UNIT_EXPRESSION_SIZE.y}
+    rl.DrawTexturePro(atlas, sprite_source, sprite_dest, get_rect_size(sprite_dest) / 2, 0, rl.WHITE)
+}
+
+get_rect_size :: proc(rect: rl.Rectangle) -> rl.Vector2 {
+    return {rect.width, rect.height}
 }
