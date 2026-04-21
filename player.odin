@@ -2,9 +2,9 @@
 
 package main
 import rl "vendor:raylib"
-import "core:fmt"
 
 Inittal_bullet_countdown :f32 : 1.
+PLAYER_MAX_HORIZONTAL_SPD : f32 : 150
 
 STAT_BUFF:: enum {
     HP,
@@ -151,7 +151,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 
 
-  
+    player.body.vel.x = clamp(player.body.vel.x, -PLAYER_MAX_HORIZONTAL_SPD, PLAYER_MAX_HORIZONTAL_SPD)
     
     player.body.position.x += player.body.vel.x  * dt
 
