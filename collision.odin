@@ -128,7 +128,10 @@ resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,
         // pos := rl.Collision
         unordered_remove(bullets, idx)
         add_particle(&game.particle_system, Particle {
-            duration = 0.3, time_left = 0.3, 
+            timer = {
+                current = 0.3,
+                max_time = 0.3
+            } ,
             position = {bullet.position.x, bullet.position.y},
             sprite_source = sprite_source
         })

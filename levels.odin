@@ -35,7 +35,7 @@ ENEMY_RANGER_SPAWNERS_LAYER:int: 9
 ENEMY_SNIPER_SPAWNERS_LAYER:int: 10
 GATE_LAYER: int: 11
 PLAYER_SPAWN_POS_LAYER : int : 12
-
+MAX_BOSS_NUMB : int : 2
 KEY_POT_SIZE :: rl.Vector2 {10,10}
 
 Level:: struct {
@@ -62,6 +62,7 @@ Exp_buff :: struct {
 }
 
 Key_pot :: struct {
+    disabled: bool,
     position: rl.Vector2,
     collected: bool,
 }
@@ -118,9 +119,14 @@ Designed_Level : []Level = {
         map_image = "assets/map_images/map_3.png",
         map_data = "assets/map_tiles/map_3.json"
     },
+     Level {
+        level_size = rl.Vector2 {720, 720},
+        map_image = "assets/map_images/map_4.png",
+        map_data = "assets/map_tiles/map_4.json"
+    },
 }
 
-
+Boss_levels : [MAX_BOSS_NUMB] int= {4, 10}
 
 get_level_data::proc (lvl: int) -> Level {
     level_data : Level
@@ -128,6 +134,7 @@ get_level_data::proc (lvl: int) -> Level {
         case 0: level_data =  Designed_Level[0]
         case 1: level_data = Designed_Level[1]
         case 2: level_data = Designed_Level[2]
+        case 3: level_data = Designed_Level[3]
     }
     return level_data
 }

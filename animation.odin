@@ -23,8 +23,7 @@ Animation_controller :: struct {
 Particle :: struct {
     position: rl.Vector2,
     sprite_source: rl.Rectangle,
-    duration: f32,
-    time_left: f32,
+    timer: Timer
 }
 
 Particles_systems :: struct {
@@ -69,6 +68,13 @@ E_sniper_animations := map[string] Animation {
     RUN_ANI = {name= RUN_ANI, frame_start = 0, frame_end = 1, frame_timer = .25, count = 2, is_loop = true },
 }
 
+Temp_sprite_display :: struct {
+    time_left: f32,
+    pos : rl.Vector2,
+    sprite: Sprite_desc
+}
+
+
 draw_animation :: proc (atlas: rl.Texture2D, anim_controller : ^Animation_controller, anim: Animation, sprite_name: string, is_flip: bool, dest: rl.Rectangle ,dt: f32) {
     anim_controller.current_timer -= dt
 
@@ -112,11 +118,11 @@ add_particle:: proc(particle_sys: ^Particles_systems, new_particle: Particle) {
 particles_systems_update :: proc(particle_sys: ^Particles_systems, dt: f32) {
     for i:= 0; i < particle_sys.particles.len; i += 1 {
 
-        if particle_sys.particles.data[i].time_left - dt <= 0 {
+        if particle_sys.particles.data[i].timer.current - dt <= 0 {
             small_array.unordered_remove(&particle_sys.particles, i)
             continue
         } else {
-            particle_sys.particles.data[i].time_left -= dt
+            particle_sys.particles.data[i].timer.current -= dt
         }
     }
 }
@@ -126,9 +132,9 @@ particls_systems_draw:: proc(atlas: rl.Texture2D, particle_sys: Particles_system
     // particle_soure := rl.Rectangle {x = particle_sprite.x, y = particle_sprite.y, width = particle_sprite.w, height = particle_sprite.h}
     for i:= 0; i < particle_sys.particles.len; i += 1 {
         p := small_array.get(particle_sys.particles, i)
-        scale :=  1. + .5 * (p.duration - p.time_left) / p.duration
+        scale :=  1. + .5 * (p.timer.max_time - p.timer.current) / p.timer.max_time
         dest := rl.Rectangle {x = p.position.x  , y = p.position.y , width = p.sprite_source.width * scale, height = p.sprite_source.height * scale}
-        rl.DrawTexturePro(atlas, p.sprite_source, dest, {dest.width / 2, dest.height / 2}, 0. , rl.Color {255, 255, 255, u8(55 +  200 * p.time_left / p.duration)})
+        rl.DrawTexturePro(atlas, p.sprite_source, dest, {dest.width / 2, dest.height / 2}, 0. , rl.Color {255, 255, 255, u8(55 +  200 * p.timer.current / p.timer.max_time)})
     }
 }
 // math.sin_f32( (p.duration - p.time_left) / p.duration) * 90

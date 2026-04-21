@@ -20,7 +20,7 @@ Sprite_desc :: struct {
 
 
 KEY_SPRITE :: "Key_sprite"
-
+KEY_DISABLE_AURA_SPRITE :: "Key_disable_aura_sprite"
 E_MELEE_SPRITE :: "E_melee_sprite"
 E_MELEE_TAUNTED_SPRITE :: "E_melle_taunted_sprite"
 E_MELEE_DEAD_SPRITE :: "E_melee_dead_sprite"
@@ -40,7 +40,6 @@ PORTAL_SPRITE :: "Portal_sprite"
 PORTAL_DEAD_SPRITE :: "Portad_dead_sprite"
 PORTAL_SPRITE_1 :: "Portal_sprite_a1"
 PORTAL_SPRITE_2 :: "Portal_sprite_a2"
-PORTAL_STATUS_SPRITE :: "Portal_sattus_sprite"
 BULLET_SPRITE :: "Bullet_sprite"
 EXPERIENCE_BUFF_SPRITE :: "Experience_sprite"
 PLAYER_AVATAR_SPRITE :: "Player_avatar_sprite"
@@ -63,11 +62,11 @@ UI_CURSIR_SPRITE_2 :: "Ui_cursor_sprite_2"
 
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
+    KEY_DISABLE_AURA_SPRITE = {x =288, y = 176, w = 32, h = 32},
     PORTAL_SPRITE = {x = 0, y = 144, w = 96, h = 32, count = 3},
     PORTAL_DEAD_SPRITE = {x = 96, y = 144, w = 32, h = 32},
     PORTAL_SPRITE_1 = {x = 128, y = 144, w = 32, h = 32},
     PORTAL_SPRITE_2 = {x = 160, y = 144, w = 32, h = 32},
-    PORTAL_STATUS_SPRITE = {x = 320, y= 144, w = 32, h = 32},
     //
     E_TAUNTED_AURA_SPRITE = {x = 224, y = 176, w =32, h= 32},
     E_RELOAD_AURA_SPRITE = {x = 256, y = 176, w =32, h= 32},
@@ -104,7 +103,7 @@ SPRITE_MAP := map[string]Sprite_desc {
     PARTICLE_SPRITE = {x = 64, y = 176, w = 32, h = 32},
     LEVEL_GATE_SPRITE = {x = 0, y = 176, w = 32, h = 32},
     SHOOT_SKILL_SPRITE = {x = 128, y = 176, w = 32, h = 32},
-    MINI_MAP_ARROW_SPRITE = {x = 288, y = 144, w = 32, h = 32},
+    MINI_MAP_ARROW_SPRITE = {x = 256, y = 144, w = 32, h = 32},
     PAUSED_SIGN_SPRITE = {x = 0, y = 464, w = 96, h = 48},
     UI_CURSIR_SPRITE_1 = {x = 0, y = 80, w = 16, h = 16},
     UI_CURSIR_SPRITE_2 = {x = 16, y = 80, w = 16, h = 16}

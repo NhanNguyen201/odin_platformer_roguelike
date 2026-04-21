@@ -10,7 +10,7 @@ GRAVITY: f32: 250
 PLAYER_SIZE: rl.Vector2: {12, 12}
 PLAYER_MOVE_SPD: f32 : 140
 PlAYER_JUMP_VEL: f32: -240
-MAX_FALL_SPEED: f32: 300
+MAX_FALL_SPEED: f32: 150
 BULLET_SIZE: rl.Vector2 : {6, 6}
 Enemy_melee_SIZE : rl.Vector2 : {15, 15}
 
@@ -85,7 +85,6 @@ game_init:: proc() -> Game {
     level := 0
     player_level := 0
     game: Game
-    rl.HideCursor()
     player_stats := Player_stats{health_stats = {max_hp = 100, current_hp = 100}, dmg = 25}
     game.current_level = level
     game.player = Player {
@@ -99,8 +98,11 @@ game_init:: proc() -> Game {
             level = player_level,
             require = EXPERIENCE_PER_LEVEL[player_level]
         }
-
+        
     }
+
+    rl.HideCursor()
+    
     game.game_options.is_hub = true
     load_atlas(&game)
     load_level(&game, game.current_level)
@@ -249,14 +251,16 @@ level_gate_draw:: proc(atlas: rl.Texture2D, level_data: Level_data) {
 
 keypot_draw :: proc(atlas: rl.Texture2D, is_debug: bool, player_pos: rl.Vector2, keys: []Key_pot) {
     key_atlas_sprite := SPRITE_MAP[KEY_SPRITE]
-
     key_source := rl.Rectangle{x = key_atlas_sprite.x, y= key_atlas_sprite.y , width = key_atlas_sprite.w, height = key_atlas_sprite.h}
     for key in keys {
         if !key.collected {
             dest := rl.Rectangle{x = key.position.x, y= key.position.y , width = key_atlas_sprite.w, height = key_atlas_sprite.h}
 
-            rl.DrawTexturePro(atlas, key_source, dest, {dest.width / 2, dest.height /2}, 0,rl.WHITE)
-           
+            rl.DrawTexturePro(atlas, key_source, dest, {dest.width / 2, dest.height /2}, 0, key.disabled ? rl.Color{255, 255, 255, 160}  : rl.WHITE)
+            if key.disabled {
+                unit_expression_draw(atlas, SPRITE_MAP[KEY_DISABLE_AURA_SPRITE], key.position + {8, -8})
+
+            }
         }
     }
 }
