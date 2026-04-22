@@ -23,6 +23,9 @@ resolve_horizontal :: proc(player: ^Player, rect: rl.Rectangle) {
     } else {
         player.body.position.x = rect.x + rect.width  + pr.width / 2
     } 
+    if !player.on_ground {
+        player.body.vel.x = 0
+    }
 }
 
 resolve_minion_horizontal :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
@@ -98,7 +101,7 @@ resolve_enemy_and_bullet:: proc(e_body: Enemy_Body, health_stats: ^Health_stats,
 
 }
 
-resolve_player_and_bullet:: proc(body: Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
+resolve_player_and_bullet:: proc(body: Body, player_buffes: Player_buffes, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
     pr := get_body_rect(body)
 
     for bullet, idx in bullets {
@@ -106,7 +109,7 @@ resolve_player_and_bullet:: proc(body: Body, health_stats: ^Health_stats, bullet
 
         if !rl.CheckCollisionRecs(pr, bullet_rect) do continue 
 
-        player_take_dmg(health_stats, bullet.dmg)
+        player_take_dmg(health_stats, player_buffes, bullet.dmg)
         unordered_remove(bullets, idx)
 
         break
@@ -133,7 +136,9 @@ resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,
                 max_time = 0.3
             } ,
             position = {bullet.position.x, bullet.position.y},
-            sprite_source = sprite_source
+            sprite_source = sprite_source,
+            is_blur = true,
+            is_scaled = true
         })
         break
        
@@ -161,10 +166,24 @@ enemy_take_dmg :: proc(health: ^Health_stats, bullet: Bullet) {
     health.current_hp -= bullet.dmg
 }
 
-player_take_dmg :: proc(health: ^Health_stats, dmg: f32) {
-    if health.current_hp > dmg {
-        health.current_hp -= dmg
+player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f32) {
+    reduced_dmg := dmg * (1 - (player_buff.armor / 100))
+
+    if health.current_hp > reduced_dmg {
+        health.current_hp -= reduced_dmg
     } else {
         health.current_hp = 0
     }
+}
+
+check_collision_line_rect :: proc(p1, p2: rl.Vector2, r: rl.Rectangle)  -> bool {
+    collision_point: rl.Vector2
+    if rl.CheckCollisionLines(p1, p2, {r.x, r.y}, {r.x + r.width, r.y}, &collision_point) || 
+        rl.CheckCollisionLines(p1, p2, {r.x, r.y}, {r.x, r.y + r.height}, &collision_point) || 
+        rl.CheckCollisionLines(p1, p2, {r.x + r.width, r.y}, {r.x + r.width, r.y + r.height}, &collision_point) || 
+        rl.CheckCollisionLines(p1, p2, {r.x , r.y + r.height}, {r.x + r.width, r.y + r.height}, &collision_point) 
+    {
+        return true
+    }
+    return false
 }
