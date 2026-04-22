@@ -120,7 +120,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     if rl.IsKeyDown(.LEFT) || rl.IsKeyDown(.A) {
         player.direction = .LEFT
         player.is_flip = true
-        player.body.vel.x = -(PLAYER_MOVE_SPD + player.stats.buffes.mv_spd)
+        player.body.vel.x = -(PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
          if player.anim_controller.animation_name != RUN_ANI {
             player.anim_controller.animation_name = RUN_ANI
             player.anim_controller.current_frame = 0
@@ -130,7 +130,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.direction = .RIGHT
         player.is_flip = false
 
-        player.body.vel.x = (PLAYER_MOVE_SPD + player.stats.buffes.mv_spd)
+        player.body.vel.x = (PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
         if player.anim_controller.animation_name != RUN_ANI {
             player.anim_controller.animation_name = RUN_ANI
             player.anim_controller.current_frame = 0
@@ -192,7 +192,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
     }
 
-    resolve_player_and_bullet(player.body, &player.stats.health_stats, &game.enemy_side.enemy_bullets)
+    resolve_player_and_bullet(player.body, player.stats.buffes, &player.stats.health_stats, &game.enemy_side.enemy_bullets)
     
 
 }
