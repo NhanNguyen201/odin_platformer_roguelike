@@ -35,7 +35,6 @@ ENEMY_RANGER_SPAWNERS_LAYER:int: 9
 ENEMY_SNIPER_SPAWNERS_LAYER:int: 10
 GATE_LAYER: int: 11
 PLAYER_SPAWN_POS_LAYER : int : 12
-MAX_BOSS_NUMB : int : 2
 KEY_POT_SIZE : rl.Vector2: {10,10}
 
 Level:: struct {
@@ -163,8 +162,13 @@ load_level :: proc(game: ^Game, lvl: int)  {
     game.boss_manager.is_boss_level = is_boss_level
     
     if is_boss_level {
-        game.boss_manager.scene_transition.current = BOSS_SCENE_TRANSITION_TIME
         game.ui_controller.ui_scene = .BOSS_ENTRANCE
+        game.ui_controller.transition_time = BOSS_SCENE_TRANSITION_TIME
+        game.ui_controller.is_ui_screen = true
+        game.game_options.is_paused = true
+    } else {
+        game.ui_controller.ui_scene = .START_LEVEL
+        game.ui_controller.transition_time = 1.
         game.ui_controller.is_ui_screen = true
         game.game_options.is_paused = true
     }

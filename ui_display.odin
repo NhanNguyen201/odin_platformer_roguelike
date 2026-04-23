@@ -66,6 +66,7 @@ get_rect_center :: proc(rect: rl.Rectangle) -> rl.Vector2 {
 UI_Controller :: struct {
     is_ui_screen: bool,
     ui_scene: UI_scenes,
+    transition_time: f32
 }
 
 UI_Cursor_Controller :: struct {
@@ -417,16 +418,3 @@ get_rect_size :: proc(rect: rl.Rectangle) -> rl.Vector2 {
     return {rect.width, rect.height}
 }
 
-
-game_ui_scene_draw::proc(game: ^Game, dt: f32) {
-    ui_x_start := game.player.body.position.x +  + UI_PADDING.x - game.camera.offset.x / 4
-    ui_y_start := game.player.body.position.y +  + UI_PADDING.y - game.camera.offset.y / 4
-
-    ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x / 2 
-    ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y / 2
-    
-    ui_rect := rl.Rectangle{x = ui_x_start, y = ui_y_start, width = ui_width, height = ui_height}
-    if game.ui_controller.ui_scene == .BOSS_ENTRANCE && game.boss_manager.scene_transition.current > 0 {
-        rl.DrawRectangleRec(ui_rect, rl.BLACK)
-    }
-}

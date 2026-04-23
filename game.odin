@@ -166,7 +166,7 @@ game_post_update:: proc(game: ^Game, dt: f32) {
 }
 
 game_pre_update:: proc(game: ^Game, dt: f32) {
-    boss_manager_update(&game.ui_controller, &game.game_options, &game.boss_manager, dt)
+    scene_manager_update(game, dt)
 }
 
 level_gate_update :: proc(game: ^Game) {
@@ -344,18 +344,6 @@ bullets_update :: proc (game: ^Game, dt: f32) {
     }
 }
 
-// in pre update 
-boss_manager_update :: proc(ui_controller : ^UI_Controller, game_options: ^Game_Options,boss_manager: ^Boss_level_scene_manager, dt: f32 ) {
-    if ui_controller.ui_scene == .BOSS_ENTRANCE && boss_manager.scene_transition.current >= 0 { 
-        boss_manager.scene_transition.current -= dt    
-    }
-    
-    if boss_manager.scene_transition.current < 0 && ui_controller.ui_scene == .BOSS_ENTRANCE{
-        ui_controller.is_ui_screen = false
-        game_options.is_paused = false
-        ui_controller.ui_scene = .NONE
-    }
-}
 
 camera_update :: proc(camera : ^rl.Camera2D, player: Player) {
     camera.offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)}

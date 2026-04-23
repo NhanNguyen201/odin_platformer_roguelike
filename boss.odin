@@ -7,11 +7,12 @@ BOSS_TELE_DUR: f32 : 1.
 BOSS_EXPLOSIONS_SKILL_TRIGGER_TIME : f32 : 1.
 BOSS_HP :f32 : 4000
 BOSS_DMG: f32 : 50
+
+MAX_BOSS_NUMB : int : 2
 Boss_levels : [MAX_BOSS_NUMB] int= {0, 10}
 
 Boss_level_scene_manager :: struct {
     is_boss_level : bool,
-    scene_transition: Timer,
     boss: Boss
 }
 
