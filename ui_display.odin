@@ -39,7 +39,9 @@ UI_scenes :: enum  {
     MENU,
     BOSS_ENTRANCE,
     END_LEVEL,
-    START_LEVEL
+    START_LEVEL,
+    GAME_OVER,
+    GAME_START
 }
 
 Buff_detail :: struct {

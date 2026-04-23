@@ -166,9 +166,14 @@ load_level :: proc(game: ^Game, lvl: int)  {
         game.ui_controller.transition_time = BOSS_SCENE_TRANSITION_TIME
         game.ui_controller.is_ui_screen = true
         game.game_options.is_paused = true
+    } else if lvl == 0 {
+        game.ui_controller.ui_scene = .GAME_START
+        game.ui_controller.is_ui_screen = true
+        game.game_options.is_paused = true
     } else {
         game.ui_controller.ui_scene = .START_LEVEL
         game.ui_controller.transition_time = 1.
+
         game.ui_controller.is_ui_screen = true
         game.game_options.is_paused = true
     }

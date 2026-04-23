@@ -56,7 +56,8 @@ LEVEL_GATE_SPRITE :: "Level_gate_sprite"
 SHOOT_SKILL_SPRITE :: "Shoot_skill_sprite"
 MINI_MAP_ARROW_SPRITE :: "Minimap_arrow_sprite"
 PAUSED_SIGN_SPRITE :: "Paused_sign_sprite"
-
+GAME_OVER_SPRITE :: "Game_over_sprite"
+GAME_START_SPRITE :: "Game_start_sprite"
 UI_CURSIR_SPRITE_1 :: "Ui_cursor_sprite_1"
 UI_CURSIR_SPRITE_2 :: "Ui_cursor_sprite_2"
 
@@ -106,7 +107,9 @@ SPRITE_MAP := map[string]Sprite_desc {
     MINI_MAP_ARROW_SPRITE = {x = 256, y = 144, w = 32, h = 32},
     PAUSED_SIGN_SPRITE = {x = 0, y = 464, w = 96, h = 48},
     UI_CURSIR_SPRITE_1 = {x = 0, y = 80, w = 16, h = 16},
-    UI_CURSIR_SPRITE_2 = {x = 16, y = 80, w = 16, h = 16}
+    UI_CURSIR_SPRITE_2 = {x = 16, y = 80, w = 16, h = 16},
+    GAME_OVER_SPRITE = {x = 0, y = 512, w = 144, h = 96},
+    GAME_START_SPRITE = {x = 144, y = 512, w = 144, h = 96},
 }
 
 load_atlas:: proc(game: ^Game) {

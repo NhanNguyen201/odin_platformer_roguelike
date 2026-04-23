@@ -163,6 +163,12 @@ game_post_update:: proc(game: ^Game, dt: f32) {
     
     camera_update(&game.camera, game.player)       
     particles_systems_update(&game.particle_system, dt)
+
+    if game.player.stats.health_stats.current_hp <= 0 {
+        game.game_options.is_paused = true
+        game.ui_controller.is_ui_screen = true
+        game.ui_controller.ui_scene = .GAME_OVER
+    }
 }
 
 game_pre_update:: proc(game: ^Game, dt: f32) {
@@ -348,4 +354,19 @@ bullets_update :: proc (game: ^Game, dt: f32) {
 camera_update :: proc(camera : ^rl.Camera2D, player: Player) {
     camera.offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)}
     camera.target = player.body.position + PLAYER_SIZE / 2
+}
+
+game_restart :: proc(game: ^Game) {
+    start_level := 0
+    player_level := 0
+
+    game.player.stats.buffes = {}
+    game.player.stats = {health_stats = {max_hp = 100, current_hp = 100}, dmg = 25}
+    game.player.exp_controller = {
+        current = 0,
+        level = player_level,
+        require = EXPERIENCE_PER_LEVEL[player_level]
+    }
+    game.current_level = start_level
+    load_level(game, start_level)
 }
