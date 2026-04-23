@@ -28,7 +28,7 @@ resolve_horizontal :: proc(player: ^Player, rect: rl.Rectangle) {
     }
 }
 
-resolve_minion_horizontal :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
+resolve_enemy_horizontal :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
     pr := get_enemy_body_rect(body^)
 
     if !rl.CheckCollisionRecs(pr, rect) do return
@@ -58,7 +58,7 @@ resolve_vertical :: proc( player : ^Player, rect : rl.Rectangle) {
     }
 }
 
-resolve_minion_vertical :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
+resolve_enemy_vertical :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
     pr := get_enemy_body_rect(body^)
 
 
