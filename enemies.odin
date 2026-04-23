@@ -24,6 +24,7 @@ ENEMY_MOVE_SPEED: f32 : 20
 ENEMY_SPAWNER_SIZE: rl.Vector2 : {8, 16}
 ENEMY_SPAWN_OFFSET_RANGE : f32 : 25
 
+
 Enemy_buffes :: struct {
 
 }
@@ -104,7 +105,8 @@ Enemy_sniper :: struct  {
 
 Enemy_status :: enum {
     DEAD,
-    ALIVE
+    ALIVE,
+    IS_GRAB
 }
 
 Enemy_unit_stats :: struct {
@@ -132,77 +134,77 @@ enemies_spawner_update:: proc(game: ^Game, dt: f32) {
             resolve_spawner_and_bullet(&enemy_spawner, &game.player_bullets)
             switch enemy_spawner.enemy_type {
                 case .MELEE : {
-                    is_minion_dead := false
+                    is_enemy_dead := false
                     found := false
             
             
-                    for minion in game.enemy_side.e_melee {
-                        if minion.id == enemy_spawner.enemy_id  {
+                    for enemy in game.enemy_side.e_melee {
+                        if enemy.id == enemy_spawner.enemy_id  {
                             found = true
-                            if minion.status == .DEAD {
-                                is_minion_dead = true
+                            if enemy.status == .DEAD {
+                                is_enemy_dead = true
                                 break
                             }
                         } 
                     }
             
-                    if is_minion_dead  || !found {
+                    if is_enemy_dead  || !found {
                         enemy_spawner.re_spawn.time -= dt
             
                         if enemy_spawner.re_spawn.time < 0 {
                             enemy_spawner.re_spawn.time =  enemy_spawner.re_spawn.max_time
-                            spawn_minion(game, enemy_spawner)
+                            spawn_enemy(game, enemy_spawner)
                         }
             
                     }
                 }
                 case .SNIPER: {
-                    is_minion_dead := false
+                    is_enemy_dead := false
                     found := false
             
             
-                    for minion in game.enemy_side.e_sniper {
-                        if minion.id == enemy_spawner.enemy_id  {
+                    for enemy in game.enemy_side.e_sniper {
+                        if enemy.id == enemy_spawner.enemy_id  {
                             found = true
-                            if minion.status == .DEAD {
-                                is_minion_dead = true
+                            if enemy.status == .DEAD {
+                                is_enemy_dead = true
                                 break
                             }
                         } 
                     }
             
-                    if is_minion_dead  || !found {
+                    if is_enemy_dead  || !found {
                         enemy_spawner.re_spawn.time -= dt
             
                         if enemy_spawner.re_spawn.time < 0 {
                             enemy_spawner.re_spawn.time =  enemy_spawner.re_spawn.max_time
-                            spawn_minion(game, enemy_spawner)
+                            spawn_enemy(game, enemy_spawner)
                         }
             
                     }
                 }
 
                 case .RANGER: {
-                    is_minion_dead := false
+                    is_enemy_dead := false
                     found := false
             
             
-                    for minion in game.enemy_side.e_ranger {
-                        if minion.id == enemy_spawner.enemy_id  {
+                    for enemy in game.enemy_side.e_ranger {
+                        if enemy.id == enemy_spawner.enemy_id  {
                             found = true
-                            if minion.status == .DEAD {
-                                is_minion_dead = true
+                            if enemy.status == .DEAD {
+                                is_enemy_dead = true
                                 break
                             }
                         } 
                     }
             
-                    if is_minion_dead  || !found {
+                    if is_enemy_dead  || !found {
                         enemy_spawner.re_spawn.time -= dt
             
                         if enemy_spawner.re_spawn.time < 0 {
                             enemy_spawner.re_spawn.time =  enemy_spawner.re_spawn.max_time
-                            spawn_minion(game, enemy_spawner)
+                            spawn_enemy(game, enemy_spawner)
                         }
             
                     }
@@ -361,7 +363,7 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
                 }
             }
             for block_collider in game.level_data.colliders {
-                resolve_minion_horizontal(&enemy.body, block_collider)
+                resolve_enemy_horizontal(&enemy.body, block_collider)
             }
 
         }
@@ -369,7 +371,7 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
             
         enemy.body.position.y += enemy.body.vel.y * dt
         for block_collider in game.level_data.colliders {
-            resolve_minion_vertical(&enemy.body, block_collider)
+            resolve_enemy_vertical(&enemy.body, block_collider)
         }
 
 
@@ -377,49 +379,49 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
 }
 
 Enemy_melees_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_melee: ^[dynamic]Enemy_melee, dt: f32) {
-    for &minion in e_melee {
-        minion_rect := rl.Rectangle {x = minion.body.position.x - minion.body.size.x / 2, y = minion.body.position.y - minion.body.size.y / 2, width = minion.body.size.x, height = minion.body.size.y}
-        is_flip := minion.body.direction != .RIGHT
+    for &enemy in e_melee {
+        enemy_rect := rl.Rectangle {x = enemy.body.position.x - enemy.body.size.x / 2, y = enemy.body.position.y - enemy.body.size.y / 2, width = enemy.body.size.x, height = enemy.body.size.y}
+        is_flip := enemy.body.direction != .RIGHT
         
 
-        anim := E_melee_animations[minion.anim_controller.animation_name]
+        anim := E_melee_animations[enemy.anim_controller.animation_name]
 
-        if minion.status == .DEAD {
+        if enemy.status == .DEAD {
             dead_sprite := SPRITE_MAP[E_MELEE_DEAD_SPRITE]
             rl.DrawTexturePro(
                 atlas, 
                 rl.Rectangle {x = dead_sprite.x, y= dead_sprite.y, width = dead_sprite.w * (is_flip ? -1 : 1), height = dead_sprite.h},
-                rl.Rectangle {x = minion.body.position.x, y = minion.body.position.y, width = minion.body.size.x, height = minion.body.size.y},
-                minion.body.size / 2,
+                rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y, width = enemy.body.size.x, height = enemy.body.size.y},
+                enemy.body.size / 2,
                 0,
                 rl.WHITE
             )
         } else {
-            if minion.combat_state == .PARTROL {
-                if minion.anim_controller.animation_name != RUN_ANI {
-                    minion.anim_controller.animation_name = RUN_ANI
-                    minion.anim_controller.current_frame = 0
-                    minion.anim_controller.current_timer = E_melee_animations[RUN_ANI].frame_timer
+            if enemy.combat_state == .PARTROL {
+                if enemy.anim_controller.animation_name != RUN_ANI {
+                    enemy.anim_controller.animation_name = RUN_ANI
+                    enemy.anim_controller.current_frame = 0
+                    enemy.anim_controller.current_timer = E_melee_animations[RUN_ANI].frame_timer
                 }
-                draw_animation(atlas, &minion.anim_controller, anim, E_MELEE_SPRITE, is_flip, minion_rect, dt)
+                draw_animation(atlas, &enemy.anim_controller, anim, E_MELEE_SPRITE, is_flip, enemy_rect, dt)
 
-            } else if minion.combat_state == .ATTACK {
-                if minion.anim_controller.animation_name != ATTACK_ANI {
-                    minion.anim_controller.animation_name = ATTACK_ANI
-                    minion.anim_controller.current_frame = 0
-                    minion.anim_controller.current_timer = E_melee_animations[ATTACK_ANI].frame_timer
+            } else if enemy.combat_state == .ATTACK {
+                if enemy.anim_controller.animation_name != ATTACK_ANI {
+                    enemy.anim_controller.animation_name = ATTACK_ANI
+                    enemy.anim_controller.current_frame = 0
+                    enemy.anim_controller.current_timer = E_melee_animations[ATTACK_ANI].frame_timer
                 }
-                draw_animation(atlas, &minion.anim_controller, anim, E_MELEE_SPRITE, is_flip, minion_rect, dt)
-            } else if minion.combat_state == .TAUNTED {
+                draw_animation(atlas, &enemy.anim_controller, anim, E_MELEE_SPRITE, is_flip, enemy_rect, dt)
+            } else if enemy.combat_state == .TAUNTED {
                 
                 taunted_sprite := SPRITE_MAP[E_MELEE_TAUNTED_SPRITE]
                 taunted_source := rl.Rectangle {x = taunted_sprite.x, y= taunted_sprite.y, width = taunted_sprite.w * (is_flip ? -1 : 1), height = taunted_sprite.h}
                 // taunted_aura_sprte_source := rl.Rectangle {x = taunted_aura_sprite.x, y= taunted_aura_sprite.y, width = taunted_aura_sprite.w, height = taunted_aura_sprite.h}
-                // taunted_aura_sprite_dest := rl.Rectangle {x = minion_rect.x + minion_rect.width - 10, y = minion_rect.y - 10, width = 16, height = 16}
-                rl.DrawTexturePro(atlas, taunted_source, minion_rect, {0, 0}, 0, rl.WHITE)
-                unit_expression_draw(atlas, SPRITE_MAP[E_TAUNTED_AURA_SPRITE], minion.body.position + {8, -8})
+                // taunted_aura_sprite_dest := rl.Rectangle {x = enemy_rect.x + enemy_rect.width - 10, y = enemy_rect.y - 10, width = 16, height = 16}
+                rl.DrawTexturePro(atlas, taunted_source, enemy_rect, {0, 0}, 0, rl.WHITE)
+                unit_expression_draw(atlas, SPRITE_MAP[E_TAUNTED_AURA_SPRITE], enemy.body.position + {8, -8})
                 // rl.DrawTexturePro(atlas, taunted_aura_sprte_source, taunted_aura_sprite_dest, {0, 0}, 0, rl.WHITE)
-                // draw_animation(atlas, &minion.anim_controller, anim, E_MELEE_SPRITE, is_flip, minion_rect, dt)
+                // draw_animation(atlas, &enemy.anim_controller, anim, E_MELEE_SPRITE, is_flip, enemy_rect, dt)
             }
         }
 
@@ -427,9 +429,9 @@ Enemy_melees_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_mele
         if game_options.is_debug || game_options.is_health_bar {
             full_health_width : f32 = 20
 
-            full_health_rect := rl.Rectangle {x = minion_rect.x + (minion.body.size.x / 2)- (full_health_width / 2), y = minion_rect.y - 7.5, width = full_health_width , height = 2.5}
+            full_health_rect := rl.Rectangle {x = enemy_rect.x + (enemy.body.size.x / 2)- (full_health_width / 2), y = enemy_rect.y - 7.5, width = full_health_width , height = 2.5}
 
-            health_rect := rl.Rectangle {x = full_health_rect.x, y = full_health_rect.y, width = minion.stats.health_stats.current_hp / minion.stats.health_stats.max_hp * full_health_width , height = full_health_rect.height}
+            health_rect := rl.Rectangle {x = full_health_rect.x, y = full_health_rect.y, width = enemy.stats.health_stats.current_hp / enemy.stats.health_stats.max_hp * full_health_width , height = full_health_rect.height}
             rl.DrawRectangleLinesEx(full_health_rect, 0.25, rl.WHITE)
             rl.DrawRectangleRec(health_rect, rl.RED)
         }
@@ -493,7 +495,7 @@ Enemy_sniper_update:: proc(game: ^Game, dt: f32) {
             
         // enemy.body.position.y += enemy.body.vel.y * dt
         // for block_collider in game.level_data.colliders {
-        //     resolve_minion_vertical(&enemy.body, block_collider)
+        //     resolve_enemy_vertical(&enemy.body, block_collider)
         // }
 
     }
@@ -564,7 +566,7 @@ Enemy_sniper_draw:: proc(atlas: rl.Texture2D, game_options: Game_Options, e_snip
             rl.DrawRectangleLinesEx(full_health_rect, 0.25, rl.WHITE)
             rl.DrawRectangleRec(health_rect, rl.RED)
         }
-        // rl.DrawCircleV(minion.targeting.current_aiming_point, minion.targeting.aiming_radius, rl.RED)
+        // rl.DrawCircleV(enemy.targeting.current_aiming_point, enemy.targeting.aiming_radius, rl.RED)
     } 
 }
 Enemy_ranger_update :: proc (game: ^Game, dt: f32) {
@@ -632,7 +634,7 @@ Enemy_ranger_update :: proc (game: ^Game, dt: f32) {
             }
 
              for block_collider in game.level_data.colliders {
-                resolve_minion_horizontal(&enemy.body, block_collider)
+                resolve_enemy_horizontal(&enemy.body, block_collider)
             }
         }
 
@@ -640,7 +642,7 @@ Enemy_ranger_update :: proc (game: ^Game, dt: f32) {
             
         enemy.body.position.y += enemy.body.vel.y * dt
         for block_collider in game.level_data.colliders {
-            resolve_minion_vertical(&enemy.body, block_collider)
+            resolve_enemy_vertical(&enemy.body, block_collider)
         }
     }
 }
@@ -690,12 +692,20 @@ Enemy_ranger_draw :: proc(atlas: rl.Texture2D, game_options: Game_Options, e_ran
                 unit_expression_draw(atlas, SPRITE_MAP[E_RELOAD_AURA_SPRITE], enemy.body.position + {8, -8})
             }
         }
+        if game_options.is_debug || game_options.is_health_bar {
+            full_health_width : f32 = 20
 
+            full_health_rect := rl.Rectangle {x = enemy_rect.x + (enemy.body.size.x / 2)- (full_health_width / 2), y = enemy_rect.y - 7.5, width = full_health_width , height = 2.5}
+
+            health_rect := rl.Rectangle {x = full_health_rect.x, y = full_health_rect.y, width = enemy.stats.health_stats.current_hp / enemy.stats.health_stats.max_hp * full_health_width , height = full_health_rect.height}
+            rl.DrawRectangleLinesEx(full_health_rect, 0.25, rl.WHITE)
+            rl.DrawRectangleRec(health_rect, rl.RED)
+        }
     }
 
 }
 
-spawn_minion:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
+spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
     stats := Enemy_unit_stats {
         health_stats = {
             max_hp = 100,
