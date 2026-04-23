@@ -36,7 +36,7 @@ ENEMY_SNIPER_SPAWNERS_LAYER:int: 10
 GATE_LAYER: int: 11
 PLAYER_SPAWN_POS_LAYER : int : 12
 MAX_BOSS_NUMB : int : 2
-KEY_POT_SIZE :: rl.Vector2 {10,10}
+KEY_POT_SIZE : rl.Vector2: {10,10}
 
 Level:: struct {
     level_size : rl.Vector2,
@@ -126,7 +126,6 @@ Designed_Level : []Level = {
     },
 }
 
-Boss_levels : [MAX_BOSS_NUMB] int= {4, 10}
 
 get_level_data::proc (lvl: int) -> Level {
     level_data : Level
@@ -140,6 +139,9 @@ get_level_data::proc (lvl: int) -> Level {
 }
 
 load_level :: proc(game: ^Game, lvl: int)  {
+    is_boss_level := get_is_boss_lvl(lvl)
+
+
     level := get_level_data(lvl)
 
     game.current_level = lvl
@@ -157,6 +159,16 @@ load_level :: proc(game: ^Game, lvl: int)  {
     clear(&game.enemy_side.e_melee)
     clear(&game.enemy_side.e_ranger)
     clear(&game.enemy_side.e_sniper)
+
+    game.boss_manager.is_boss_level = is_boss_level
+    
+    if is_boss_level {
+        game.boss_manager.scene_transition.current = BOSS_SCENE_TRANSITION_TIME
+        game.ui_controller.ui_scene = .BOSS_ENTRANCE
+        game.ui_controller.is_ui_screen = true
+        game.game_options.is_paused = true
+    }
+
     data, ok := os.read_entire_file_from_filename(level.map_data)
 
     // clear(&game.)

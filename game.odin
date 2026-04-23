@@ -75,7 +75,8 @@ Game :: struct {
     game_background: rl.Texture2D,
     game_cloud_background: rl.Texture2D,
     player_bullets: [dynamic] Bullet,
-    enemy_side: Enemy_side
+    enemy_side: Enemy_side,
+    boss_manager: Boss_level_scene_manager
 }
  
 
@@ -100,7 +101,10 @@ game_init:: proc() -> Game {
         }
         
     }
-
+    game.ui_controller = {
+        is_ui_screen = false,
+        ui_scene = .NONE
+    }
     rl.HideCursor()
     
     game.game_options.is_hub = true
@@ -112,7 +116,6 @@ game_init:: proc() -> Game {
 }
 
 game_update:: proc(game: ^Game, dt: f32) {
-           
     game.game_options.ui_mouse_pos = rl.GetScreenToWorld2D(rl.GetMousePosition(), game.camera)
 
     if rl.IsKeyPressed(.F2) {
@@ -152,12 +155,20 @@ game_update:: proc(game: ^Game, dt: f32) {
         level_gate_update(game)
         
         bullets_update(game, dt)
-        particles_systems_update(&game.particle_system, dt)
     }
-
-
-
+    
 }
+
+game_post_update:: proc(game: ^Game, dt: f32) {
+    
+    camera_update(&game.camera, game.player)       
+    particles_systems_update(&game.particle_system, dt)
+}
+
+game_pre_update:: proc(game: ^Game, dt: f32) {
+    boss_manager_update(&game.ui_controller, &game.game_options, &game.boss_manager, dt)
+}
+
 level_gate_update :: proc(game: ^Game) {
     
 
@@ -331,4 +342,22 @@ bullets_update :: proc (game: ^Game, dt: f32) {
 
 
     }
+}
+
+// in pre update 
+boss_manager_update :: proc(ui_controller : ^UI_Controller, game_options: ^Game_Options,boss_manager: ^Boss_level_scene_manager, dt: f32 ) {
+    if ui_controller.ui_scene == .BOSS_ENTRANCE && boss_manager.scene_transition.current >= 0 { 
+        boss_manager.scene_transition.current -= dt    
+    }
+    
+    if boss_manager.scene_transition.current < 0 && ui_controller.ui_scene == .BOSS_ENTRANCE{
+        ui_controller.is_ui_screen = false
+        game_options.is_paused = false
+        ui_controller.ui_scene = .NONE
+    }
+}
+
+camera_update :: proc(camera : ^rl.Camera2D, player: Player) {
+    camera.offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)}
+    camera.target = player.body.position + PLAYER_SIZE / 2
 }

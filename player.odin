@@ -231,6 +231,7 @@ exp_buff_collect:: proc(player: ^Player, game: ^Game) {
         if player.exp_controller.current >= player.exp_controller.require.val {
             game.ui_controller.is_ui_screen = true
             game.game_options.is_paused = true
+            game.ui_controller.ui_scene = .BUFFES_PICK
 
             player.exp_controller.current -= player.exp_controller.require.val
             player.exp_controller.level += 1

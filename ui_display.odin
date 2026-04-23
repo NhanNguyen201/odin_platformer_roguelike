@@ -32,6 +32,16 @@ MAX_ATS_BUFF_AMOUNT: f32: 70
 MAX_MVSP_BUFF_AMOUNT: f32: 100
 MAX_AR_BUFF_AMOUNT: f32: 80
 
+
+UI_scenes :: enum  {
+    NONE,
+    BUFFES_PICK,
+    MENU,
+    BOSS_ENTRANCE,
+    END_LEVEL,
+    START_LEVEL
+}
+
 Buff_detail :: struct {
     sprite: string,
     buff : STAT_BUFF,
@@ -54,7 +64,8 @@ get_rect_center :: proc(rect: rl.Rectangle) -> rl.Vector2 {
 }
 
 UI_Controller :: struct {
-    is_ui_screen: bool
+    is_ui_screen: bool,
+    ui_scene: UI_scenes,
 }
 
 UI_Cursor_Controller :: struct {
@@ -118,6 +129,8 @@ player_ui_draw:: proc(game: ^Game) {
     
     if game.game_options.is_debug {
         rl.DrawRectangleLinesEx(ui_rect, 0.5, rl.WHITE)
+        state_text := fmt.ctprintf("Paused :%t, \n is_ui : %t, \n is_buff_pick: %t", game.game_options.is_paused, game.ui_controller.is_ui_screen, game.ui_controller.ui_scene == .BUFFES_PICK) 
+        rl.DrawTextPro(game.fonts[FONT_REG], state_text, {ui_x_start + ui_width - 150, ui_y_start + ui_height - 50}, 0,0, 6, 0.32, rl.WHITE)
         // rl.DrawText(pause, i32(ui_rect.x) + 10, i32(ui_rect.y) + 10, 10, rl.BLACK)
     }
     // Draw keys
@@ -144,7 +157,9 @@ player_ui_draw:: proc(game: ^Game) {
     
     rl.DrawTexturePro(game.game_sprite_atlas, health_bar_source, health_bar_dest, {0, 0}, 0, rl.WHITE)
     rl.DrawTexturePro(game.game_sprite_atlas, health_fill_source, health_fill_dest, {0, 0}, 0, rl.WHITE)
-    
+    hp_text := fmt.ctprintf(" %.0f / %.0f", player.stats.health_stats.current_hp, player.stats.health_stats.max_hp)
+
+    rl.DrawTextEx(game.fonts[FONT_REG], hp_text, {health_bar_dest.x + 2, health_bar_dest.y + 1}, 5, 0.2, rl.WHITE)
     // is_mouse_hover := rl.CheckCollisionPointRec(game.game_options.ui_mouse_pos, charactor_ui_rect)
     
 
@@ -174,16 +189,18 @@ player_ui_draw:: proc(game: ^Game) {
         mini_map_draw(game.game_sprite_atlas, ui_rect, game.level_data, player.body)
     }
 
-    if game.game_options.is_paused && game.ui_controller.is_ui_screen {
+    if game.ui_controller.is_ui_screen && game.ui_controller.ui_scene == .BUFFES_PICK {
         rl.DrawRectangle(i32(ui_x_start), i32(ui_y_start), i32 (ui_width), i32(ui_height), rl.Color {184, 226, 217, 160})
         player_buff_picking_scene_draw(game.game_sprite_atlas, game.fonts ,ui_rect, &game.game_options, &game.ui_controller, &game.player)
     }
     if game.game_options.is_hub {
         skill_hud_draw(game.game_sprite_atlas, ui_rect, player)
     }
-    if game.game_options.is_paused && !game.ui_controller.is_ui_screen && !game.game_options.is_menu {
+    if game.game_options.is_paused && !game.ui_controller.is_ui_screen {
         paused_sign_draw(game.game_sprite_atlas, ui_rect)
     }
+
+    
 }
 
 
@@ -238,41 +255,42 @@ player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, fonts: map[string] rl
 }
 
 pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Controller, player: ^Player, buff: STAT_BUFF, amount: f32) {
-        switch buff {
-                case .HP: {
-                    player.stats.health_stats.max_hp += amount
-                    player.stats.health_stats.current_hp += 0.25 * player.stats.health_stats.max_hp
+    switch buff {
+            case .HP: {
+                player.stats.health_stats.max_hp += amount
+                player.stats.health_stats.current_hp += 0.25 * player.stats.health_stats.max_hp
+            }
+            case .AD: { 
+                player.stats.buffes.damage += amount
+            }
+            case .ATS: {
+                if player.stats.buffes.at_spd + amount >= MAX_ATS_BUFF_AMOUNT {
+                    player.stats.buffes.at_spd = MAX_ATS_BUFF_AMOUNT
+                } else {
+                    player.stats.buffes.at_spd += amount
                 }
-                case .AD: { 
-                    player.stats.buffes.damage += amount
-                }
-                case .ATS: {
-                    if player.stats.buffes.at_spd + amount >= MAX_ATS_BUFF_AMOUNT {
-                        player.stats.buffes.at_spd = MAX_ATS_BUFF_AMOUNT
-                    } else {
-                        player.stats.buffes.at_spd += amount
-                    }
-                }
-
-                case .AR: {
-                     if player.stats.buffes.armor + amount >= MAX_AR_BUFF_AMOUNT {
-                        player.stats.buffes.armor = MAX_AR_BUFF_AMOUNT
-                    } else {
-                        player.stats.buffes.armor += amount
-                    }
-                }
-                case .MVSPD : {
-                    if player.stats.buffes.mv_spd + amount >= MAX_MVSP_BUFF_AMOUNT {
-                        player.stats.buffes.mv_spd = MAX_MVSP_BUFF_AMOUNT
-                    } else {
-                        player.stats.buffes.mv_spd += amount
-                    }
-                }
-
             }
 
-            ui_controller.is_ui_screen = false
-            game_options.is_paused = false
+            case .AR: {
+                    if player.stats.buffes.armor + amount >= MAX_AR_BUFF_AMOUNT {
+                    player.stats.buffes.armor = MAX_AR_BUFF_AMOUNT
+                } else {
+                    player.stats.buffes.armor += amount
+                }
+            }
+            case .MVSPD : {
+                if player.stats.buffes.mv_spd + amount >= MAX_MVSP_BUFF_AMOUNT {
+                    player.stats.buffes.mv_spd = MAX_MVSP_BUFF_AMOUNT
+                } else {
+                    player.stats.buffes.mv_spd += amount
+                }
+            }
+
+    }
+
+    ui_controller.is_ui_screen = false
+    game_options.is_paused = false
+    ui_controller.ui_scene = .NONE
 }
 
 
@@ -397,4 +415,18 @@ unit_expression_draw:: proc(atlas: rl.Texture2D, sprite_desc: Sprite_desc, posit
 
 get_rect_size :: proc(rect: rl.Rectangle) -> rl.Vector2 {
     return {rect.width, rect.height}
+}
+
+
+game_ui_scene_draw::proc(game: ^Game, dt: f32) {
+    ui_x_start := game.player.body.position.x +  + UI_PADDING.x - game.camera.offset.x / 4
+    ui_y_start := game.player.body.position.y +  + UI_PADDING.y - game.camera.offset.y / 4
+
+    ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x / 2 
+    ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y / 2
+    
+    ui_rect := rl.Rectangle{x = ui_x_start, y = ui_y_start, width = ui_width, height = ui_height}
+    if game.ui_controller.ui_scene == .BOSS_ENTRANCE && game.boss_manager.scene_transition.current > 0 {
+        rl.DrawRectangleRec(ui_rect, rl.BLACK)
+    }
 }

@@ -531,7 +531,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -576,8 +576,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":345,
-                 "y":476
+                 "x":729,
+                 "y":421
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -618,7 +618,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -642,7 +642,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 

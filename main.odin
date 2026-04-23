@@ -44,25 +44,26 @@ main :: proc() {
     game.camera = rl.Camera2D {
         zoom = SCREEN_HEIGHT / PIXEL_WINDOW_HEIGHT,
         offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)},
-        target = game.player.body.position
+        target = game.player.body.position + rl.Vector2{PLAYER_SIZE.x / 2, PLAYER_SIZE.y / 2}
     }
 
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
-
+        
+        game_pre_update(&game, dt)
         game_update(&game, dt)
+        game_post_update(&game, dt)
 
         rl.BeginDrawing()
-         rl.ClearBackground(rl.BLACK)
+        rl.ClearBackground(rl.BLACK)
 
-        game.camera.target = game.player.body.position + rl.Vector2{PLAYER_SIZE.x / 2, PLAYER_SIZE.y / 2}
         rl.BeginMode2D(game.camera)
 
         
         
         game_draw(&game, dt)
-        
+        game_ui_scene_draw(&game, dt)
 
         rl.EndMode2D()
         rl.EndDrawing()
