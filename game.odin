@@ -76,7 +76,7 @@ Game :: struct {
     game_cloud_background: rl.Texture2D,
     player_bullets: [dynamic] Bullet,
     enemy_side: Enemy_side,
-    boss_manager: Boss_level_scene_manager
+    boss_manager: Boss_level_manager
 }
  
 
@@ -106,7 +106,6 @@ game_init:: proc() -> Game {
         ui_scene = .NONE
     }
     rl.HideCursor()
-    
     game.game_options.is_hub = true
     load_atlas(&game)
     load_level(&game, game.current_level)
@@ -118,23 +117,7 @@ game_init:: proc() -> Game {
 game_update:: proc(game: ^Game, dt: f32) {
     game.game_options.ui_mouse_pos = rl.GetScreenToWorld2D(rl.GetMousePosition(), game.camera)
 
-    if rl.IsKeyPressed(.F2) {
-        game.game_options.is_debug = !game.game_options.is_debug
-    }
     
-    if rl.IsKeyPressed(.H) {
-        game.game_options.is_hub = !game.game_options.is_hub
-    }
-    if rl.IsKeyPressed(.M) {
-        game.game_options.is_mini_map = !game.game_options.is_mini_map
-    }
-    
-    if rl.IsKeyPressed(.L){
-        if game.ui_controller.is_ui_screen {
-            game.ui_controller.is_ui_screen = false
-        }
-        game.game_options.is_paused = !game.game_options.is_paused
-    }
     if !game.game_options.is_paused {
         player_update(&game.player, game,  game.level_data.colliders[:], dt)
         
@@ -151,7 +134,9 @@ game_update:: proc(game: ^Game, dt: f32) {
         key_collect(game.player, game)
       
         exp_buff_collect(&game.player, game)
-    
+        if game.boss_manager.is_boss_level {
+            boss_update(&game.boss_manager.boss, &game.player_bullets, dt)
+        }
         level_gate_update(game)
         
         bullets_update(game, dt)
@@ -173,6 +158,23 @@ game_post_update:: proc(game: ^Game, dt: f32) {
 
 game_pre_update:: proc(game: ^Game, dt: f32) {
     scene_manager_update(game, dt)
+    if rl.IsKeyPressed(.F2) {
+        game.game_options.is_debug = !game.game_options.is_debug
+    }
+    
+    if rl.IsKeyPressed(.H) {
+        game.game_options.is_hub = !game.game_options.is_hub
+    }
+    if rl.IsKeyPressed(.M) {
+        game.game_options.is_mini_map = !game.game_options.is_mini_map
+    }
+    
+    if rl.IsKeyPressed(.L){
+        if game.ui_controller.is_ui_screen {
+            game.ui_controller.is_ui_screen = false
+        }
+        game.game_options.is_paused = !game.game_options.is_paused
+    }
 }
 
 level_gate_update :: proc(game: ^Game) {
@@ -239,7 +241,9 @@ game_draw:: proc(game: ^Game, dt: f32) {
     Enemy_melees_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_melee, dt)
     Enemy_sniper_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_sniper, dt)
     Enemy_ranger_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_ranger, dt)
-    
+    if game.boss_manager.is_boss_level {
+        boss_draw(game.game_sprite_atlas, game.boss_manager.boss, dt)
+    }
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_side.enemy_bullets[:])
     
     player_draw(&game.player, game^, dt)
@@ -300,7 +304,7 @@ key_collect:: proc(player: Player, game: ^Game) {
     pr := get_body_rect(player.body)
    
     for &key in game.level_data.keys {
-        if key.collected do continue
+        if key.collected || key.disabled do continue
 
         key_rect := rl.Rectangle{x = key.position.x - KEY_POT_SIZE.x / 2, y = key.position.y - KEY_POT_SIZE.y / 2, width = KEY_POT_SIZE.x, height = KEY_POT_SIZE.y}
         if !rl.CheckCollisionRecs(pr, key_rect) do continue

@@ -31,11 +31,11 @@ main :: proc() {
 
     }
 
-    rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "My first game")
+    rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Platform shooter")
     rl.SetWindowPosition(30, 60)
     rl.SetWindowState({.WINDOW_RESIZABLE})
     rl.SetTargetFPS(60)
-    
+    rl.SetExitKey(.KEY_NULL)
     
 
     game := game_init()

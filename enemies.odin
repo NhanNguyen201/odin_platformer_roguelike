@@ -768,7 +768,10 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
         
                     enemy.status = .ALIVE
                     enemy.body.position = enemy_spawner.position + spawn_offset
+                    enemy.combat_state = .RELOAD
                     enemy.stats = stats
+                    enemy.targeting.reload.current = 0.5
+                    enemy.targeting.current_aiming_point = enemy_spawner.position + spawn_offset
                     enemy.body.vel = 0
         
                     break

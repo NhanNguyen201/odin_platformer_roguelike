@@ -138,8 +138,10 @@ get_level_data::proc (lvl: int) -> Level {
 }
 
 load_level :: proc(game: ^Game, lvl: int)  {
+    @static enemy_spawner_hp: f32 = 150
+    @static enemy_respawn_time: f32 = 2.5
+    @static enemy_recontruct_time: f32 = 5
     is_boss_level := get_is_boss_lvl(lvl)
-
 
     level := get_level_data(lvl)
 
@@ -166,6 +168,7 @@ load_level :: proc(game: ^Game, lvl: int)  {
         game.ui_controller.transition_time = BOSS_SCENE_TRANSITION_TIME
         game.ui_controller.is_ui_screen = true
         game.game_options.is_paused = true
+        spawn_boss(&game.boss_manager)
     } else if lvl == 0 {
         game.ui_controller.ui_scene = .GAME_START
         game.ui_controller.is_ui_screen = true
@@ -224,7 +227,7 @@ load_level :: proc(game: ^Game, lvl: int)  {
         x := f32(parsed["x"].(json.Float))
         y := f32(parsed["y"].(json.Float))
         // key_pos := rl.Vector2 {x_pos, y_pos} 
-        append(&game.level_data.keys,  Key_pot{ position = {x, y}})
+        append(&game.level_data.keys,  Key_pot{ position = {x, y}, disabled = is_boss_level})
     }
 
     // Enemy MELEE spaawner
@@ -240,17 +243,17 @@ load_level :: proc(game: ^Game, lvl: int)  {
             enemy_type = .MELEE,
             position = {x, y}, 
             hp_stats = {
-                max_hp = 150, 
-                current_hp = 150
+                max_hp = enemy_spawner_hp, 
+                current_hp = enemy_spawner_hp
             },
             re_spawn = {
-                max_time = 10.,
+                max_time = enemy_respawn_time,
                 status = .EXIST,
-                time = 3. 
+                time = 2. 
             },
             re_contruct ={
-                max_time = 5.,
-                time = 5.
+                max_time = enemy_recontruct_time,
+                time = enemy_recontruct_time
             },
             anim_controller =  {
                 animation_name = IDLE_ANI,
@@ -274,17 +277,17 @@ load_level :: proc(game: ^Game, lvl: int)  {
             enemy_type = .RANGER,
             position = {x, y}, 
             hp_stats = {
-                max_hp = 150, 
-                current_hp = 150
+                max_hp = enemy_spawner_hp, 
+                current_hp = enemy_spawner_hp
             },
             re_spawn = {
-                max_time = 10.,
+                max_time = enemy_respawn_time,
                 status = .EXIST,
-                time = 3. 
+                time = 2. 
             },
             re_contruct ={
-                max_time = 5.,
-                time = 5.
+                max_time = enemy_recontruct_time,
+                time = enemy_recontruct_time
             },
             anim_controller =  {
                 animation_name = IDLE_ANI,
@@ -309,17 +312,17 @@ load_level :: proc(game: ^Game, lvl: int)  {
             enemy_type = .SNIPER,
             position = {x, y}, 
             hp_stats = {
-                max_hp = 150, 
-                current_hp = 150
+                max_hp = enemy_spawner_hp, 
+                current_hp = enemy_spawner_hp
             },
             re_spawn = {
-                max_time = 10.,
+                max_time = enemy_respawn_time,
                 status = .EXIST,
-                time = 3. 
+                time = 2. 
             },
             re_contruct ={
-                max_time = 3.,
-                time = 3.
+                max_time = enemy_recontruct_time,
+                time = enemy_recontruct_time
             },
             anim_controller =  {
                 animation_name = IDLE_ANI,

@@ -21,6 +21,7 @@ UI_MINI_MAP_MAX_DISTANCE_DRAW: f32: 170
 UI_MINI_MAP_CIRCLE_RADIUS: f32 : 20 
 
 UI_PAUSED_SIGN_SIZE : rl.Vector2 : {80, 40}
+UI_BOSS_HEALTH_BAR_SIZE: rl.Vector2 : {200, 10}
 
 UI_CURSIR_SIZE : rl.Vector2: { 16 , 16}
 UI_UNIT_EXPRESSION_SIZE : rl.Vector2 : {16, 16}
@@ -203,7 +204,12 @@ player_ui_draw:: proc(game: ^Game) {
         paused_sign_draw(game.game_sprite_atlas, ui_rect)
     }
 
-    
+    if game.boss_manager.is_boss_level {
+        boss_healthbar_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - UI_BOSS_HEALTH_BAR_SIZE.x / 2, y = ui_rect.y, width = UI_BOSS_HEALTH_BAR_SIZE.x, height = UI_BOSS_HEALTH_BAR_SIZE.y}
+        rl.DrawRectangleRec(boss_healthbar_rect, rl.GRAY)
+        boss_healthbar_fill_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - UI_BOSS_HEALTH_BAR_SIZE.x / 2, y = ui_rect.y, width = UI_BOSS_HEALTH_BAR_SIZE.x * (game.boss_manager.boss.stats.health_stats.current_hp / game.boss_manager.boss.stats.health_stats.max_hp), height = UI_BOSS_HEALTH_BAR_SIZE.y}
+        rl.DrawRectangleRec(boss_healthbar_fill_rect, rl.RED)
+    }
 }
 
 

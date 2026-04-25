@@ -35,6 +35,11 @@ E_RELOAD_AURA_SPRITE :: "E_reload_aura_sprite"
 E_RANGER_SPRITE :: "E_ranger_sprite"
 E_RANGER_DEAD_SPRITE :: "E_ranger_dead_sprite"
 E_RANGER_TAUNTED_SPRITE :: "E_ranger_taunted_sprite"
+BOSS_BODY_SPRITE :: "Boss_body_sprite"
+BOSS_GLASS_SPRITE :: "Boss_glass_sprite"
+BOSS_NOSE_SPRITE :: "Boss_nose_sprite"
+BOSS_BEARD_SPRITE :: "Boss_beard_sprite"
+BOSS_HAND_SPRITE :: "Boss_hand_sprite"
 PLAYER_SPRITE :: "Player_sprite"
 PORTAL_SPRITE :: "Portal_sprite"
 PORTAL_DEAD_SPRITE :: "Portad_dead_sprite"
@@ -87,8 +92,14 @@ SPRITE_MAP := map[string]Sprite_desc {
     E_RANGER_SPRITE = {x = 0, y = 272, w = 384, h = 48, count = 8},
     E_RANGER_DEAD_SPRITE = {x = 96, y = 416, w = 48, h = 48},
     E_RANGER_TAUNTED_SPRITE = {x = 384, y = 272, w = 48, h = 48},
+    // Boss Body
+    BOSS_BODY_SPRITE = {x = 592, y = 0, w = 80, h = 80},
+    BOSS_GLASS_SPRITE = {x = 672, y = 0, w = 64, h = 32},
+    BOSS_NOSE_SPRITE = {x = 672, y = 32, w = 32, h = 32},
+    BOSS_BEARD_SPRITE = {x = 704, y = 32, w = 32, h = 32},
+    BOSS_HAND_SPRITE = {x = 736, y = 0, w = 32, h = 32},
 
-    PLAYER_SPRITE = {x = 0, y = 112, w = 160, h = 32, count = 5},
+    PLAYER_SPRITE = {x = 64, y = 208, w = 320, h = 64, count = 5},
     BULLET_SPRITE = {x = 0, y = 64, w = 16, h = 16},
     EXPERIENCE_BUFF_SPRITE = {x = 32, y = 176, w = 32, h = 32},
     PLAYER_AVATAR_SPRITE = {x = 0, y = 208, w = 64, h = 64},

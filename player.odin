@@ -4,8 +4,8 @@ package main
 import rl "vendor:raylib"
 
 Inittal_bullet_countdown :f32 : 1.
-PLAYER_MAX_HORIZONTAL_SPD : f32 : 150
-
+PLAYER_MAX_HORIZONTAL_SPD : f32 : 130
+PLAYER_MAX_ACC : f32 : 7.5
 STAT_BUFF:: enum {
     HP,
     AD,
@@ -36,7 +36,8 @@ Body :: struct {
     size: rl.Vector2,
     position: rl.Vector2,
     vel: rl.Vector2,
-    direction : Player_direction
+    direction : Player_direction,
+    acc: f32
 }
 
 Experience_controller:: struct {
@@ -120,7 +121,8 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     if rl.IsKeyDown(.LEFT) || rl.IsKeyDown(.A) {
         player.direction = .LEFT
         player.is_flip = true
-        player.body.vel.x = -(PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
+        // player.body.vel.x = -(PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
+        player.body.acc = -PLAYER_MAX_ACC
          if player.anim_controller.animation_name != RUN_ANI {
             player.anim_controller.animation_name = RUN_ANI
             player.anim_controller.current_frame = 0
@@ -130,7 +132,9 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.direction = .RIGHT
         player.is_flip = false
 
-        player.body.vel.x = (PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
+        // player.body.vel.x = (PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
+        player.body.acc = PLAYER_MAX_ACC
+
         if player.anim_controller.animation_name != RUN_ANI {
             player.anim_controller.animation_name = RUN_ANI
             player.anim_controller.current_frame = 0
@@ -139,6 +143,8 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
         }
     } else {
+        player.body.acc = 0
+
         if player.on_ground {
             player.body.vel.x  *= 0.8
         }
@@ -150,8 +156,8 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         }
     }
 
-
-    player.body.vel.x = clamp(player.body.vel.x, -PLAYER_MAX_HORIZONTAL_SPD, PLAYER_MAX_HORIZONTAL_SPD)
+    player.body.vel.x += player.body.acc
+    player.body.vel.x = clamp(player.body.vel.x, -PLAYER_MAX_HORIZONTAL_SPD * (1 + player.stats.buffes.mv_spd / 80), PLAYER_MAX_HORIZONTAL_SPD * (1 + player.stats.buffes.mv_spd / 80))
     
     player.body.position.x += player.body.vel.x  * dt
 

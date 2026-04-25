@@ -15,6 +15,7 @@ scene_manager_update :: proc(game: ^Game, dt: f32 ) {
         game.ui_controller.is_ui_screen = false
         game.game_options.is_paused = false
         game.ui_controller.ui_scene = .NONE
+        game.boss_manager.boss.status = .ALIVE
     }
     // Level start
     if game.ui_controller.ui_scene == .START_LEVEL  { 
