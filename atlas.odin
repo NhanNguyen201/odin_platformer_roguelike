@@ -40,6 +40,7 @@ BOSS_GLASS_SPRITE :: "Boss_glass_sprite"
 BOSS_NOSE_SPRITE :: "Boss_nose_sprite"
 BOSS_BEARD_SPRITE :: "Boss_beard_sprite"
 BOSS_HAND_SPRITE :: "Boss_hand_sprite"
+BOSS_FIREBALL_SPRITE :: "Boss_fireball_sprite"
 PLAYER_SPRITE :: "Player_sprite"
 PORTAL_SPRITE :: "Portal_sprite"
 PORTAL_DEAD_SPRITE :: "Portad_dead_sprite"
@@ -98,7 +99,7 @@ SPRITE_MAP := map[string]Sprite_desc {
     BOSS_NOSE_SPRITE = {x = 672, y = 32, w = 32, h = 32},
     BOSS_BEARD_SPRITE = {x = 704, y = 32, w = 32, h = 32},
     BOSS_HAND_SPRITE = {x = 736, y = 0, w = 32, h = 32},
-
+    BOSS_FIREBALL_SPRITE = {x = 0, y = 608, w = 144, h = 64, count = 4},
     PLAYER_SPRITE = {x = 64, y = 208, w = 320, h = 64, count = 5},
     BULLET_SPRITE = {x = 0, y = 64, w = 16, h = 16},
     EXPERIENCE_BUFF_SPRITE = {x = 32, y = 176, w = 32, h = 32},
@@ -121,6 +122,7 @@ SPRITE_MAP := map[string]Sprite_desc {
     UI_CURSIR_SPRITE_2 = {x = 16, y = 80, w = 16, h = 16},
     GAME_OVER_SPRITE = {x = 0, y = 512, w = 144, h = 96},
     GAME_START_SPRITE = {x = 144, y = 512, w = 144, h = 96},
+
 }
 
 load_atlas:: proc(game: ^Game) {

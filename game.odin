@@ -135,7 +135,7 @@ game_update:: proc(game: ^Game, dt: f32) {
       
         exp_buff_collect(&game.player, game)
         if game.boss_manager.is_boss_level {
-            boss_update(&game.boss_manager.boss, &game.player_bullets, dt)
+            boss_update(&game.boss_manager.boss, game, dt)
         }
         level_gate_update(game)
         
@@ -242,7 +242,7 @@ game_draw:: proc(game: ^Game, dt: f32) {
     Enemy_sniper_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_sniper, dt)
     Enemy_ranger_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_ranger, dt)
     if game.boss_manager.is_boss_level {
-        boss_draw(game.game_sprite_atlas, game.boss_manager.boss, dt)
+        boss_draw(game.game_sprite_atlas, game.boss_manager.boss, &game.particle_system, dt)
     }
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_side.enemy_bullets[:])
     

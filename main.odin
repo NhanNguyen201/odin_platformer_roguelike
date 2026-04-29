@@ -78,6 +78,8 @@ main :: proc() {
     delete(game.enemy_side.enemy_spawners)
     delete(game.level_data.keys)
     delete(game.level_data.exp_buffs)
+    clear(&game.boss_manager.boss.skill_queue)
+    delete(game.boss_manager.boss.skill_queue)
     rl.UnloadFont(game.fonts[FONT_BOLD])
     rl.UnloadFont(game.fonts[FONT_REG])
     rl.UnloadFont(game.fonts[FONT_THIN])

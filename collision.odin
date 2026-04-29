@@ -98,9 +98,20 @@ resolve_enemy_and_bullet:: proc(e_body: Enemy_Body, health_stats: ^Health_stats,
         break
     }
 
-
 }
 
+resolve_boss_and_bullet:: proc(b_body: Enemy_Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
+    for bullet, idx in bullets {
+        bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
+
+        if !rl.CheckCollisionCircleRec(b_body.position, b_body.size.x, bullet_rect) do return
+
+        enemy_take_dmg(health_stats, bullet)
+        unordered_remove(bullets, idx)
+
+        break
+    }
+}
 resolve_player_and_bullet:: proc(body: Body, player_buffes: Player_buffes, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
     pr := get_body_rect(body)
 
@@ -170,7 +181,7 @@ player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f
     reduced_dmg := dmg * (1 - (player_buff.armor / 100))
 
     if health.current_hp > reduced_dmg {
-        health.current_hp -= reduced_dmg
+        // health.current_hp -= reduced_dmg
     } else {
         health.current_hp = 0
     }

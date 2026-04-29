@@ -160,7 +160,7 @@ load_level :: proc(game: ^Game, lvl: int)  {
     clear(&game.enemy_side.e_melee)
     clear(&game.enemy_side.e_ranger)
     clear(&game.enemy_side.e_sniper)
-
+    clear(&game.boss_manager.boss.skill_queue)
     game.boss_manager.is_boss_level = is_boss_level
     
     if is_boss_level {
