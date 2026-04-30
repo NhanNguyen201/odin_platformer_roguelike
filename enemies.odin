@@ -390,7 +390,7 @@ Enemy_melees_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_mele
             dead_sprite := SPRITE_MAP[E_MELEE_DEAD_SPRITE]
             rl.DrawTexturePro(
                 atlas, 
-                rl.Rectangle {x = dead_sprite.x, y= dead_sprite.y, width = dead_sprite.w * (is_flip ? -1 : 1), height = dead_sprite.h},
+                get_sprite_source_rect(dead_sprite, is_flip),
                 rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y, width = enemy.body.size.x, height = enemy.body.size.y},
                 enemy.body.size / 2,
                 0,
@@ -415,7 +415,7 @@ Enemy_melees_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_mele
             } else if enemy.combat_state == .TAUNTED {
                 
                 taunted_sprite := SPRITE_MAP[E_MELEE_TAUNTED_SPRITE]
-                taunted_source := rl.Rectangle {x = taunted_sprite.x, y= taunted_sprite.y, width = taunted_sprite.w * (is_flip ? -1 : 1), height = taunted_sprite.h}
+                taunted_source := get_sprite_source_rect(taunted_sprite, is_flip)
                 // taunted_aura_sprte_source := rl.Rectangle {x = taunted_aura_sprite.x, y= taunted_aura_sprite.y, width = taunted_aura_sprite.w, height = taunted_aura_sprite.h}
                 // taunted_aura_sprite_dest := rl.Rectangle {x = enemy_rect.x + enemy_rect.width - 10, y = enemy_rect.y - 10, width = 16, height = 16}
                 rl.DrawTexturePro(atlas, taunted_source, enemy_rect, {0, 0}, 0, rl.WHITE)
@@ -465,7 +465,7 @@ Enemy_sniper_update:: proc(game: ^Game, dt: f32) {
             } else if enemy.combat_state == .TRIGGER{
                 enemy.targeting.trigger.current -= dt
                 sprite := SPRITE_MAP[E_SNIPER_PARTICLE_SPRITE]
-                sprite_source := rl.Rectangle {x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
+                sprite_source := get_sprite_source_rect(sprite)
                 if enemy.targeting.trigger.current <=0 {
                     if rl.CheckCollisionPointCircle(game.player.body.position, enemy.targeting.current_aiming_point, ENEMY_AIMING_RADIUS) {
                         player_take_dmg(&game.player.stats.health_stats, game.player.stats.buffes, enemy.stats.dmg)
@@ -476,7 +476,8 @@ Enemy_sniper_update:: proc(game: ^Game, dt: f32) {
                         position = enemy.targeting.current_aiming_point,
                         sprite_source = sprite_source,
                         is_blur = true,
-                        is_scaled = true
+                        is_scaled = true,
+                        size = {32, 32}
                     })
                     enemy.targeting.current_aiming_point = enemy.body.position
     
@@ -512,7 +513,7 @@ Enemy_sniper_draw:: proc(atlas: rl.Texture2D, game_options: Game_Options, e_snip
             dead_sprite := SPRITE_MAP[E_SINPER_DEAD_SPIPER]
             rl.DrawTexturePro(
                 atlas, 
-                rl.Rectangle {x = dead_sprite.x, y= dead_sprite.y, width = dead_sprite.w * (is_flip ? -1 : 1), height = dead_sprite.h},
+                get_sprite_source_rect(dead_sprite, is_flip),
                 rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y, width = enemy.body.size.x, height = enemy.body.size.y},
                 enemy.body.size / 2,
                 0,
@@ -545,13 +546,13 @@ Enemy_sniper_draw:: proc(atlas: rl.Texture2D, game_options: Game_Options, e_snip
             }
             case .AIMING : {
                 sprite := SPRITE_MAP[E_SNIPER_AIMING_SPRITE]
-                sprite_source := rl.Rectangle{x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
+                sprite_source := get_sprite_source_rect(sprite)
                 sprite_dest := rl.Rectangle {x = enemy.targeting.current_aiming_point.x, y = enemy.targeting.current_aiming_point.y, width = ENEMY_AIMING_RADIUS, height = ENEMY_AIMING_RADIUS}
                 rl.DrawTexturePro(atlas, sprite_source, sprite_dest, {ENEMY_AIMING_RADIUS / 2, ENEMY_AIMING_RADIUS / 2}, 0, rl.WHITE)
             }
             case .TRIGGER : {
                 sprite := SPRITE_MAP[E_SNIPER_TRIGGER_SPRITE]
-                sprite_source := rl.Rectangle{x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
+                sprite_source := get_sprite_source_rect(sprite)
                 sprite_scale :f32 = 1. +  0.6 * (enemy.targeting.trigger.current / enemy.targeting.trigger.max_time)
                 sprite_dest := rl.Rectangle {x = enemy.targeting.current_aiming_point.x, y = enemy.targeting.current_aiming_point.y, width = ENEMY_AIMING_RADIUS * sprite_scale, height = ENEMY_AIMING_RADIUS * sprite_scale}
                 rl.DrawTexturePro(atlas, sprite_source, sprite_dest, {ENEMY_AIMING_RADIUS * sprite_scale / 2, ENEMY_AIMING_RADIUS * sprite_scale / 2}, 0, rl.WHITE)
@@ -658,7 +659,7 @@ Enemy_ranger_draw :: proc(atlas: rl.Texture2D, game_options: Game_Options, e_ran
             dead_sprite := SPRITE_MAP[E_RANGER_DEAD_SPRITE]
             rl.DrawTexturePro(
                 atlas, 
-                rl.Rectangle {x = dead_sprite.x, y= dead_sprite.y, width = dead_sprite.w * (is_flip ? -1 : 1), height = dead_sprite.h},
+                get_sprite_source_rect(dead_sprite, is_flip),
                 rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y, width = enemy.body.size.x, height = enemy.body.size.y},
                 enemy.body.size / 2,
                 0,
@@ -675,7 +676,7 @@ Enemy_ranger_draw :: proc(atlas: rl.Texture2D, game_options: Game_Options, e_ran
 
             } else if enemy.combat_state == .TAUNTED {
                 taunted_sprite := SPRITE_MAP[E_RANGER_TAUNTED_SPRITE]
-                taunted_sprite_source := rl.Rectangle {x = taunted_sprite.x, y= taunted_sprite.y, width = taunted_sprite.w * (is_flip ? -1 : 1), height = taunted_sprite.h}
+                taunted_sprite_source := get_sprite_source_rect(taunted_sprite, is_flip)
                 
                 rl.DrawTexturePro(atlas, taunted_sprite_source, enemy_rect, 0, 0, rl.WHITE)
                 unit_expression_draw(atlas, SPRITE_MAP[E_TAUNTED_AURA_SPRITE], enemy.body.position + {8, -8})

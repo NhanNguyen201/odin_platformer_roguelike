@@ -197,7 +197,7 @@ level_gate_update :: proc(game: ^Game) {
 
 bullets_draw :: proc(atlas: rl.Texture2D, player_bullets: []Bullet, enemy_bullets : []Bullet)  {
     sprite := SPRITE_MAP[BULLET_SPRITE]
-    source := rl.Rectangle {x= sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
+    source := get_sprite_source_rect(sprite)
 
     for bullet in player_bullets {
 

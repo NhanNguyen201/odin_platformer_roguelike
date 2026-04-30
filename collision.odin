@@ -132,7 +132,7 @@ resolve_player_and_bullet:: proc(body: Body, player_buffes: Player_buffes, healt
 
 resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,  rect: rl.Rectangle) {
     sprite := SPRITE_MAP[PARTICLE_SPRITE]
-    sprite_source := rl.Rectangle {x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
+    sprite_source := get_sprite_source_rect(sprite)
     for bullet, idx in bullets{
         bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
 
@@ -149,7 +149,8 @@ resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,
             position = {bullet.position.x, bullet.position.y},
             sprite_source = sprite_source,
             is_blur = true,
-            is_scaled = true
+            is_scaled = true,
+            size = {32, 32}
         })
         break
        
