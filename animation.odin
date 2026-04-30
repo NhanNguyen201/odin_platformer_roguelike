@@ -2,6 +2,7 @@
 
 package main
 import rl "vendor:raylib"
+import "core:math"
 
 import "core:container/small_array"
 
@@ -25,7 +26,11 @@ Particle :: struct {
     sprite_source: rl.Rectangle,
     timer: Timer,
     is_scaled: bool,
-    is_blur: bool
+    is_blur: bool,
+    is_flip: bool,
+    sprite_count: int,
+    rotation: f32,
+    size: rl.Vector2
 }
 
 Particles_systems :: struct {
@@ -127,10 +132,15 @@ particls_systems_draw:: proc(atlas: rl.Texture2D, particle_sys: Particles_system
     // particle_soure := rl.Rectangle {x = particle_sprite.x, y = particle_sprite.y, width = particle_sprite.w, height = particle_sprite.h}
     for i:= 0; i < particle_sys.particles.len; i += 1 {
         p := small_array.get(particle_sys.particles, i)
-        scale :=  p.is_scaled ? 1. + .5 * (p.timer.max_time - p.timer.current) / p.timer.max_time : 1
+        time_left := p.timer.max_time - p.timer.current
+        sprite_count := max(p.sprite_count, 1)
+        current_frame := math.floor_f32(time_left / p.timer.max_time * f32(sprite_count))
+        frame_width := p.sprite_source.width / f32(sprite_count)
+        new_sprite_source := rl.Rectangle {x = p.sprite_source.x + (frame_width * current_frame), y = p.sprite_source.y, width = frame_width * (p.is_flip ? -1 : 1), height = p.sprite_source.height}
+        scale :=  p.is_scaled ? 1. + .5 * time_left / p.timer.max_time : 1
         tint := p.is_blur ? rl.Color {255, 255, 255, u8(55 +  200 * p.timer.current / p.timer.max_time)} : rl.WHITE
-        dest := rl.Rectangle {x = p.position.x  , y = p.position.y , width = p.sprite_source.width * scale, height = p.sprite_source.height * scale}
-        rl.DrawTexturePro(atlas, p.sprite_source, dest, {dest.width / 2, dest.height / 2}, 0. , tint)
+        dest := rl.Rectangle {x = p.position.x  , y = p.position.y , width = p.size.x * scale, height = p.size.y * scale}
+        rl.DrawTexturePro(atlas, new_sprite_source, dest, {dest.width / 2, dest.height / 2}, p.rotation , tint)
     }
 }
 // math.sin_f32( (p.duration - p.time_left) / p.duration) * 90
