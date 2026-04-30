@@ -71,7 +71,8 @@ Player_buffes :: struct {
 Player_stats :: struct {
     health_stats: Health_stats,
     dmg: f32,
-    buffes: Player_buffes
+    buffes: Player_buffes,
+    de_buffes: [dynamic] Player_debuff
 }
 
 
@@ -83,6 +84,17 @@ Player_direction :: enum {
 PLAYER_ACTION_SETTING :: enum {
     SHOOT,
     JUMP
+}
+
+Player_debuff :: struct {
+    debuff_type: Player_debuff_types,
+    time: Timer,
+    dmg: f32
+}
+
+Player_debuff_types :: enum {
+    BURNING,
+    // FREEZED
 }
 
 MAX_LEVEL: int :10
@@ -199,7 +211,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 
     resolve_player_and_bullet(player.body, player.stats.buffes, &player.stats.health_stats, &game.enemy_side.enemy_bullets)
-    
+    resolve_player_debuff_update(player, dt)
 
 }
 
@@ -246,5 +258,29 @@ exp_buff_collect:: proc(player: ^Player, game: ^Game) {
 
         }
 
+    }
+}
+
+player_apply_debuff :: proc(debuff: Player_debuff, player: ^Player) {
+    for &current_dedbuff in player.stats.de_buffes {
+        if current_dedbuff.debuff_type == debuff.debuff_type {
+            current_dedbuff.time = debuff.time
+            current_dedbuff.dmg = max(current_dedbuff.dmg, debuff.dmg)
+            return
+        }
+    }
+    append(&player.stats.de_buffes, debuff)
+}
+
+resolve_player_debuff_update:: proc(player: ^Player, dt: f32) {
+    for i := 0; i < len(player.stats.de_buffes); i += 1  {
+        debuff := player.stats.de_buffes[i]
+
+        if debuff.time.current <= 0 {
+            unordered_remove(&player.stats.de_buffes, i)
+            continue
+        } else {
+            player.stats.de_buffes[i].time.current -= dt
+        }
     }
 }

@@ -80,6 +80,7 @@ main :: proc() {
     delete(game.level_data.exp_buffs)
     clear(&game.boss_manager.boss.skill_queue)
     delete(game.boss_manager.boss.skill_queue)
+    delete(game.player.stats.de_buffes)
     rl.UnloadFont(game.fonts[FONT_BOLD])
     rl.UnloadFont(game.fonts[FONT_REG])
     rl.UnloadFont(game.fonts[FONT_THIN])
