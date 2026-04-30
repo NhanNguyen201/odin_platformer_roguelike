@@ -116,8 +116,8 @@ is_ui_component_hover :: proc(game_options: Game_Options, rect : rl.Rectangle) -
 player_ui_draw:: proc(game: ^Game) {
     key_atlas_sprite := SPRITE_MAP[KEY_SPRITE]
 
-    key_source := rl.Rectangle{x = key_atlas_sprite.x , y= key_atlas_sprite.y , width = key_atlas_sprite.w , height = key_atlas_sprite.h}
-
+    key_source := get_sprite_source_rect(key_atlas_sprite)
+    player_debuff_burned_sprite_source := get_sprite_source_rect(SPRITE_MAP[UI_PLAYER_DEBUFF_FIRE_SPRITE])
 
     player := game.player
     
@@ -142,7 +142,7 @@ player_ui_draw:: proc(game: ^Game) {
 
     avatar_sprite := SPRITE_MAP[PLAYER_AVATAR_SPRITE]
     avatar_size := rl.Vector2{12, 12}
-    avatar_source := rl.Rectangle{x = avatar_sprite.x, y= avatar_sprite.y, width = avatar_sprite.w, height = avatar_sprite.h}
+    avatar_source := get_sprite_source_rect(avatar_sprite)
 
     avatar_dest := rl.Rectangle{x = ui_x_start, y= ui_y_start, width = avatar_size.x, height = avatar_size.y}
     rl.DrawTexturePro(game.game_sprite_atlas, avatar_source, avatar_dest, {0,0}, 0, rl.WHITE)
@@ -166,8 +166,19 @@ player_ui_draw:: proc(game: ^Game) {
     rl.DrawTextEx(game.fonts[FONT_REG], hp_text, {health_bar_dest.x + 2, health_bar_dest.y + 1}, 5, 0.2, rl.WHITE)
     // is_mouse_hover := rl.CheckCollisionPointRec(game.game_options.ui_mouse_pos, charactor_ui_rect)
     
+    for player_debuff, idx in player.stats.de_buffes {
+        debuff_dest := rl.Rectangle {x = ui_x_start + 15 + f32(idx) * 11, y = ui_y_start + 15, width = 10, height = 10}
+        if player_debuff.debuff_type == .BURNING {
+            rl.DrawTexturePro(game.game_sprite_atlas, player_debuff_burned_sprite_source, debuff_dest, 0, 0, rl.WHITE )
+            rl.DrawRectangleV(
+                {debuff_dest.x, debuff_dest.y + debuff_dest.height * (1. - player_debuff.time.current / player_debuff.time.max_time)}, 
+                {debuff_dest.width, debuff_dest.height * player_debuff.time.current / player_debuff.time.max_time}, 
+                rl.Color {220, 220, 220, 180}
+            )
+        }
+    }
 
-    key_dest :=  rl.Rectangle {x = get_rect_center(avatar_dest).x, y = get_rect_center(avatar_dest).y + 16 , height = 12, width = 12}
+    key_dest :=  rl.Rectangle {x = get_rect_center(avatar_dest).x, y = get_rect_center(avatar_dest).y + 25 , height = 12, width = 12}
     rl.DrawTexturePro(game.game_sprite_atlas, key_source, key_dest, {key_source.width  / 2 , key_source.height / 2}, 0, rl.WHITE)
 
     key_text := fmt.ctprintf(":%d/%d", game.level_data.collected_keys, len(game.level_data.keys))
