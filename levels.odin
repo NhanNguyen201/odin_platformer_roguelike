@@ -138,6 +138,7 @@ get_level_data::proc (lvl: int) -> Level {
 }
 
 load_level :: proc(game: ^Game, lvl: int)  {
+    clear_game_mem(game)
     @static enemy_spawner_hp: f32 = 150
     @static enemy_respawn_time: f32 = 2.5
     @static enemy_recontruct_time: f32 = 5
@@ -152,15 +153,8 @@ load_level :: proc(game: ^Game, lvl: int)  {
     game.level_data.is_complete = false
     game.level_data.collected_keys = 0
     game.player.body.vel = {0, 0}    
-    clear(&game.level_data.colliders)
-    clear(&game.enemy_side.enemy_spawners)
-    clear(&game.level_data.keys)
-    clear(&game.enemy_side.enemy_bullets)
-    clear(&game.player_bullets)
-    clear(&game.enemy_side.e_melee)
-    clear(&game.enemy_side.e_ranger)
-    clear(&game.enemy_side.e_sniper)
-    clear(&game.boss_manager.boss.skill_queue)
+    
+
     game.boss_manager.is_boss_level = is_boss_level
     
     if is_boss_level {

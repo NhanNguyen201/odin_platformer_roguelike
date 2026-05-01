@@ -182,7 +182,7 @@ player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f
     reduced_dmg := dmg * (1 - (player_buff.armor / 100))
 
     if health.current_hp > reduced_dmg {
-        // health.current_hp -= reduced_dmg
+        health.current_hp -= reduced_dmg
     } else {
         health.current_hp = 0
     }

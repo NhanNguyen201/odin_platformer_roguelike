@@ -100,7 +100,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
         } else if boss.combat_state == .ARGO {
             
             boss.state_timer.current -= dt
-            if boss.state_timer.current < 0 {
+            if boss.state_timer.current < 0 && game.player.stats.health_stats.current_hp > 0{
                 
                 append(&boss.skill_queue,  Boss_skill_cast {
                     area_effect = 20.,
@@ -148,7 +148,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                                 timer ={ max_time = skill.timer.current, current = skill.timer.current },
                                 position = skill.pos_destination,
                                 sprite_source = get_sprite_source_rect(SPRITE_MAP[BOSS_EXPLOSIONS_SPRITE]),
-                                sprite_count = 3,
+                                sprite_count = 5,
                                 size = skill.area_effect * 2
                             })
                         }
@@ -178,7 +178,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                         // fireball_circle := 
                         fireball_pos := get_fireball_position(skill^, dt)
 
-                        if rl.CheckCollisionCircleRec(fireball_pos, skill.area_effect, get_body_rect(game.player.body)) {
+                        if rl.CheckCollisionCircleRec(fireball_pos, skill.area_effect, get_body_rect(game.player.body))  && game.player.stats.health_stats.current_hp > 0 {
                             player_apply_debuff({debuff_type = .BURNING, dmg = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
                         }
                     }
@@ -212,8 +212,6 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
 
         }
     }
-    // boss.body.position.x += 2.5 * math.sin_f32(f32(rl.GetTime()))
-    // boss.body.position.y += 2.5 * math.cos_f32(f32(rl.GetTime()))
     for i:= len(boss.skill_queue) - 1; i  > 0; i -= 1  { 
         if boss.skill_queue[i].timer.current < 0 {
             unordered_remove(&boss.skill_queue, i)

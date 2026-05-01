@@ -364,6 +364,9 @@ game_restart :: proc(game: ^Game) {
     start_level := 0
     player_level := 0
 
+    // Ensure we clean up existing memory before overwriting pointers
+    clear_game_mem(game)
+
     game.player.stats.buffes = {}
     game.player.stats = {health_stats = {max_hp = 100, current_hp = 100}, dmg = 25}
     game.player.exp_controller = {
@@ -373,4 +376,39 @@ game_restart :: proc(game: ^Game) {
     }
     game.current_level = start_level
     load_level(game, start_level)
+}
+
+drop_game_mem:: proc(game : ^Game) {
+    delete(game.enemy_side.enemy_bullets)
+    delete(game.player_bullets)
+    delete(game.enemy_side.e_melee)
+    delete(game.enemy_side.e_ranger)
+    delete(game.enemy_side.e_sniper)
+    delete(game.level_data.colliders)
+    delete(game.enemy_side.enemy_spawners)
+    delete(game.level_data.keys)
+    delete(game.level_data.exp_buffs)
+    delete(game.boss_manager.boss.skill_queue)
+    delete(game.player.stats.de_buffs)
+    rl.UnloadFont(game.fonts[FONT_BOLD])
+    rl.UnloadFont(game.fonts[FONT_REG])
+    rl.UnloadFont(game.fonts[FONT_THIN])
+    delete(game.fonts)
+}
+
+clear_game_mem:: proc(game: ^Game) {
+    clear(&game.player_bullets)
+    clear(&game.enemy_side.e_melee)
+    clear(&game.enemy_side.e_ranger)
+    clear(&game.enemy_side.e_sniper)
+    clear(&game.level_data.colliders)
+    clear(&game.enemy_side.enemy_spawners)
+    clear(&game.level_data.keys)
+    clear(&game.level_data.exp_buffs)
+
+    delete(game.boss_manager.boss.skill_queue)
+    game.boss_manager.boss.skill_queue = nil
+
+    delete(game.player.stats.de_buffs)
+    game.player.stats.de_buffs = nil
 }

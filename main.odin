@@ -69,21 +69,6 @@ main :: proc() {
         rl.EndDrawing()
     }
 
-    delete(game.enemy_side.enemy_bullets)
-    delete(game.player_bullets)
-    delete(game.enemy_side.e_melee)
-    delete(game.enemy_side.e_ranger)
-    delete(game.enemy_side.e_sniper)
-    delete(game.level_data.colliders)
-    delete(game.enemy_side.enemy_spawners)
-    delete(game.level_data.keys)
-    delete(game.level_data.exp_buffs)
-    clear(&game.boss_manager.boss.skill_queue)
-    delete(game.boss_manager.boss.skill_queue)
-    delete(game.player.stats.de_buffes)
-    rl.UnloadFont(game.fonts[FONT_BOLD])
-    rl.UnloadFont(game.fonts[FONT_REG])
-    rl.UnloadFont(game.fonts[FONT_THIN])
-    delete(game.fonts)
+    drop_game_mem(&game)
 
 }

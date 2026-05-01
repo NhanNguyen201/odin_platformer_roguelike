@@ -5,6 +5,7 @@ import rl "vendor:raylib"
 
 Inittal_bullet_countdown :f32 : 1.
 PLAYER_MAX_HORIZONTAL_SPD : f32 : 130
+PLAYER_DEBUFF_TICK_TIME : f32 : 1.
 PLAYER_MAX_ACC : f32 : 7.5
 STAT_BUFF:: enum {
     HP,
@@ -72,7 +73,7 @@ Player_stats :: struct {
     health_stats: Health_stats,
     dmg: f32,
     buffes: Player_buffes,
-    de_buffes: [dynamic] Player_debuff
+    de_buffs: [dynamic] Player_debuff
 }
 
 
@@ -88,6 +89,7 @@ PLAYER_ACTION_SETTING :: enum {
 
 Player_debuff :: struct {
     debuff_type: Player_debuff_types,
+    tick_time: f32,
     time: Timer,
     dmg: f32
 }
@@ -211,7 +213,9 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 
     resolve_player_and_bullet(player.body, player.stats.buffes, &player.stats.health_stats, &game.enemy_side.enemy_bullets)
-    resolve_player_debuff_update(player, dt)
+    if player.stats.health_stats.current_hp > 0 {
+        resolve_player_debuff_update(player, dt)
+    }
 
 }
 
@@ -262,25 +266,37 @@ exp_buff_collect:: proc(player: ^Player, game: ^Game) {
 }
 
 player_apply_debuff :: proc(debuff: Player_debuff, player: ^Player) {
-    for &current_dedbuff in player.stats.de_buffes {
-        if current_dedbuff.debuff_type == debuff.debuff_type {
-            current_dedbuff.time = debuff.time
-            current_dedbuff.dmg = max(current_dedbuff.dmg, debuff.dmg)
+    for &current_debuff in player.stats.de_buffs {
+        if current_debuff.debuff_type == debuff.debuff_type {
+            current_debuff.time = debuff.time
+            current_debuff.dmg = max(current_debuff.dmg, debuff.dmg)
+            
             return
         }
     }
-    append(&player.stats.de_buffes, debuff)
+    if debuff.debuff_type == .BURNING {
+       
+        append(&player.stats.de_buffs, Player_debuff {debuff_type = .BURNING, dmg = debuff.dmg, time = debuff.time, tick_time = PLAYER_DEBUFF_TICK_TIME})
+    }
 }
 
 resolve_player_debuff_update:: proc(player: ^Player, dt: f32) {
-    for i := 0; i < len(player.stats.de_buffes); i += 1  {
-        debuff := player.stats.de_buffes[i]
+    for i := len(player.stats.de_buffs) - 1; i >= 0; i -= 1 {
+        debuff := &player.stats.de_buffs[i]
 
         if debuff.time.current <= 0 {
-            unordered_remove(&player.stats.de_buffes, i)
+            unordered_remove(&player.stats.de_buffs, i)
             continue
         } else {
-            player.stats.de_buffes[i].time.current -= dt
+            debuff.time.current -= dt
+
+            if debuff.debuff_type == .BURNING {
+                debuff.tick_time -= dt 
+                if debuff.tick_time < 0  && debuff.time.current > 0 {
+                    player_take_dmg(&player.stats.health_stats, player.stats.buffes, debuff.dmg)
+                    debuff.tick_time = PLAYER_DEBUFF_TICK_TIME
+                }
+            }
         }
     }
 }
