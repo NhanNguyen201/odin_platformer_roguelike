@@ -7,18 +7,18 @@ import "core:fmt"
 // in pre update 
 scene_manager_update :: proc(game: ^Game, dt: f32 ) {
     // Boss entrance scene update
-    if game.ui_controller.ui_scene == .BOSS_ENTRANCE && game.ui_controller.transition_time > 0 { 
-        game.ui_controller.transition_time -= dt    
-    }
-    
-    if game.ui_controller.ui_scene == .BOSS_ENTRANCE && game.ui_controller.transition_time <= 0 {
-        game.ui_controller.is_ui_screen = false
-        game.game_options.is_paused = false
-        game.ui_controller.ui_scene = .NONE
-        game.boss_manager.boss.status = .ALIVE
-    }
-    // Level start
-    if game.ui_controller.ui_scene == .START_LEVEL  { 
+    if game.ui_controller.ui_scene == .BOSS_ENTRANCE { 
+        if game.ui_controller.transition_time > 0  {
+            game.ui_controller.transition_time -= dt    
+
+        } else {
+            game.ui_controller.is_ui_screen = false
+            game.game_options.is_paused = false
+            game.ui_controller.ui_scene = .NONE
+            game.boss_manager.boss.status = .ALIVE
+        }
+    } else if game.ui_controller.ui_scene == .START_LEVEL  { 
+        // Level start
         if game.ui_controller.transition_time > 0 {
             game.ui_controller.transition_time -= dt    
 
@@ -27,17 +27,11 @@ scene_manager_update :: proc(game: ^Game, dt: f32 ) {
             game.game_options.is_paused = false
             game.ui_controller.ui_scene = .NONE
         }
-    }
+    } 
 }
 
 game_ui_scene_draw::proc(game: ^Game, dt: f32) {
-    ui_x_start := game.player.body.position.x +  + UI_PADDING.x - game.camera.offset.x / 4
-    ui_y_start := game.player.body.position.y +  + UI_PADDING.y - game.camera.offset.y / 4
-
-    ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x / 2 
-    ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y / 2
-    
-    ui_rect := rl.Rectangle{x = ui_x_start, y = ui_y_start, width = ui_width, height = ui_height}
+    ui_rect := get_ui_scene_rect(game^)
 
     // boss entrance
     if game.ui_controller.ui_scene == .BOSS_ENTRANCE {
@@ -76,4 +70,14 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
             game.ui_controller.is_ui_screen = false
         }
     }
+}
+
+get_ui_scene_rect :: proc (game: Game) -> rl.Rectangle {
+    ui_x_start := game.player.body.position.x +  + UI_PADDING.x - game.camera.offset.x / 4
+    ui_y_start := game.player.body.position.y +  + UI_PADDING.y - game.camera.offset.y / 4
+
+    ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x / 2 
+    ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y / 2
+    
+    return {x = ui_x_start, y = ui_y_start, width = ui_width, height = ui_height}
 }

@@ -41,6 +41,8 @@ UI_scenes :: enum  {
     BOSS_ENTRANCE,
     END_LEVEL,
     START_LEVEL,
+    SHOPPING,
+    VENDOR,
     GAME_OVER,
     GAME_START
 }
@@ -121,20 +123,15 @@ player_ui_draw:: proc(game: ^Game) {
 
     player := game.player
     
-    ui_x_start := player.body.position.x +  + UI_PADDING.x - game.camera.offset.x / 4
-    ui_y_start := player.body.position.y +  + UI_PADDING.y - game.camera.offset.y / 4
+    ui_rect := get_ui_scene_rect(game^)
 
-    ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x / 2 
-    ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y / 2
-    
-    ui_rect := rl.Rectangle{x = ui_x_start, y = ui_y_start, width = ui_width, height = ui_height}
     
     pause := fmt.ctprintf("%t", game.game_options.is_paused)
     
     if game.game_options.is_debug {
         rl.DrawRectangleLinesEx(ui_rect, 0.5, rl.WHITE)
         state_text := fmt.ctprintf("Paused :%t, \n is_ui : %t, \n is_buff_pick: %t", game.game_options.is_paused, game.ui_controller.is_ui_screen, game.ui_controller.ui_scene == .BUFFES_PICK) 
-        rl.DrawTextPro(game.fonts[FONT_REG], state_text, {ui_x_start + ui_width - 150, ui_y_start + ui_height - 50}, 0,0, 6, 0.32, rl.WHITE)
+        rl.DrawTextPro(game.fonts[FONT_REG], state_text, {ui_rect.x + ui_rect.width - 150, ui_rect.y + ui_rect.height - 50}, 0,0, 6, 0.32, rl.WHITE)
         // rl.DrawText(pause, i32(ui_rect.x) + 10, i32(ui_rect.y) + 10, 10, rl.BLACK)
     }
     // Draw keys
@@ -144,10 +141,10 @@ player_ui_draw:: proc(game: ^Game) {
     avatar_size := rl.Vector2{12, 12}
     avatar_source := get_sprite_source_rect(avatar_sprite)
 
-    avatar_dest := rl.Rectangle{x = ui_x_start, y= ui_y_start, width = avatar_size.x, height = avatar_size.y}
+    avatar_dest := rl.Rectangle{x = ui_rect.x, y= ui_rect.y, width = avatar_size.x, height = avatar_size.y}
     rl.DrawTexturePro(game.game_sprite_atlas, avatar_source, avatar_dest, {0,0}, 0, rl.WHITE)
 
-    charactor_ui_rect := rl.Rectangle {x = ui_x_start, y = ui_y_start, width = 50, height = 30}
+    charactor_ui_rect := rl.Rectangle {x = ui_rect.x, y = ui_rect.y, width = 50, height = 30}
     
     health_bar_sprite := SPRITE_MAP[HEALTH_BAR_SPRITE]
     health_bar_fill_sprite := SPRITE_MAP[HEALTH_BAR_FILL_SPRITE]
@@ -156,8 +153,8 @@ player_ui_draw:: proc(game: ^Game) {
     health_fill_source := rl.Rectangle {x = health_bar_fill_sprite.x, y = health_bar_fill_sprite.y, width = health_bar_fill_sprite.w * (player.stats.health_stats.current_hp / player.stats.health_stats.max_hp), height = health_bar_fill_sprite.h}
 
 
-    health_bar_dest := rl.Rectangle {x = ui_x_start + 15 , y = ui_y_start , width = HEALTH_BAR_SIZE.x, height = HEALTH_BAR_SIZE.y}
-    health_fill_dest := rl.Rectangle {x = ui_x_start + 15 , y = ui_y_start , width = HEALTH_BAR_SIZE.x * (player.stats.health_stats.current_hp / player.stats.health_stats.max_hp), height = HEALTH_BAR_SIZE.y}
+    health_bar_dest := rl.Rectangle {x = ui_rect.x + 15 , y = ui_rect.y , width = HEALTH_BAR_SIZE.x, height = HEALTH_BAR_SIZE.y}
+    health_fill_dest := rl.Rectangle {x = ui_rect.x + 15 , y = ui_rect.y , width = HEALTH_BAR_SIZE.x * (player.stats.health_stats.current_hp / player.stats.health_stats.max_hp), height = HEALTH_BAR_SIZE.y}
     
     rl.DrawTexturePro(game.game_sprite_atlas, health_bar_source, health_bar_dest, {0, 0}, 0, rl.WHITE)
     rl.DrawTexturePro(game.game_sprite_atlas, health_fill_source, health_fill_dest, {0, 0}, 0, rl.WHITE)
@@ -167,7 +164,7 @@ player_ui_draw:: proc(game: ^Game) {
     // is_mouse_hover := rl.CheckCollisionPointRec(game.game_options.ui_mouse_pos, charactor_ui_rect)
     
     for player_debuff, idx in player.stats.de_buffs {
-        debuff_dest := rl.Rectangle {x = ui_x_start + 15 + f32(idx) * 11, y = ui_y_start + 15, width = UI_MINI_MAP_ICON_SIZE, height = UI_MINI_MAP_ICON_SIZE}
+        debuff_dest := rl.Rectangle {x = ui_rect.x + 15 + f32(idx) * 11, y = ui_rect.y + 15, width = UI_MINI_MAP_ICON_SIZE, height = UI_MINI_MAP_ICON_SIZE}
         if player_debuff.debuff_type == .BURNING {
             rl.DrawTexturePro(game.game_sprite_atlas, player_debuff_burned_sprite_source, debuff_dest, 0, 0, rl.WHITE )
             rl.DrawRectangleV(
@@ -186,17 +183,17 @@ player_ui_draw:: proc(game: ^Game) {
     
     // Draw experience
     rl.DrawRectangleRec(
-        rl.Rectangle{x = ui_x_start + 15, y = ui_y_start + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x, height = EXPERIENCE_BAR_SIZE.y },
+        rl.Rectangle{x = ui_rect.x + 15, y = ui_rect.y + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x, height = EXPERIENCE_BAR_SIZE.y },
         rl.WHITE
     )
     rl.DrawRectangleRec(
-        rl.Rectangle{x = ui_x_start + 15, y = ui_y_start + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x * (player.exp_controller.current / player.exp_controller.require.val), height = EXPERIENCE_BAR_SIZE.y },
+        rl.Rectangle{x = ui_rect.x + 15, y = ui_rect.y + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x * (player.exp_controller.current / player.exp_controller.require.val), height = EXPERIENCE_BAR_SIZE.y },
         rl.Color {247, 161, 56, 220}
     )
     lvl_text := fmt.ctprintf("Level %d : %d / %d", player.exp_controller.level + 1, i32(player.exp_controller.current), i32(player.exp_controller.require.val))
-    rl.DrawTextEx(game.fonts[FONT_REG], lvl_text, {ui_x_start + 17, ui_y_start + HEALTH_BAR_SIZE.y + 1}, 5, 0.1, rl.BLACK)
+    rl.DrawTextEx(game.fonts[FONT_REG], lvl_text, {ui_rect.x + 17, ui_rect.y + HEALTH_BAR_SIZE.y + 1}, 5, 0.1, rl.BLACK)
     rl.DrawRectangleLinesEx(
-        rl.Rectangle{x = ui_x_start + 15, y = ui_y_start + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x, height = EXPERIENCE_BAR_SIZE.y },
+        rl.Rectangle{x = ui_rect.x + 15, y = ui_rect.y + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x, height = EXPERIENCE_BAR_SIZE.y },
         0.5,
         rl.BLACK
     )
@@ -205,7 +202,7 @@ player_ui_draw:: proc(game: ^Game) {
     }
 
     if game.ui_controller.is_ui_screen && game.ui_controller.ui_scene == .BUFFES_PICK {
-        rl.DrawRectangle(i32(ui_x_start), i32(ui_y_start), i32 (ui_width), i32(ui_height), rl.Color {184, 226, 217, 160})
+        rl.DrawRectangleRec(ui_rect, rl.Color {184, 226, 217, 160})
         player_buff_picking_scene_draw(game.game_sprite_atlas, game.fonts ,ui_rect, &game.game_options, &game.ui_controller, &game.player)
     }
     if game.game_options.is_hub {
@@ -216,9 +213,9 @@ player_ui_draw:: proc(game: ^Game) {
     }
 
     if game.boss_manager.is_boss_level {
-        boss_healthbar_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - UI_BOSS_HEALTH_BAR_SIZE.x / 2, y = ui_rect.y, width = UI_BOSS_HEALTH_BAR_SIZE.x, height = UI_BOSS_HEALTH_BAR_SIZE.y}
+        boss_healthbar_rect := rl.Rectangle {x = ui_rect.x + ui_rect.width / 2 - UI_BOSS_HEALTH_BAR_SIZE.x / 2, y = ui_rect.y, width = UI_BOSS_HEALTH_BAR_SIZE.x, height = UI_BOSS_HEALTH_BAR_SIZE.y}
         rl.DrawRectangleRec(boss_healthbar_rect, rl.GRAY)
-        boss_healthbar_fill_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - UI_BOSS_HEALTH_BAR_SIZE.x / 2, y = ui_rect.y, width = UI_BOSS_HEALTH_BAR_SIZE.x * (game.boss_manager.boss.stats.health_stats.current_hp / game.boss_manager.boss.stats.health_stats.max_hp), height = UI_BOSS_HEALTH_BAR_SIZE.y}
+        boss_healthbar_fill_rect := rl.Rectangle {x = ui_rect.x + ui_rect.width / 2 - UI_BOSS_HEALTH_BAR_SIZE.x / 2, y = ui_rect.y, width = UI_BOSS_HEALTH_BAR_SIZE.x * (game.boss_manager.boss.stats.health_stats.current_hp / game.boss_manager.boss.stats.health_stats.max_hp), height = UI_BOSS_HEALTH_BAR_SIZE.y}
         rl.DrawRectangleRec(boss_healthbar_fill_rect, rl.RED)
     }
 }
@@ -261,50 +258,29 @@ player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, fonts: map[string] rl
 
             }
         }
-
-
-        // is_hover := is_ui_component_hover(game_options^, slot_rect)
-        // if is_hover {
-        //     if game_options.cursor_controler.current_cursor != .HOVER {
-        //         // game_options.cursor_controler.current_cursor = .HOVER
-        //         render_temp_cursor(atlas, SPRITE_MAP[UI_CURSIR_SPRITE_2], game_options^)
-        //     }
-        // } 
-
     }
 }
 
 pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Controller, player: ^Player, buff: STAT_BUFF, amount: f32) {
     switch buff {
-            case .HP: {
-                player.stats.health_stats.max_hp += amount
-                player.stats.health_stats.current_hp += 0.25 * player.stats.health_stats.max_hp
-            }
-            case .AD: { 
-                player.stats.buffes.damage += amount
-            }
-            case .ATS: {
-                if player.stats.buffes.at_spd + amount >= MAX_ATS_BUFF_AMOUNT {
-                    player.stats.buffes.at_spd = MAX_ATS_BUFF_AMOUNT
-                } else {
-                    player.stats.buffes.at_spd += amount
-                }
-            }
+        case .HP: {
+            player.stats.health_stats.max_hp += amount
+            player.stats.health_stats.current_hp += 0.25 * player.stats.health_stats.max_hp
+        }
+        case .AD: { 
+            player.stats.buffes.damage += amount
+        }
+        case .ATS: {
+            player.stats.buffes.at_spd = min(MAX_ATS_BUFF_AMOUNT, player.stats.buffes.at_spd + amount)
+        }
 
-            case .AR: {
-                    if player.stats.buffes.armor + amount >= MAX_AR_BUFF_AMOUNT {
-                    player.stats.buffes.armor = MAX_AR_BUFF_AMOUNT
-                } else {
-                    player.stats.buffes.armor += amount
-                }
-            }
-            case .MVSPD : {
-                if player.stats.buffes.mv_spd + amount >= MAX_MVSP_BUFF_AMOUNT {
-                    player.stats.buffes.mv_spd = MAX_MVSP_BUFF_AMOUNT
-                } else {
-                    player.stats.buffes.mv_spd += amount
-                }
-            }
+        case .AR: {
+            player.stats.buffes.armor = min(MAX_AR_BUFF_AMOUNT, player.stats.buffes.armor + amount)
+        }
+        case .MVSPD : {
+            player.stats.buffes.mv_spd = min(MAX_AR_BUFF_AMOUNT, player.stats.buffes.mv_spd + amount)
+
+        }
 
     }
 
@@ -421,7 +397,7 @@ mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, level_data: Le
 paused_sign_draw:: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle) {
     sprite := SPRITE_MAP[PAUSED_SIGN_SPRITE]
     sign_source := rl.Rectangle {x = sprite.x, y = sprite.y, width = sprite.w, height = sprite.h}
-    sign_dest := rl.Rectangle { x = get_rect_center(ui_rect).x - UI_PAUSED_SIGN_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_PAUSED_SIGN_SIZE.y - 20., width = UI_PAUSED_SIGN_SIZE.x, height = UI_PAUSED_SIGN_SIZE.y}
+    sign_dest := rl.Rectangle { x = ui_rect.x + ui_rect.width / 2 - UI_PAUSED_SIGN_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_PAUSED_SIGN_SIZE.y - 20., width = UI_PAUSED_SIGN_SIZE.x, height = UI_PAUSED_SIGN_SIZE.y}
     rl.DrawTexturePro(atlas, sign_source, sign_dest, {0, 0}, 0, rl.WHITE)
 }
 

@@ -70,7 +70,7 @@ UI_CURSIR_SPRITE_1 :: "Ui_cursor_sprite_1"
 UI_CURSIR_SPRITE_2 :: "Ui_cursor_sprite_2"
 
 UI_PLAYER_DEBUFF_FIRE_SPRITE :: "Ui_player_debuff_fire_sprite"
-
+EFFECT_PLAYER_STOMP :: "Effect_player_stomp"
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
     KEY_DISABLE_AURA_SPRITE = {x =288, y = 176, w = 32, h = 32},
@@ -128,7 +128,8 @@ SPRITE_MAP := map[string]Sprite_desc {
     UI_CURSIR_SPRITE_2 = {x = 16, y = 80, w = 16, h = 16},
     GAME_OVER_SPRITE = {x = 0, y = 512, w = 144, h = 96},
     GAME_START_SPRITE = {x = 144, y = 512, w = 144, h = 96},
-    UI_PLAYER_DEBUFF_FIRE_SPRITE = {x = 208, y = 64, h =16, w = 16}
+    UI_PLAYER_DEBUFF_FIRE_SPRITE = {x = 208, y = 64, h =16, w = 16},
+    EFFECT_PLAYER_STOMP = {x = 0, y = 96, w = 128, h = 16}
 }
 
 load_atlas:: proc(game: ^Game) {
