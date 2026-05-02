@@ -7,7 +7,7 @@ BOSS_SIZE: f32 : 70
 
 BOSS_TELE_DUR: f32 : 1.
 BOSS_EXPLOSIONS_SKILL_TRIGGER_TIME : f32 : 1.
-BOSS_HP :f32 : 4000
+BOSS_HP :f32 : 100
 BOSS_DMG: f32 : 50
 BOSS_IDLE_TIME: f32: 5.
 BOSS_ARGO_TIME: f32: 5.
@@ -211,13 +211,19 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
             }
 
         }
+
+        if boss.stats.health_stats.current_hp <= 0 {
+            boss.status = .DEAD
+            for &key in game.level_data.keys {
+                key.disabled = false
+            }
+        }
     }
     for i:= len(boss.skill_queue) - 1; i  > 0; i -= 1  { 
         if boss.skill_queue[i].timer.current < 0 {
             unordered_remove(&boss.skill_queue, i)
         } 
     }
-
 }
 
 boss_draw :: proc(atlas: rl.Texture2D ,boss: Boss, particle_sys: ^Particles_systems, dt: f32) {
