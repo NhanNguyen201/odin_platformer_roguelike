@@ -44,18 +44,23 @@ resolve_enemy_horizontal :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
     body.vel.x *= -1
 }
 
-resolve_vertical :: proc( player : ^Player, rect : rl.Rectangle) {
+resolve_vertical :: proc( player : ^Player, rect : rl.Rectangle, verticle_acc : bool = false)  -> (bool, bool, bool) {
     pr := get_body_rect(player.body)
-    if !rl.CheckCollisionRecs(pr, rect) do return
+    if !rl.CheckCollisionRecs(pr, rect) {
+        return false, false, false
+    }
 
     if pr.y < rect.y {
+       
         player.body.position.y = rect.y - pr.height / 2
-        player.on_ground = true
         player.body.vel.y = 0
+        player.on_ground = true
+        return true, true, verticle_acc 
     } else {
         player.body.position.y = rect.y + rect.height + pr.height / 2
         player.body.vel.y = 0
     }
+    return true, false, false
 }
 
 resolve_enemy_vertical :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
