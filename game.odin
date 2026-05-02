@@ -189,7 +189,10 @@ level_gate_update :: proc(game: ^Game) {
         player_rect := get_body_rect(game.player.body)
 
         if rl.CheckCollisionRecs(gate, player_rect) {
-            load_level(game, game.current_level + 1)
+            game.ui_controller.is_ui_screen = true
+            game.game_options.is_paused = true
+            game.ui_controller.ui_scene = .END_LEVEL
+            game.ui_controller.transition_time = 0.5
         }
        
     }
@@ -253,6 +256,8 @@ game_draw:: proc(game: ^Game, dt: f32) {
     
     particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
     player_ui_draw(game)
+    game_ui_scene_draw(game, dt)
+
     render_cursor(game.game_sprite_atlas, game.game_options)
 }
 

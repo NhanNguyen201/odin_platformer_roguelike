@@ -63,7 +63,6 @@ main :: proc() {
         
         
         game_draw(&game, dt)
-        game_ui_scene_draw(&game, dt)
 
         rl.EndMode2D()
         rl.EndDrawing()
