@@ -10,12 +10,12 @@ GRAVITY: f32: 250
 PLAYER_SIZE: rl.Vector2: {12, 12}
 PLAYER_MOVE_SPD: f32 : 140
 PlAYER_JUMP_VEL: f32: -240
-MAX_FALL_SPEED: f32: 150
+MAX_FALL_SPEED: f32: 300
 BULLET_SIZE: rl.Vector2 : {6, 6}
 Enemy_melee_SIZE : rl.Vector2 : {15, 15}
 
 LEVEL_GATE_SIZE : rl.Vector2 : {12, 12}
-
+MONEY_COINS_PER_KEY : f32 : 20
 
 BULLET_DIRECTION :: enum {
     UP, 
@@ -311,7 +311,7 @@ key_collect:: proc(player: Player, game: ^Game) {
 
         if !key.collected {
             game.level_data.collected_keys += 1
-
+            game.player.money_coins += MONEY_COINS_PER_KEY
             key.collected = true
         }  
         

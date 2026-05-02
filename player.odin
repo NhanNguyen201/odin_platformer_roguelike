@@ -7,6 +7,8 @@ Inittal_bullet_countdown :f32 : 1.
 PLAYER_MAX_HORIZONTAL_SPD : f32 : 130
 PLAYER_DEBUFF_TICK_TIME : f32 : 1.
 PLAYER_MAX_ACC : f32 : 7.5
+STOMPED_MAX_FALL_SPEED: f32 : 600
+
 STAT_BUFF:: enum {
     HP,
     AD,
@@ -28,6 +30,7 @@ Player :: struct {
     spawn_pos: rl.Vector2,
     on_ground: bool,
     is_flip: bool,
+    money_coins: f32,
     bullet_cd: Bullet_Countdown,
     anim_controller: Animation_controller,
     exp_controller: Experience_controller
@@ -38,7 +41,7 @@ Body :: struct {
     position: rl.Vector2,
     vel: rl.Vector2,
     direction : Player_direction,
-    acc: f32
+    acc: rl.Vector2
 }
 
 Experience_controller:: struct {
@@ -136,7 +139,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.direction = .LEFT
         player.is_flip = true
         // player.body.vel.x = -(PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
-        player.body.acc = -PLAYER_MAX_ACC
+        player.body.acc.x = -PLAYER_MAX_ACC
          if player.anim_controller.animation_name != RUN_ANI {
             player.anim_controller.animation_name = RUN_ANI
             player.anim_controller.current_frame = 0
@@ -147,7 +150,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.is_flip = false
 
         // player.body.vel.x = (PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
-        player.body.acc = PLAYER_MAX_ACC
+        player.body.acc.x = PLAYER_MAX_ACC
 
         if player.anim_controller.animation_name != RUN_ANI {
             player.anim_controller.animation_name = RUN_ANI
@@ -157,7 +160,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
         }
     } else {
-        player.body.acc = 0
+        player.body.acc.x = 0
 
         if player.on_ground {
             player.body.vel.x  *= 0.8
@@ -170,7 +173,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         }
     }
 
-    player.body.vel.x += player.body.acc
+    player.body.vel.x += player.body.acc.x
     player.body.vel.x = clamp(player.body.vel.x, -PLAYER_MAX_HORIZONTAL_SPD * (1 + player.stats.buffes.mv_spd / 80), PLAYER_MAX_HORIZONTAL_SPD * (1 + player.stats.buffes.mv_spd / 80))
     
     player.body.position.x += player.body.vel.x  * dt
@@ -184,18 +187,37 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.on_ground = false
     }
     
+    stomp_pressed := rl.IsKeyDown(.S) || rl.IsKeyDown(.DOWN)
+
+    if stomp_pressed && !player.on_ground {
+        player.body.acc.y = 50
+    } else {
+        player.body.acc.y = 0
+    }
+
     for block_collider in game_collider_block {
         resolve_horizontal(player, block_collider)
     }
 
-
-    player.body.vel.y = min(player.body.vel.y + (GRAVITY * dt), MAX_FALL_SPEED)
+    player.body.vel.y += player.body.acc.y
+    player.body.vel.y = min(player.body.vel.y + (GRAVITY * dt), stomp_pressed ? STOMPED_MAX_FALL_SPEED : MAX_FALL_SPEED )
     
     player.on_ground = false
     player.body.position.y += player.body.vel.y * dt
 
     for block_collider in game_collider_block {
-        resolve_vertical(player, block_collider)
+        _, _, is_stomped_collided := resolve_vertical(player, block_collider, player.body.acc.y > 0)
+        if is_stomped_collided  {
+            add_particle(&game.particle_system, {
+                sprite_count = 4,
+                timer = {max_time = 0.5, current = 0.5},
+                sprite_source = get_sprite_source_rect(SPRITE_MAP[EFFECT_PLAYER_STOMP]),
+                size = {24, 12},
+                is_blur = true,
+                is_scaled = true,
+                position = player.body.position + {0,3} 
+            })
+        }
     }
 
     if player.bullet_cd.current_time > 0 {
@@ -213,7 +235,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 
     resolve_player_and_bullet(player.body, player.stats.buffes, &player.stats.health_stats, &game.enemy_side.enemy_bullets)
-    if player.stats.health_stats.current_hp > 0 {
+    if player.stats.health_stats.current_hp > 0 && game.ui_controller.ui_scene != .GAME_OVER{
         resolve_player_debuff_update(player, dt)
     }
 
