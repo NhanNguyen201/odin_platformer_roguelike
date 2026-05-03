@@ -162,6 +162,7 @@ load_level :: proc(game: ^Game, lvl: int)  {
         game.ui_controller.transition_time = BOSS_SCENE_TRANSITION_TIME
         game.ui_controller.is_ui_screen = true
         game.game_options.is_paused = true
+        game.boss_manager.map_size = game.level_data.map_size
         spawn_boss(&game.boss_manager)
     } else if lvl == 0 {
         game.ui_controller.ui_scene = .GAME_START
