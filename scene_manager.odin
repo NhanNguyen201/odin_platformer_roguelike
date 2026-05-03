@@ -73,23 +73,22 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
         rl.DrawTexturePro(game.game_sprite_atlas, sprite_source, sprite_dest, {sprite_dest.width / 2, sprite_dest.height / 2}, 0, rl.WHITE)
        
     } else if game.ui_controller.ui_scene == .END_LEVEL {
-        sign_source := get_sprite_source_rect(SPRITE_MAP[UI_SHOP_SIGN_SPRITE])
-        rl.DrawRectangleRec(ui_rect, rl.BLACK)
+        ui_scr_source := get_sprite_source_rect(SPRITE_MAP[UI_SCREEN_SPRITE])
+        rl.DrawTexturePro(game.game_sprite_atlas, ui_scr_source, ui_rect, 0, 0, rl.WHITE)
         coins_text := fmt.ctprintf("Coins you got : %.0f", game.player.money_coins)
         rl.DrawTextPro(game.fonts[FONT_REG], coins_text, {ui_rect.x + 10, ui_rect.y + 10}, 0, 0, 12, 0.1, rl.WHITE)
 
         shop_open_rect := rl.Rectangle {x = ui_rect.x + 10 , y = ui_rect.y + 25, width = 75, height = 15}
         is_shop_hover := is_ui_component_hover(game.game_options, shop_open_rect)
-        // rl.DrawRectangleRec(shop_open_rect, rl.Color{ 25, 25, 255, 255})
-        rl.DrawTexturePro(game.game_sprite_atlas, sign_source, shop_open_rect, 0, 0, is_shop_hover ? rl.Color{ 25, 25, 255, 255} : rl.WHITE)
+        ui_box_draw(game.game_sprite_atlas, shop_open_rect)
         shop_open_text := fmt.ctprintf("Go shopping :> ")
         rl.DrawTextPro(game.fonts[FONT_BOLD], shop_open_text, {shop_open_rect.x + 5, shop_open_rect.y + 7.5}, {0, 4.5}, 0, 9, 0.1, rl.WHITE)
 
         next_level_rect := rl.Rectangle {x = ui_rect.x + ui_rect.width / 2 - 45, y = ui_rect.y + ui_rect.height - 40 , height = 20, width = 50}
         is_next_level_hover := is_ui_component_hover(game.game_options, next_level_rect)
 
-        // rl.DrawRectangleRec(next_level_rect, rl.Color{ 25, 25, 255, 255})
-        rl.DrawTexturePro(game.game_sprite_atlas, sign_source, next_level_rect, 0, 0, is_next_level_hover ? rl.Color{ 25, 25, 255, 255} : rl.WHITE)
+        ui_box_draw(game.game_sprite_atlas, next_level_rect)
+
 
         next_level_text := fmt.ctprintf("Next level")
         rl.DrawTextPro(game.fonts[FONT_BOLD], next_level_text, {next_level_rect.x + 5, next_level_rect.y + 10}, {0, 4.5}, 0, 9, 0.1, rl.WHITE  )

@@ -415,3 +415,7 @@ get_rect_size :: proc(rect: rl.Rectangle) -> rl.Vector2 {
     return {rect.width, rect.height}
 }
 
+ui_box_draw:: proc(atlas: rl.Texture2D, dest: rl.Rectangle) {
+    UI_BOX_SOURCE := get_sprite_source_rect(SPRITE_MAP[UI_BOX_SPRITE]) 
+    rl.DrawTexturePro(atlas, UI_BOX_SOURCE, dest, 0, 0, rl.WHITE)
+}

@@ -50,15 +50,19 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
-        
-        game_pre_update(&game, dt)
-        game_update(&game, dt)
-        game_post_update(&game, dt)
-
-        rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
 
+        
+        game_pre_update(&game, dt)
+
+        game_update(&game, dt)
+        game_post_update(&game, dt)
+        
+        rl.BeginDrawing()
+
         rl.BeginMode2D(game.camera)
+        
+        
 
         
         
