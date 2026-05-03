@@ -17,7 +17,8 @@ Boss_levels : [MAX_BOSS_NUMB] int= {0, 10}
 
 Boss_level_manager :: struct {
     is_boss_level : bool,
-    boss: Boss
+    boss: Boss,
+    map_size: rl.Vector2
 }
 
 Timer :: struct {
@@ -100,7 +101,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
         } else if boss.combat_state == .ARGO {
             
             boss.state_timer.current -= dt
-            if boss.state_timer.current < 0 && game.player.stats.health_stats.current_hp > 0{
+            if boss.state_timer.current < 0 && get_player(game^).stats.health_stats.current_hp > 0{
                 
                 append(&boss.skill_queue,  Boss_skill_cast {
                     area_effect = 20.,
@@ -140,7 +141,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                     } else if skill.state == .TRIGGER  {
                         skill.trigger.current -= dt
                         if skill.trigger.current > .5 {
-                            skill.pos_destination = game.player.body.position
+                            skill.pos_destination = get_player(game^).body.position
                         }
                         if skill.trigger.current < 0 {
                             skill.state = .CASTED 
@@ -154,7 +155,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                         }
                     } else if skill.state == .CASTED   {
                         skill.timer.current -= dt 
-                        if rl.CheckCollisionCircleRec(skill.pos_destination, skill.area_effect, get_body_rect(game.player.body)) {
+                        if rl.CheckCollisionCircleRec(skill.pos_destination, skill.area_effect, get_body_rect(get_player(game^).body)) {
                             player_apply_debuff({debuff_type = .BURNING, dmg = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
 
                         }
@@ -168,7 +169,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                         }
                     } else if skill.state == .TRIGGER  {
                         skill.trigger.current -= dt
-                        skill.pos_destination = game.player.body.position
+                        skill.pos_destination = get_player(game^).body.position
                         skill.pos_from = boss.body.position
                         if skill.trigger.current < 0 {
                             skill.state = .CASTED
@@ -178,7 +179,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                         // fireball_circle := 
                         fireball_pos := get_fireball_position(skill^, dt)
 
-                        if rl.CheckCollisionCircleRec(fireball_pos, skill.area_effect, get_body_rect(game.player.body))  && game.player.stats.health_stats.current_hp > 0 {
+                        if rl.CheckCollisionCircleRec(fireball_pos, skill.area_effect, get_body_rect(get_player(game^).body))  && get_player(game^).stats.health_stats.current_hp > 0 {
                             player_apply_debuff({debuff_type = .BURNING, dmg = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
                         }
                     }
@@ -200,8 +201,8 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
             } else {
                 if boss.teleportation.count > 0 {
                     boss.teleportation.count -= 1
-                    boss.body.position.x = game.level_data.map_size.x * (rand.float32() > 0.5 ? 1 : 0)
-                    boss.body.position.y = game.level_data.map_size.y * rand.float32()
+                    boss.body.position.x = game.boss_manager.map_size.x * (rand.float32() > 0.5 ? 1 : 0)
+                    boss.body.position.y = game.boss_manager.map_size.y * rand.float32()
                 }
                 boss.state_timer.current -= dt
                 if boss.state_timer.current < 0 {
@@ -308,6 +309,6 @@ spawn_boss :: proc(boss_manager: ^Boss_level_manager)  {
         combat_state = .IDLE,
         state_timer = {
             current = 5.
-        }
+        },
     }
 }
