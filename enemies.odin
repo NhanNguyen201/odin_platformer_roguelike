@@ -295,10 +295,10 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
                     enemy.body.vel.x = ENEMY_MOVE_SPEED * (enemy.body.direction == .RIGHT ? 1 : -1)
                     enemy.body.position.x += dt * enemy.body.vel.x 
                     
-                    if rl.CheckCollisionPointRec(game.player.body.position, taunted_rect) {
+                    if rl.CheckCollisionPointRec(get_player(game^).body.position, taunted_rect) {
                         behind_cld := false
                         for cld in game.level_data.colliders {
-                            if check_collision_line_rect(enemy.body.position, game.player.body.position, cld) {
+                            if check_collision_line_rect(enemy.body.position, get_player(game^).body.position, cld) {
                                 behind_cld = true
                                 break
                             }
@@ -314,10 +314,10 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
                     
                 }
                 case .TAUNTED : {
-                    enemy.body.direction = game.player.body.position.x - enemy.body.position.x > 0 ? .RIGHT : .LEFT
+                    enemy.body.direction = get_player(game^).body.position.x - enemy.body.position.x > 0 ? .RIGHT : .LEFT
                     enemy.taunted_timer.current -= dt
                     
-                    if enemy.taunted_timer.current > dt  && !rl.CheckCollisionPointRec(game.player.body.position, taunted_rect) {
+                    if enemy.taunted_timer.current > dt  && !rl.CheckCollisionPointRec(get_player(game^).body.position, taunted_rect) {
                         if enemy.taunted_timer.current + 0.5 < enemy.taunted_timer.max_time  {
 
                             enemy.taunted_timer.current = enemy.taunted_timer.max_time
@@ -326,7 +326,7 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
                     }
                     if enemy.taunted_timer.current <= 0 {
                         enemy.attack.current = enemy.attack.max_time
-                        enemy.attack.direction = game.player.body.position.x - enemy.body.position.x > 0
+                        enemy.attack.direction = get_player(game^).body.position.x - enemy.body.position.x > 0
                         enemy.combat_state = .ATTACK
                     }
                 }
@@ -338,8 +338,8 @@ Enemy_melees_update::proc (game: ^Game, dt: f32) {
                     enemy.body.vel.x =  remain_force * (enemy.attack.direction ? 1 : -1) * dt
                     enemy.body.position.x += enemy.body.vel.x
 
-                    if rl.CheckCollisionRecs(get_body_rect(game.player.body), get_enemy_body_rect(enemy.body)) {
-                        player_take_dmg(&game.player.stats.health_stats, game.player.stats.buffes,enemy.stats.dmg)
+                    if rl.CheckCollisionRecs(get_body_rect(get_player(game^).body), get_enemy_body_rect(enemy.body)) {
+                        player_take_dmg(&game.player.stats.health_stats, get_player(game^).stats.buffes,enemy.stats.dmg)
                         resolve_e_mele_attack(&game.player, enemy, ENEMY_MELEE_PUSH_FORCE * remain_scale, dt)
                     }
                     
@@ -453,13 +453,13 @@ Enemy_sniper_update:: proc(game: ^Game, dt: f32) {
         if enemy.status == .ALIVE {
             resolve_enemy_and_bullet(enemy.body, &enemy.stats.health_stats, &game.player_bullets)
             if enemy.combat_state == .AIMING {
-                enemy.targeting.target = game.player.body.position
+                enemy.targeting.target = get_player(game^).body.position
                 // player_pos := game.player.body.position
                 enemy.targeting.current_aiming_point += (enemy.targeting.target - enemy.targeting.current_aiming_point) * dt * ( 1 + ENEMY_AIMING_SPD )
         
-                if rl.CheckCollisionPointCircle(game.player.body.position, enemy.targeting.current_aiming_point, ENEMY_AIMING_RADIUS) {
+                if rl.CheckCollisionPointCircle(get_player(game^).body.position, enemy.targeting.current_aiming_point, ENEMY_AIMING_RADIUS) {
                     enemy.targeting.trigger.current = enemy.targeting.trigger.max_time
-                    enemy.targeting.current_aiming_point = game.player.body.position
+                    enemy.targeting.current_aiming_point = get_player(game^).body.position
                     enemy.combat_state = .TRIGGER
                 }
             } else if enemy.combat_state == .TRIGGER{
@@ -467,8 +467,8 @@ Enemy_sniper_update:: proc(game: ^Game, dt: f32) {
                 sprite := SPRITE_MAP[E_SNIPER_PARTICLE_SPRITE]
                 sprite_source := get_sprite_source_rect(sprite)
                 if enemy.targeting.trigger.current <=0 {
-                    if rl.CheckCollisionPointCircle(game.player.body.position, enemy.targeting.current_aiming_point, ENEMY_AIMING_RADIUS) {
-                        player_take_dmg(&game.player.stats.health_stats, game.player.stats.buffes, enemy.stats.dmg)
+                    if rl.CheckCollisionPointCircle(get_player(game^).body.position, enemy.targeting.current_aiming_point, ENEMY_AIMING_RADIUS) {
+                        player_take_dmg(&game.player.stats.health_stats, get_player(game^).stats.buffes, enemy.stats.dmg)
                     }
     
                     add_particle(&game.particle_system, Particle {
@@ -597,10 +597,10 @@ Enemy_ranger_update :: proc (game: ^Game, dt: f32) {
                     
                     taunted_rect := rl.Rectangle {width = ENEMY_RANGER_TAUNTED_RANGE, height = 10, x = enemy.body.position.x + (enemy.body.direction == .RIGHT ? enemy.body.size.x / 2 : -enemy.body.size.x / 2 - ENEMY_RANGER_TAUNTED_RANGE), y = enemy.body.position.y - 5}
                     
-                    if rl.CheckCollisionPointRec(game.player.body.position, taunted_rect) {
+                    if rl.CheckCollisionPointRec(get_player(game^).body.position, taunted_rect) {
                         behind_cld := false
                         for cld in game.level_data.colliders {
-                            if check_collision_line_rect(enemy.body.position, game.player.body.position, cld) {
+                            if check_collision_line_rect(enemy.body.position, get_player(game^).body.position, cld) {
                                 behind_cld = true
                                 break
                             }
@@ -803,7 +803,7 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                             current = ENEMY_AIMING_TRIGGER_DUR,
                             max_time = ENEMY_AIMING_TRIGGER_DUR
                         },
-                        target = game.player.body.position,
+                        target = get_player(game^).body.position,
                         current_aiming_point = enemy_spawner.position + spawn_offset
 
                     }
@@ -861,4 +861,9 @@ e_ranger_shoot :: proc(enemy_bullet : ^[dynamic]Bullet, enemy_body: Enemy_Body, 
         position = enemy_body.position,
         is_exploded = true
     })
+}
+
+
+enemy_take_dmg :: proc(health: ^Health_stats, bullet: Bullet) {
+    health.current_hp -= bullet.dmg
 }

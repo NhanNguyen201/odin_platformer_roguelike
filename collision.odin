@@ -179,19 +179,6 @@ resolve_spawner_and_bullet :: proc( spawner : ^Enemy_spawner_pot, bullets: ^[dyn
 }
 
 
-enemy_take_dmg :: proc(health: ^Health_stats, bullet: Bullet) {
-    health.current_hp -= bullet.dmg
-}
-
-player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f32) {
-    reduced_dmg := dmg * (1 - (player_buff.armor / 100))
-
-    if health.current_hp > reduced_dmg {
-        health.current_hp -= reduced_dmg
-    } else {
-        health.current_hp = 0
-    }
-}
 
 check_collision_line_rect :: proc(p1, p2: rl.Vector2, r: rl.Rectangle)  -> bool {
     collision_point: rl.Vector2

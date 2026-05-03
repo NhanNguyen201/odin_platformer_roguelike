@@ -322,3 +322,18 @@ resolve_player_debuff_update:: proc(player: ^Player, dt: f32) {
         }
     }
 }
+
+
+player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f32) {
+    reduced_dmg := dmg * (1 - (player_buff.armor / 100))
+
+    if health.current_hp > reduced_dmg {
+        // health.current_hp -= reduced_dmg
+    } else {
+        health.current_hp = 0
+    }
+}
+
+get_player :: proc(game: Game) -> Player {
+    return game.player
+}
