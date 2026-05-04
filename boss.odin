@@ -13,7 +13,7 @@ BOSS_IDLE_TIME: f32: 5.
 BOSS_ARGO_TIME: f32: 5.
 MAX_BOSS_NUMB : int : 2
 BOSS_FIREBALL_FLY_SPD : f32 : 25
-Boss_levels : [MAX_BOSS_NUMB] int= {0, 10}
+Boss_levels : [MAX_BOSS_NUMB] int= {1, 10}
 
 Boss_level_manager :: struct {
     is_boss_level : bool,
@@ -218,6 +218,8 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
             for &key in game.level_data.keys {
                 key.disabled = false
             }
+            clear(&boss.skill_queue)
+            return
         }
     }
     for i:= len(boss.skill_queue) - 1; i  > 0; i -= 1  { 
@@ -226,6 +228,16 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
         } 
     }
 }
+
+// boss_skills_update :: proc(boss_skills : ^[dynamic]Boss_skill_cast, dt: f32) {
+//     for &skill, idx in boss_skills {
+//         skil.timer.current -= dt
+
+//         if skil.timer.current < 0 {
+//             unordered_remove()
+//         }
+//     }
+// } 
 
 boss_draw :: proc(atlas: rl.Texture2D ,boss: Boss, particle_sys: ^Particles_systems, dt: f32) {
     boss_rect := rl.Rectangle{ boss.body.position.x -  boss.body.size.x , boss.body.position.y -  boss.body.size.y , boss.body.size.x * 2, boss.body.size.y * 2}
