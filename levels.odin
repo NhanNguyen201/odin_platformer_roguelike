@@ -7,20 +7,7 @@ import "core:os"
 import "core:strings"
 import "core:math"
 import "core:math/rand"
-Enemy_spawner_status :: enum {
-    EXIST,
-    COUNT_DOWN
-}
-Enemy_directions :: enum {
-    LEFT, 
-    RIGHT
-}
 
-Enemy_types :: enum {
-    MELEE,
-    RANGER,
-    SNIPER
-}
 
 BACKGROUND_LAYER: int : 0
 VISIBLE_LAYER_LOW: int : 1
@@ -153,21 +140,21 @@ load_level :: proc(game: ^Game, lvl: int)  {
     game.level_data.is_complete = false
     game.level_data.collected_keys = 0
     game.player.body.vel = {0, 0}    
-    
+    refresh_shop(&game.shop_manager)
 
     game.boss_manager.is_boss_level = is_boss_level
     
-    if is_boss_level {
+    if lvl == 0 {
+        game.ui_controller.ui_scene = .GAME_START
+        game.ui_controller.is_ui_screen = true
+        game.game_options.is_paused = true
+    } else if is_boss_level {
         game.ui_controller.ui_scene = .BOSS_ENTRANCE
         game.ui_controller.transition_time = BOSS_SCENE_TRANSITION_TIME
         game.ui_controller.is_ui_screen = true
         game.game_options.is_paused = true
         game.boss_manager.map_size = game.level_data.map_size
         spawn_boss(&game.boss_manager)
-    } else if lvl == 0 {
-        game.ui_controller.ui_scene = .GAME_START
-        game.ui_controller.is_ui_screen = true
-        game.game_options.is_paused = true
     } else {
         game.ui_controller.ui_scene = .START_LEVEL
         game.ui_controller.transition_time = 1.

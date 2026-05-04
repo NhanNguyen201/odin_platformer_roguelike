@@ -24,6 +24,20 @@ ENEMY_MOVE_SPEED: f32 : 20
 ENEMY_SPAWNER_SIZE: rl.Vector2 : {8, 16}
 ENEMY_SPAWN_OFFSET_RANGE : f32 : 25
 
+Enemy_spawner_status :: enum {
+    EXIST,
+    COUNT_DOWN
+}
+Enemy_directions :: enum {
+    LEFT, 
+    RIGHT
+}
+
+Enemy_types :: enum {
+    MELEE,
+    RANGER,
+    SNIPER
+}
 
 Enemy_buffes :: struct {
 
