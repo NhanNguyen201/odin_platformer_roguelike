@@ -76,7 +76,8 @@ Game :: struct {
     game_cloud_background: rl.Texture2D,
     player_bullets: [dynamic] Bullet,
     enemy_side: Enemy_side,
-    boss_manager: Boss_level_manager
+    boss_manager: Boss_level_manager,
+    shop_manager: Shop_manager
 }
  
 
@@ -254,11 +255,11 @@ game_draw:: proc(game: ^Game, dt: f32) {
     
    
     
-    particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
     player_ui_draw(game)
     game_ui_scene_draw(game, dt)
-
+    
     render_cursor(game.game_sprite_atlas, game.game_options)
+    particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
 }
 
 level_gate_draw:: proc(atlas: rl.Texture2D, level_data: Level_data) {
@@ -316,8 +317,19 @@ key_collect:: proc(player: Player, game: ^Game) {
 
         if !key.collected {
             game.level_data.collected_keys += 1
-            game.player.money_coins += MONEY_COINS_PER_KEY
+            game.player.money_coins.val += MONEY_COINS_PER_KEY
             key.collected = true
+            add_particle(&game.particle_system, {
+                size = {20, 20},
+                position = key.position,
+                sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_COIN_PARTICLE_SPRITE]),
+                vel = {0, -100},
+                is_blur = true,
+                is_scaled = true,
+                timer = {max_time = 0.5, current = 0.5}
+
+
+            })
         }  
         
     }

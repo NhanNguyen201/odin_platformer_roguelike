@@ -25,7 +25,7 @@ UI_BOSS_HEALTH_BAR_SIZE: rl.Vector2 : {200, 10}
 
 UI_CURSIR_SIZE : rl.Vector2: { 16 , 16}
 UI_UNIT_EXPRESSION_SIZE : rl.Vector2 : {16, 16}
-
+UI_NEXT_LEVEL_RECT_SIZE : rl.Vector2 : {70, 20}
 HEALTH_BAR_SIZE : rl.Vector2: {40, 7}
 EXPERIENCE_BAR_SIZE: rl.Vector2: {40, 5}
 
@@ -49,7 +49,7 @@ UI_scenes :: enum  {
 
 Buff_detail :: struct {
     sprite: string,
-    buff : STAT_BUFF,
+    buff : Stat_buff,
     val : f32,
     description: string,
     title: string
@@ -261,7 +261,7 @@ player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, fonts: map[string] rl
     }
 }
 
-pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Controller, player: ^Player, buff: STAT_BUFF, amount: f32) {
+pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Controller, player: ^Player, buff: Stat_buff, amount: f32) {
     switch buff {
         case .HP: {
             player.stats.health_stats.max_hp += amount
@@ -294,12 +294,11 @@ pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Control
 skill_hud_draw :: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle, player: Player) {
     bullet_cd := player.bullet_cd
 
-    shoot_sprite := SPRITE_MAP[SHOOT_SKILL_SPRITE]
 
     hud_rect := rl.Rectangle{x = ui_rect.x + ui_rect.width / 2 - UI_SKILL_HUB_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_SKILL_HUB_SIZE.y, width = UI_SKILL_HUB_SIZE.x, height = UI_SKILL_HUB_SIZE.y}
-    rl.DrawRectangleRec(hud_rect, rl.Color{200,200,200, 200})
+    rl.DrawRectangleRec(hud_rect, rl.Color{200,200,200, 180})
     
-    shoot_source := rl.Rectangle{ x = shoot_sprite.x, y = shoot_sprite.y, height = shoot_sprite.h, width = shoot_sprite.w}
+    shoot_source := get_sprite_source_rect(SPRITE_MAP[SHOOT_SKILL_SPRITE])
     shoot_dest := rl.Rectangle { x = hud_rect.x + UI_SKILL_HUB_PADDING.x, y = hud_rect.y + UI_SKILL_HUB_PADDING.y, height = UI_SKILL_HUD_SLOT_SIZE.x, width = UI_SKILL_HUD_SLOT_SIZE.y}
 
     rl.DrawTexturePro(atlas, shoot_source, shoot_dest, {0, 0}, 0, rl.WHITE)
@@ -307,6 +306,26 @@ skill_hud_draw :: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle, player: Playe
 
     rl.DrawRectangleRec(rl.Rectangle{x = shoot_dest.x, y = shoot_dest.y + (bullet_cd.max_time - bullet_cd.current_time) / bullet_cd.max_time * shoot_dest.height, height = bullet_cd.current_time / bullet_cd.max_time * shoot_dest.height, width = shoot_dest.width}, rl.Color {0, 0, 0, 180 })
 
+    items_rect := rl.Rectangle { x = hud_rect.x + hud_rect.width - 30, y = hud_rect.y , width = 30, height = hud_rect.height}
+    rl.DrawRectangleRec(items_rect, rl.Color{225, 225, 225, 250})
+
+    item_1_slot := rl.Rectangle {x = items_rect.x + 1, y = items_rect.y + 1, width = 8, height = 8}
+    player_item_slot_draw(atlas, player.pocket_items[0], item_1_slot)
+
+    item_2_slot := rl.Rectangle {x = items_rect.x + 11, y = items_rect.y + 1, width = 8, height = 8}
+    player_item_slot_draw(atlas, player.pocket_items[1], item_2_slot)
+
+    item_3_slot := rl.Rectangle {x = items_rect.x + 21, y = items_rect.y + 1, width = 8, height = 8}
+    player_item_slot_draw(atlas, player.pocket_items[2], item_3_slot)
+
+    item_4_slot := rl.Rectangle {x = items_rect.x + 1, y = items_rect.y + 11, width = 8, height = 8}
+    player_item_slot_draw(atlas, player.pocket_items[3], item_4_slot)
+
+    item_5_slot := rl.Rectangle {x = items_rect.x + 11, y = items_rect.y + 11, width = 8, height = 8}
+    player_item_slot_draw(atlas, player.pocket_items[4], item_5_slot)
+
+    item_6_slot := rl.Rectangle {x = items_rect.x + 21, y = items_rect.y + 11, width = 8, height = 8}
+    player_item_slot_draw(atlas, player.pocket_items[5], item_6_slot)
 }
 
 mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, level_data: Level_data, boss_manager: Boss_level_manager,player: Body) {
@@ -415,7 +434,38 @@ get_rect_size :: proc(rect: rl.Rectangle) -> rl.Vector2 {
     return {rect.width, rect.height}
 }
 
-ui_box_draw:: proc(atlas: rl.Texture2D, dest: rl.Rectangle) {
+ui_box_draw:: proc(atlas: rl.Texture2D, dest: rl.Rectangle, is_hovered : bool = false) {
     UI_BOX_SOURCE := get_sprite_source_rect(SPRITE_MAP[UI_BOX_SPRITE]) 
-    rl.DrawTexturePro(atlas, UI_BOX_SOURCE, dest, 0, 0, rl.WHITE)
+    rl.DrawTexturePro(atlas, UI_BOX_SOURCE, dest, 0, 0, is_hovered ? rl.Color{50,50, 255, 220} :rl.WHITE)
+}
+
+
+player_item_slot_draw :: proc(atlas: rl.Texture2D, item: Player_item, dest: rl.Rectangle) -> string {
+    item_tooltip : string
+    @static tooltip: [3] string = {"Heal 30%% of max health", "Increase 30%% attack \n for 30 second", "Increase 30%% speed \n for 30 second"} 
+    if item.type == .NONE {
+        rl.DrawRectangleRec(dest, rl.WHITE)
+        return "None"
+    } else {
+        sprite_source : rl.Rectangle
+        if item.type == .HEAL {
+            sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_ITEM_HEAL_SPRITE])
+            item_tooltip = tooltip[0]
+        } else if item.type == .ATK_DMG{
+            sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_ITEM_ATK_SPRITE])
+            item_tooltip = tooltip[1]
+
+        } else if item.type == .SPEED {
+            sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_ITEM_SPD_SPRITE])
+            item_tooltip = tooltip[2]
+
+        }
+        rl.DrawTexturePro(atlas, sprite_source, dest, 0, 0, rl.WHITE)
+        return item_tooltip
+    }
+}
+
+get_text_to_ui :: proc(font: rl.Font, text: cstring, font_size: f32, spacing: f32) -> (rl.Vector2, f32, f32) {
+    measured := rl.MeasureTextEx(font, text, font_size, spacing)
+    return measured, font_size, spacing
 }

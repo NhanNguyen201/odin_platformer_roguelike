@@ -2,14 +2,57 @@
 
 package main
 import rl "vendor:raylib"
+import "core:math/rand"
+import "core:math"
 
 Inittal_bullet_countdown :f32 : 1.
 PLAYER_MAX_HORIZONTAL_SPD : f32 : 130
 PLAYER_DEBUFF_TICK_TIME : f32 : 1.
 PLAYER_MAX_ACC : f32 : 7.5
 STOMPED_MAX_FALL_SPEED: f32 : 600
+PLAYER_ITEM_SLOT_NUMB: int : 6
 
-STAT_BUFF:: enum {
+PLAYER_ITEM_HEAL_AMOUNT: f32 : 30
+PLAYER_ITEM_ATK_AMOUNT: f32: 30
+PLAYER_ITEM_SPEED_AMOUNT: f32 : 25
+SHOP_ITEM_SLOT_NUM : int : 3
+SHOP_ITEM_COST: f32 : 75
+
+Shop_item_purchase_error :: enum {
+    NONE,
+    INVALID_ACTION,
+    NOT_ENOUGH_COINS,
+    POCKET_FULL,
+    SOLD
+}
+
+Shop_item :: struct {
+    price : f32,
+    item_type : Player_item_type,
+    item_status : Shop_item_status 
+} 
+
+Shop_item_status :: enum {
+    SOLD,
+    AVAILABLE
+}
+
+Player_item:: struct {
+    type: Player_item_type,
+}
+
+Player_item_type :: enum {
+    NONE,
+    HEAL,
+    ATK_DMG,
+    SPEED
+}
+
+Shop_manager :: struct {
+    items: [SHOP_ITEM_SLOT_NUM] Shop_item
+}
+
+Stat_buff:: enum {
     HP,
     AD,
     ATS, 
@@ -30,10 +73,11 @@ Player :: struct {
     spawn_pos: rl.Vector2,
     on_ground: bool,
     is_flip: bool,
-    money_coins: f32,
+    money_coins: Player_coins,
     bullet_cd: Bullet_Countdown,
     anim_controller: Animation_controller,
-    exp_controller: Experience_controller
+    exp_controller: Experience_controller,
+    pocket_items: [PLAYER_ITEM_SLOT_NUMB] Player_item
 }
 
 Body :: struct {
@@ -79,6 +123,9 @@ Player_stats :: struct {
     de_buffs: [dynamic] Player_debuff
 }
 
+Player_coins :: struct {
+    val: f32
+}
 
 Player_direction :: enum {
     LEFT, 
@@ -130,6 +177,51 @@ get_key_to_keycode :: proc (key: string) -> rl.KeyboardKey {
 
 can_key_to_keycode :: proc(key: string) -> bool {
     return type_of(KEYBOARD_KEYS[key]) == rl.KeyboardKey  
+}
+
+refresh_shop:: proc(shop: ^Shop_manager) {
+    new_item_for_shop : [3]Player_item_type = {.HEAL, .ATK_DMG, .SPEED}
+    for i := 0; i < SHOP_ITEM_SLOT_NUM; i += 1 {
+        new_item: Player_item_type= rand.choice(new_item_for_shop[:])
+        shop.items[i] = {
+            item_type = new_item,
+            item_status = .AVAILABLE,
+            price = SHOP_ITEM_COST
+        }
+    }
+}
+
+resolve_buy_item :: proc(shop: ^Shop_manager, item_idx: int, player_items: ^[PLAYER_ITEM_SLOT_NUMB]Player_item, player_coins: ^Player_coins) -> (bool, Shop_item_purchase_error) {
+    found := false
+    found_pocket_slot := false
+    found_pockket_idx :int = 0
+    
+    
+    if item_idx > SHOP_ITEM_SLOT_NUM do return false, .INVALID_ACTION
+
+    for i := 0; i < PLAYER_ITEM_SLOT_NUMB; i += 1 {
+        if player_items[i].type == .NONE {
+            found_pocket_slot = true
+            found_pockket_idx = i
+            break
+        }
+    }
+    if !found_pocket_slot {
+        return false, .POCKET_FULL
+    }
+
+    shop_item := shop.items[item_idx]
+
+    if shop_item.item_status == .SOLD do return false, .SOLD
+    
+    if player_coins.val < shop_item.price {
+        return false, .NOT_ENOUGH_COINS
+    } else {
+        shop.items[item_idx].item_status = .SOLD
+        player_items[found_pockket_idx].type = shop_item.item_type
+        player_coins.val -= shop_item.price
+        return true, .NONE
+    }
 }
 
 player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Rectangle, dt: f32) {
