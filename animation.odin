@@ -30,7 +30,8 @@ Particle :: struct {
     is_flip: bool,
     sprite_count: int,
     rotation: f32,
-    size: rl.Vector2
+    size: rl.Vector2,
+    vel: rl.Vector2
 }
 
 Particles_systems :: struct {
@@ -115,6 +116,11 @@ add_particle:: proc(particle_sys: ^Particles_systems, new_particle: Particle) {
     
 }
 
+particle_update :: proc(p : ^Particle, dt : f32) {
+    p.timer.current -= dt
+    p.position += p.vel * dt
+}
+
 particles_systems_update :: proc(particle_sys: ^Particles_systems, dt: f32) {
     for i:= 0; i < particle_sys.particles.len; i += 1 {
 
@@ -122,7 +128,7 @@ particles_systems_update :: proc(particle_sys: ^Particles_systems, dt: f32) {
             small_array.unordered_remove(&particle_sys.particles, i)
             continue
         } else {
-            particle_sys.particles.data[i].timer.current -= dt
+            particle_update(&particle_sys.particles.data[i], dt)
         }
     }
 }
