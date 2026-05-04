@@ -70,9 +70,20 @@ UI_CURSIR_SPRITE_1 :: "Ui_cursor_sprite_1"
 UI_CURSIR_SPRITE_2 :: "Ui_cursor_sprite_2"
 
 UI_PLAYER_DEBUFF_FIRE_SPRITE :: "Ui_player_debuff_fire_sprite"
-UI_BOX_SPRITE :: "Ui_shop_sigh_sprite"
+UI_BOX_SPRITE :: "Ui_box_sprite"
 UI_SCREEN_SPRITE :: "Ui_screen_sprite"
 EFFECT_PLAYER_STOMP :: "Effect_player_stomp"
+UI_COIN_PARTICLE_SPRITE :: "Ui_coin_particle_sprite" 
+UI_ITEM_HEAL_SPRITE :: "Ui_item_heal_sprite"
+UI_ITEM_ATK_SPRITE :: "Ui_item_atk_sprite"
+UI_ITEM_SPD_SPRITE :: "Ui_item_spd_sprite"
+
+UI_SHOP_SOLDOUT :: "Ui_shop_soldout"
+UI_SHOP_POCKET_FULL :: "Ui_shop_pocket_full"
+UI_SHOP_INVALID :: "Ui_shop_invalid"
+UI_SHOP_NOT_ENOUGH_MONEY :: "Ui_shop_not_enough_money"
+UI_SHOP_SUCCESS :: "Ui_shop_success"
+
 
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
@@ -134,7 +145,17 @@ SPRITE_MAP := map[string]Sprite_desc {
     UI_PLAYER_DEBUFF_FIRE_SPRITE = {x = 208, y = 64, h =16, w = 16},
     EFFECT_PLAYER_STOMP = {x = 0, y = 96, w = 128, h = 16},
     UI_BOX_SPRITE = {x = 0, y = 720, w = 64, h = 32},
-    UI_SCREEN_SPRITE = {x = 0, y = 752, w = 80, h = 48}
+    UI_SCREEN_SPRITE = {x = 0, y = 752, w = 80, h = 48},
+    UI_COIN_PARTICLE_SPRITE = {x = 64, y = 80, w = 16, h = 16 },
+    UI_ITEM_HEAL_SPRITE = {x = 0, y = 672, w = 48, h = 48},
+    UI_ITEM_ATK_SPRITE = {x = 48, y = 672, w = 48, h = 48},
+    UI_ITEM_SPD_SPRITE = {x = 96, y = 672, w = 48, h = 48},
+
+    UI_SHOP_NOT_ENOUGH_MONEY = {x = 0, y = 800, w = 48, h = 32},
+    UI_SHOP_SOLDOUT = {x = 144, y = 800, w = 48, h = 32},
+    UI_SHOP_POCKET_FULL = {x = 48, y = 800, w = 48, h = 32},
+    UI_SHOP_INVALID = {x = 96, y = 800, w = 48, h = 32},
+    UI_SHOP_SUCCESS = {x = 192, y = 800, w = 48, h = 32},
 }
 
 load_atlas:: proc(game: ^Game) {
