@@ -22,7 +22,7 @@ ENEMY_MELEE_TAUNTED_DUR: f32: .8
 
 ENEMY_MOVE_SPEED: f32 : 20
 ENEMY_SPAWNER_SIZE: rl.Vector2 : {8, 16}
-ENEMY_SPAWN_OFFSET_RANGE : f32 : 25
+ENEMY_SPAWN_OFFSET_RANGE : f32 : 15
 
 Enemy_spawner_status :: enum {
     EXIST,
@@ -402,11 +402,28 @@ Enemy_unit_update::proc (game: ^Game, dt: f32) {
             }
 
         }
-        enemy.body.vel.y = min(enemy.body.vel.y + (ENEMY_GRAVITY * dt), MAX_FALL_SPEED)
-            
-        enemy.body.position.y += enemy.body.vel.y * dt
-        for block_collider in game.level_data.colliders {
-            resolve_enemy_vertical(&enemy.body, block_collider)
+
+        if enemy.status == .IS_GRAB {
+            if len(game.boss_manager.boss.skill_queue) == 0 {
+                enemy.status = .ALIVE
+            }
+            for i:= 0; i < len(game.boss_manager.boss.skill_queue); i += 1{
+                skill  := game.boss_manager.boss.skill_queue[i]
+                if skill.target.id == enemy.id {
+                    enemy.body.position = get_grab_pos(skill.pos_from, skill.pos_destination, skill.timer)
+                }
+            }
+        }
+
+        if enemy.enemy_type != .SNIPER {
+            if enemy.status != .IS_GRAB {
+                enemy.body.vel.y = min(enemy.body.vel.y + (ENEMY_GRAVITY * dt), MAX_FALL_SPEED)
+                    
+                enemy.body.position.y += enemy.body.vel.y * dt
+                for block_collider in game.level_data.colliders {
+                    resolve_enemy_vertical(&enemy.body, block_collider)
+                }
+            }
         }
 
 
@@ -425,14 +442,7 @@ Enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: 
 
                 if enemy.status == .DEAD {
                     dead_sprite := SPRITE_MAP[E_MELEE_DEAD_SPRITE]
-                    rl.DrawTexturePro(
-                        atlas, 
-                        get_sprite_source_rect(dead_sprite, is_flip),
-                        rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y, width = enemy.body.size.x, height = enemy.body.size.y},
-                        enemy.body.size / 2,
-                        0,
-                        rl.WHITE
-                    )
+                    rl.DrawTexturePro( atlas, get_sprite_source_rect(dead_sprite, is_flip), enemy_rect, 0, 0, rl.WHITE )
                 } else {
                     if enemy.combat_state == .PARTROL {
                         if enemy.anim_controller.animation_name != RUN_ANI {
@@ -466,57 +476,43 @@ Enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: 
                 anim := E_ranger_animations[enemy.anim_controller.animation_name]
       
         
-        if enemy.status == .DEAD {
-            dead_sprite := SPRITE_MAP[E_RANGER_DEAD_SPRITE]
-                rl.DrawTexturePro(
-                    atlas, 
-                    get_sprite_source_rect(dead_sprite, is_flip),
-                    rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y, width = enemy.body.size.x, height = enemy.body.size.y},
-                    enemy.body.size / 2,
-                    0,
-                    rl.WHITE
-                )
-            } else {
-                if enemy.combat_state == .PARTROL {
-                    if enemy.anim_controller.animation_name != RUN_ANI {
-                        enemy.anim_controller.animation_name = RUN_ANI
-                        enemy.anim_controller.current_frame = 0
-                        enemy.anim_controller.current_timer = E_melee_animations[RUN_ANI].frame_timer
+                if enemy.status == .DEAD {
+                    dead_sprite := SPRITE_MAP[E_RANGER_DEAD_SPRITE]
+                    rl.DrawTexturePro(atlas, get_sprite_source_rect(dead_sprite, is_flip), enemy_rect, 0, 0, rl.WHITE)
+                } else {
+                    if enemy.combat_state == .PARTROL {
+                        if enemy.anim_controller.animation_name != RUN_ANI {
+                            enemy.anim_controller.animation_name = RUN_ANI
+                            enemy.anim_controller.current_frame = 0
+                            enemy.anim_controller.current_timer = E_melee_animations[RUN_ANI].frame_timer
+                        }
+                        draw_animation(atlas, &enemy.anim_controller, anim, E_RANGER_SPRITE, is_flip, enemy_rect, dt)
+
+                    } else if enemy.combat_state == .TAUNTED {
+                        taunted_sprite := SPRITE_MAP[E_RANGER_TAUNTED_SPRITE]
+                        taunted_sprite_source := get_sprite_source_rect(taunted_sprite, is_flip)
+                        
+                        rl.DrawTexturePro(atlas, taunted_sprite_source, enemy_rect, 0, 0, rl.WHITE)
+                        unit_expression_draw(atlas, SPRITE_MAP[E_TAUNTED_AURA_SPRITE], enemy.body.position + {8, -8})
+
+                    } else if enemy.combat_state == .RELOAD{
+                        if enemy.anim_controller.animation_name != RELOAD_ANI {
+                            enemy.anim_controller.animation_name = RELOAD_ANI
+                            enemy.anim_controller.current_frame = 0
+                            enemy.anim_controller.current_timer = E_melee_animations[RELOAD_ANI].frame_timer
+                        }
+                        
+                        draw_animation(atlas, &enemy.anim_controller, anim, E_RANGER_SPRITE, is_flip, enemy_rect, dt)
+
+                        unit_expression_draw(atlas, SPRITE_MAP[E_RELOAD_AURA_SPRITE], enemy.body.position + {8, -8})
                     }
-                    draw_animation(atlas, &enemy.anim_controller, anim, E_RANGER_SPRITE, is_flip, enemy_rect, dt)
-
-                } else if enemy.combat_state == .TAUNTED {
-                    taunted_sprite := SPRITE_MAP[E_RANGER_TAUNTED_SPRITE]
-                    taunted_sprite_source := get_sprite_source_rect(taunted_sprite, is_flip)
-                    
-                    rl.DrawTexturePro(atlas, taunted_sprite_source, enemy_rect, 0, 0, rl.WHITE)
-                    unit_expression_draw(atlas, SPRITE_MAP[E_TAUNTED_AURA_SPRITE], enemy.body.position + {8, -8})
-
-                } else if enemy.combat_state == .RELOAD{
-                    if enemy.anim_controller.animation_name != RELOAD_ANI {
-                        enemy.anim_controller.animation_name = RELOAD_ANI
-                        enemy.anim_controller.current_frame = 0
-                        enemy.anim_controller.current_timer = E_melee_animations[RELOAD_ANI].frame_timer
-                    }
-                    
-                    draw_animation(atlas, &enemy.anim_controller, anim, E_RANGER_SPRITE, is_flip, enemy_rect, dt)
-
-                    unit_expression_draw(atlas, SPRITE_MAP[E_RELOAD_AURA_SPRITE], enemy.body.position + {8, -8})
                 }
-            }
             }
             case .SNIPER : {
                 anim := E_sniper_animations[enemy.anim_controller.animation_name]
                 if enemy.status == .DEAD {
                     dead_sprite := SPRITE_MAP[E_SINPER_DEAD_SPIPER]
-                    rl.DrawTexturePro(
-                        atlas, 
-                        get_sprite_source_rect(dead_sprite, is_flip),
-                        rl.Rectangle {x = enemy.body.position.x, y = enemy.body.position.y, width = enemy.body.size.x, height = enemy.body.size.y},
-                        enemy.body.size / 2,
-                        0,
-                        rl.WHITE
-                    )
+                    rl.DrawTexturePro( atlas, get_sprite_source_rect(dead_sprite, is_flip), enemy_rect, 0, 0, rl.WHITE )
                 } else {
                     if abs(enemy.body.vel.x) == 0 {
                         if enemy.anim_controller.animation_name != IDLE_ANI {
@@ -545,7 +541,7 @@ Enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: 
             }
         }
         
-
+            
 
         if game_options.is_debug || game_options.is_health_bar {
             full_health_width : f32 = 20
