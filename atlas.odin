@@ -116,7 +116,7 @@ SPRITE_MAP := map[string]Sprite_desc {
     BOSS_GLASS_SPRITE = {x = 672, y = 0, w = 64, h = 32},
     BOSS_NOSE_SPRITE = {x = 672, y = 32, w = 32, h = 32},
     BOSS_BEARD_SPRITE = {x = 704, y = 32, w = 32, h = 32},
-    BOSS_HAND_SPRITE = {x = 736, y = 0, w = 32, h = 32},
+    BOSS_HAND_SPRITE = {x = 736, y = 0, w = 64, h = 32},
     BOSS_FIREBALL_SPRITE = {x = 0, y = 608, w = 144, h = 64, count = 3},
     BOSS_EXPLOSIONS_SPRITE = {x = 320, y = 176, w = 160, h = 32, count = 5},
     BOSS_AIMING_SPRITE = {x = 288, y = 144, h= 32, w =32},

@@ -33,8 +33,9 @@ resolve_enemy_horizontal :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
 
     if !rl.CheckCollisionRecs(pr, rect) do return
 
+    rect_center := get_rect_center(rect)
 
-    if pr.x < rect.x {
+    if pr.x < rect_center.x {
         body.position.x = rect.x - pr.width / 2
         
     } else {
