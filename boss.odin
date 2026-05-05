@@ -13,6 +13,7 @@ BOSS_IDLE_TIME: f32: 5.
 BOSS_ARGO_TIME: f32: 5.
 MAX_BOSS_NUMB : int : 2
 BOSS_FIREBALL_FLY_SPD : f32 : 25
+BOSS_MOVE_POS_NUMB: int : 8
 Boss_levels : [MAX_BOSS_NUMB] int= {1, 10}
 
 Boss_level_manager :: struct {
@@ -59,7 +60,7 @@ Skill_states :: enum {
 }
 
 Boss_teleportation:: struct {
-    count: int,
+    new_position: rl.Vector2,
     timer: Timer
 }
 Boss :: struct {
@@ -88,7 +89,9 @@ get_fireball_position :: proc(skill : Boss_skill_cast, dt: f32) -> rl.Vector2 {
     scale := 500 / (math.sqrt_f32(math.pow((skill.pos_destination - skill.pos_from).x, 2) + math.pow((skill.pos_destination - skill.pos_from).y, 2) ))
     return skill.pos_from + scale * (skill.pos_destination - skill.pos_from) * BOSS_FIREBALL_FLY_SPD  * (skill.timer.max_time - skill.timer.current) * dt
 }
-
+get_grab_pos :: proc(from: rl.Vector2, dest : rl.Vector2, timer: Timer) -> rl.Vector2 {
+    return dest + (from - dest) * (timer.current / timer.max_time)
+}
 boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
     if boss.status == .ALIVE {
         resolve_boss_and_bullet(boss.body, &boss.stats.health_stats, &game.player_bullets)
@@ -102,7 +105,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
             
             boss.state_timer.current -= dt
             if boss.state_timer.current < 0 && get_player(game^).stats.health_stats.current_hp > 0{
-                
+                grab_unit := rand.choice(game.enemy_side.enemy_units[:])
                 append(&boss.skill_queue,  Boss_skill_cast {
                     area_effect = 20.,
                     skill = .EXPLODE,
@@ -124,86 +127,36 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                     delay = {current = 4, max_time = 4}
                     
                 })
+                 append(&boss.skill_queue,  Boss_skill_cast {
+                    area_effect = 40.,
+                    skill = .GRAB,
+                    target = {id = grab_unit.id},
+                    timer = { current = 2, max_time = 2},
+                    trigger = {current =0.5, max_time = 0.5},
+                    delay = {current = 0, max_time = 0},
+                    
+                })
                 boss.state_timer.current = 9.
                 boss.combat_state = .SKILL_CAST
             }
         } else if boss.combat_state == .SKILL_CAST {
 
             boss.state_timer.current -= dt
-            for i:= len(boss.skill_queue) - 1; i  >= 0; i -= 1  {
-                skill := &boss.skill_queue[i]
-                if skill.skill == .EXPLODE {
-                    if skill.state == .DELAY {
-                        skill.delay.current -= dt
-                        if skill.delay.current < 0 {
-                            skill.state = .TRIGGER
-                        }
-                    } else if skill.state == .TRIGGER  {
-                        skill.trigger.current -= dt
-                        if skill.trigger.current > .5 {
-                            skill.pos_destination = get_player(game^).body.position
-                        }
-                        if skill.trigger.current < 0 {
-                            skill.state = .CASTED 
-                            add_particle(&game.particle_system, Particle {
-                                timer ={ max_time = skill.timer.current, current = skill.timer.current },
-                                position = skill.pos_destination,
-                                sprite_source = get_sprite_source_rect(SPRITE_MAP[BOSS_EXPLOSIONS_SPRITE]),
-                                sprite_count = 5,
-                                size = skill.area_effect * 2
-                            })
-                        }
-                    } else if skill.state == .CASTED   {
-                        skill.timer.current -= dt 
-                        if rl.CheckCollisionCircleRec(skill.pos_destination, skill.area_effect, get_body_rect(get_player(game^).body)) {
-                            player_apply_debuff({debuff_type = .BURNING, dmg = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
-
-                        }
-                    }
-                  
-                } else if skill.skill == .FIREBALL {
-                     if skill.state == .DELAY {
-                        skill.delay.current -= dt
-                        if skill.delay.current < 0 {
-                            skill.state = .TRIGGER
-                        }
-                    } else if skill.state == .TRIGGER  {
-                        skill.trigger.current -= dt
-                        skill.pos_destination = get_player(game^).body.position
-                        skill.pos_from = boss.body.position
-                        if skill.trigger.current < 0 {
-                            skill.state = .CASTED
-                        }
-                    } else if skill.state == .CASTED {
-                        skill.timer.current -= dt 
-                        // fireball_circle := 
-                        fireball_pos := get_fireball_position(skill^, dt)
-
-                        if rl.CheckCollisionCircleRec(fireball_pos, skill.area_effect, get_body_rect(get_player(game^).body))  && get_player(game^).stats.health_stats.current_hp > 0 {
-                            player_apply_debuff({debuff_type = .BURNING, dmg = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
-                        }
-                    }
-                    
-                }
-              
-            }
+            
             if boss.state_timer.current < 0 {
                 clear(&boss.skill_queue)
+                new_poss := get_boss_move_pos(game.boss_manager.map_size)
 
                 boss.state_timer.current = 2.
-                boss.teleportation.timer.current = 0.5
-                boss.teleportation.count = 1
+                boss.teleportation.timer = {current = 1., max_time = 1. }
+                boss.teleportation.new_position = rand.choice(new_poss[:])
                 boss.combat_state = .TELE_CAST
             }
         } else if boss.combat_state == .TELE_CAST {
             if boss.teleportation.timer.current > 0 {
                 boss.teleportation.timer.current -= dt
+                boss.body.position = boss.teleportation.new_position + ( boss.teleportation.new_position - boss.body.position) * (boss.teleportation.timer.current / boss.teleportation.timer.max_time)
             } else {
-                if boss.teleportation.count > 0 {
-                    boss.teleportation.count -= 1
-                    boss.body.position.x = game.boss_manager.map_size.x * (rand.float32() > 0.5 ? 1 : 0)
-                    boss.body.position.y = game.boss_manager.map_size.y * rand.float32()
-                }
                 boss.state_timer.current -= dt
                 if boss.state_timer.current < 0 {
                     boss.state_timer.current = 5.
@@ -222,28 +175,123 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
             return
         }
     }
+}
+
+
+boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
     for i:= len(boss.skill_queue) - 1; i  > 0; i -= 1  { 
         if boss.skill_queue[i].timer.current < 0 {
             unordered_remove(&boss.skill_queue, i)
         } 
     }
+    if boss.combat_state == .SKILL_CAST {
+        for i:= len(boss.skill_queue) - 1; i  >= 0; i -= 1  {
+            skill := &boss.skill_queue[i]
+            if skill.skill == .EXPLODE {
+                if skill.state == .DELAY {
+                    skill.delay.current -= dt
+                    if skill.delay.current < 0 {
+                        skill.state = .TRIGGER
+                    }
+                } else if skill.state == .TRIGGER  {
+                    skill.trigger.current -= dt
+                    if skill.trigger.current > .5 {
+                        skill.pos_destination = get_player(game^).body.position
+                    }
+                    if skill.trigger.current < 0 {
+                        skill.state = .CASTED 
+                        add_particle(&game.particle_system, Particle {
+                            timer ={ max_time = skill.timer.current, current = skill.timer.current },
+                            position = skill.pos_destination,
+                            sprite_source = get_sprite_source_rect(SPRITE_MAP[BOSS_EXPLOSIONS_SPRITE]),
+                            sprite_count = 5,
+                            size = skill.area_effect * 2
+                        })
+                    }
+                } else if skill.state == .CASTED   {
+                    skill.timer.current -= dt 
+                    if rl.CheckCollisionCircleRec(skill.pos_destination, skill.area_effect, get_body_rect(get_player(game^).body)) {
+                        player_apply_debuff({debuff_type = .BURNING, dmg = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
+    
+                    }
+                }
+                
+            } else if skill.skill == .FIREBALL {
+                if skill.state == .DELAY {
+                    skill.delay.current -= dt
+                    if skill.delay.current < 0 {
+                        skill.state = .TRIGGER
+                    }
+                } else if skill.state == .TRIGGER  {
+                    skill.trigger.current -= dt
+                    skill.pos_destination = get_player(game^).body.position
+                    skill.pos_from = boss.body.position
+                    if skill.trigger.current < 0 {
+                        skill.state = .CASTED
+                    }
+                } else if skill.state == .CASTED {
+                    skill.timer.current -= dt 
+                    // fireball_circle := 
+                    fireball_pos := get_fireball_position(skill^, dt)
+    
+                    if rl.CheckCollisionCircleRec(fireball_pos, skill.area_effect, get_body_rect(get_player(game^).body))  && get_player(game^).stats.health_stats.current_hp > 0 {
+                        player_apply_debuff({debuff_type = .BURNING, dmg = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
+                    }
+                }
+                
+            } else if skill.skill == .GRAB {
+                if skill.state == .DELAY {
+                    skill.delay.current -= dt
+                    
+
+                    if skill.delay.current < 0 {
+                        skill.state = .TRIGGER
+                    }
+                } else if skill.state == .TRIGGER {
+                    skill.trigger.current -= dt
+                    skill.pos_destination = game.player.body.position
+
+                    found := false
+                    found_idx :int = 0
+                    for i:= 0; i < len(game.enemy_side.enemy_units); i+= 1 {
+                        e_unit := game.enemy_side.enemy_units[i]
+                        if e_unit.id == skill.target.id && e_unit.status == .ALIVE{
+                            found = true
+                            found_idx = i
+                            skill.pos_from = e_unit.body.position
+                        }
+                    }
+                    if skill.trigger.current <= 0 {
+                        if !found {
+                            skill.timer = {current = 0, max_time = 0}
+                        } else {
+                            game.enemy_side.enemy_units[found_idx].status = .IS_GRAB
+                        }
+                        skill.state = .CASTED
+                    }
+
+                } else if skill.state == .CASTED {
+                    skill.timer.current -= dt 
+                    if skill.timer.current <= dt {
+                        for i:= 0; i < len(game.enemy_side.enemy_units); i+= 1 {
+                        e_unit := &game.enemy_side.enemy_units[i]
+                        if e_unit.id == skill.target.id {
+                            e_unit.status = .ALIVE
+                        }
+                    }
+                    }
+                }
+            }
+            
+        }
+    }
 }
 
-// boss_skills_update :: proc(boss_skills : ^[dynamic]Boss_skill_cast, dt: f32) {
-//     for &skill, idx in boss_skills {
-//         skil.timer.current -= dt
-
-//         if skil.timer.current < 0 {
-//             unordered_remove()
-//         }
-//     }
-// } 
-
-boss_draw :: proc(atlas: rl.Texture2D ,boss: Boss, particle_sys: ^Particles_systems, dt: f32) {
+boss_draw :: proc(atlas: rl.Texture2D ,boss: Boss, dt: f32) {
     boss_rect := rl.Rectangle{ boss.body.position.x -  boss.body.size.x , boss.body.position.y -  boss.body.size.y , boss.body.size.x * 2, boss.body.size.y * 2}
     boss_sprite := SPRITE_MAP[BOSS_BODY_SPRITE]
     boss_body_sprite_source := get_sprite_source_rect(boss_sprite)
-    rl.DrawTexturePro(atlas, boss_body_sprite_source, boss_rect, 0, 0, rl.WHITE)
+    rl.DrawTexturePro(atlas, boss_body_sprite_source, boss_rect, 0, 0, rl.Color {255,255,255, 200})
     // rl.DrawCircleV(boss.body.position, boss.body.size.x, rl.Color{255,255,255, 180})
 
     boss_glass_sprite := SPRITE_MAP[BOSS_GLASS_SPRITE]
@@ -267,7 +315,11 @@ boss_draw :: proc(atlas: rl.Texture2D ,boss: Boss, particle_sys: ^Particles_syst
    
     rl.DrawTexturePro(atlas, boss_beard_sprite_source, beard_rect, get_rect_size(beard_rect) / 2, 0, rl.WHITE)
     
-    if boss.combat_state == .SKILL_CAST {
+    
+}
+
+boss_skill_draw :: proc(atlas: rl.Texture2D, boss: Boss, dt: f32) {
+    if boss.status == .ALIVE && boss.combat_state == .SKILL_CAST {
         for skill in boss.skill_queue {
             if skill.skill == .EXPLODE {
                 if skill.state == .TRIGGER {
@@ -296,13 +348,21 @@ boss_draw :: proc(atlas: rl.Texture2D ,boss: Boss, particle_sys: ^Particles_syst
 
                 
                 }
+            } else if skill.skill == .GRAB {
+                if skill.state == .CASTED {
+                    sprite_source := get_sprite_source_rect(SPRITE_MAP[BOSS_HAND_SPRITE])
+                    hand_pos := get_grab_pos(skill.pos_from, skill.pos_destination, skill.timer)
+                    sprite_dest := rl.Rectangle {x = hand_pos.x - 15, y = hand_pos.y - 15, width = 60, height = 30}
+                    rl.DrawTexturePro(atlas, sprite_source, sprite_dest, 0, 0, rl.WHITE)
+                }
             }
         }
     }
 }
 
 spawn_boss :: proc(boss_manager: ^Boss_level_manager)  {
-    @static boss_position := rl.Vector2 { 500, 360 }
+    pos := get_boss_move_pos(boss_manager.map_size)
+    boss_position := rand.choice(pos[:])
     boss_manager.boss = {
         body = {
             position = boss_position,
@@ -322,5 +382,18 @@ spawn_boss :: proc(boss_manager: ^Boss_level_manager)  {
         state_timer = {
             current = 5.
         },
+    }
+}
+
+get_boss_move_pos :: proc(map_size: rl.Vector2) -> [BOSS_MOVE_POS_NUMB] rl.Vector2 {
+    return {
+        {0, 0},
+        {map_size.x, 0},
+        {map_size.x, map_size.y / 2},
+        {0, map_size.y / 2},
+        {map_size.x, map_size.y / 4},
+        {0, map_size.y / 4},
+        {map_size.x, map_size.y * 0.75},
+        {0, map_size.y * 0.75},
     }
 }
