@@ -331,6 +331,9 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         resolve_player_debuff_update(player, dt)
     }
 
+    if player.stats.health_stats.current_hp > 0 && game.ui_controller.ui_scene == .NONE {
+        resolve_using_item(player)
+    }
 }
 
 player_draw :: proc(player: ^Player, game: Game, dt: f32) {
@@ -415,6 +418,22 @@ resolve_player_debuff_update:: proc(player: ^Player, dt: f32) {
     }
 }
 
+resolve_using_item :: proc(player: ^Player) {
+    resolve_keyinput_and_item(.ONE, &player.pocket_items[0])
+    resolve_keyinput_and_item(.TWO, &player.pocket_items[1])
+    resolve_keyinput_and_item(.THREE, &player.pocket_items[2])
+    resolve_keyinput_and_item(.FOUR, &player.pocket_items[3])
+    resolve_keyinput_and_item(.FIVE, &player.pocket_items[4])
+    resolve_keyinput_and_item(.SIX, &player.pocket_items[5])
+}
+
+resolve_keyinput_and_item :: proc(key : rl.KeyboardKey, item: ^Player_item) {
+    if rl.IsKeyPressed(key) {
+        if item.type != .NONE {
+            item.type = .NONE
+        }
+    }
+}
 
 player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f32) {
     reduced_dmg := dmg * (1 - (player_buff.armor / 100))
