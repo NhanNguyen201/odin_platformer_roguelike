@@ -78,7 +78,7 @@ resolve_enemy_vertical :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
     }
 }
 
-resolve_e_mele_attack:: proc(player: ^Player, enemy: ^Enemy_melee, force: f32, dt: f32) {
+resolve_e_mele_attack:: proc(player: ^Player, enemy: ^Enemy_unit, force: f32, dt: f32) {
     player_rect := get_body_rect(player.body)
     enemy_rect := get_enemy_body_rect(enemy.body)
     if !rl.CheckCollisionRecs(player_rect, enemy_rect) do return

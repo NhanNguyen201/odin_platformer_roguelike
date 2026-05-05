@@ -25,9 +25,7 @@ BULLET_DIRECTION :: enum {
 }
 
 Enemy_side :: struct {
-    e_melee: [dynamic] Enemy_melee,
-    e_ranger: [dynamic] Enemy_ranger,
-    e_sniper: [dynamic] Enemy_sniper,
+    enemy_units: [dynamic] Enemy_unit,
     enemy_spawners: [dynamic] Enemy_spawner_pot,
     enemy_bullets: [dynamic] Bullet
 } 
@@ -123,9 +121,8 @@ game_update:: proc(game: ^Game, dt: f32) {
         player_update(&game.player, game,  game.level_data.colliders[:], dt)
         
         enemies_spawner_update(game, dt)
-        Enemy_melees_update(game, dt) 
-        Enemy_ranger_update(game, dt)
-        Enemy_sniper_update(game, dt)
+        Enemy_unit_update(game, dt) 
+        
 
         for block_collider in game.level_data.colliders {
             resolve_bullet_collider_collision(game, &game.player_bullets, block_collider)
@@ -242,9 +239,8 @@ game_draw:: proc(game: ^Game, dt: f32) {
     enemies_spawner_draw(game^, dt)
     
     
-    Enemy_melees_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_melee, dt)
-    Enemy_sniper_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_sniper, dt)
-    Enemy_ranger_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.e_ranger, dt)
+    Enemy_unit_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.enemy_units, dt)
+  
     if game.boss_manager.is_boss_level {
         boss_draw(game.game_sprite_atlas, game.boss_manager.boss, &game.particle_system, dt)
     }
@@ -398,9 +394,7 @@ game_restart :: proc(game: ^Game) {
 drop_game_mem:: proc(game : ^Game) {
     delete(game.enemy_side.enemy_bullets)
     delete(game.player_bullets)
-    delete(game.enemy_side.e_melee)
-    delete(game.enemy_side.e_ranger)
-    delete(game.enemy_side.e_sniper)
+    delete(game.enemy_side.enemy_units)
     delete(game.level_data.colliders)
     delete(game.enemy_side.enemy_spawners)
     delete(game.level_data.keys)
@@ -415,9 +409,7 @@ drop_game_mem:: proc(game : ^Game) {
 
 clear_game_mem:: proc(game: ^Game) {
     clear(&game.player_bullets)
-    clear(&game.enemy_side.e_melee)
-    clear(&game.enemy_side.e_ranger)
-    clear(&game.enemy_side.e_sniper)
+    clear(&game.enemy_side.enemy_units)
     clear(&game.level_data.colliders)
     clear(&game.enemy_side.enemy_spawners)
     clear(&game.level_data.keys)
