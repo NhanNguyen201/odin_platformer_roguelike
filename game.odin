@@ -133,7 +133,9 @@ game_update:: proc(game: ^Game, dt: f32) {
       
         exp_buff_collect(&game.player, game)
         if game.boss_manager.is_boss_level {
+
             boss_update(&game.boss_manager.boss, game, dt)
+            boss_skill_update(&game.boss_manager.boss, game, dt)
         }
         level_gate_update(game)
         
@@ -215,12 +217,16 @@ bullets_draw :: proc(atlas: rl.Texture2D, player_bullets: []Bullet, enemy_bullet
 
 
 game_draw:: proc(game: ^Game, dt: f32) {
-    rl.ClearBackground({135,206,235,255})
     colliders := game.level_data.colliders
     player_bullet_len := fmt.ctprintf("Player bullets: %d", len(game.player_bullets))
 
     rl.DrawTexturePro(game.game_background, {x =0, y= 0, width = f32(game.game_background.width), height= f32(game.game_background.height)}, {x= 0, y= 0, width = game.level_data.map_size.x, height = game.level_data.map_size.y}, {0,0}, 0, rl.WHITE)
     rl.DrawTexturePro(game.game_cloud_background, {x =0, y= 0, width = f32(game.game_cloud_background.width), height= f32(game.game_cloud_background.height)}, {x= 0, y= 0, width = game.level_data.map_size.x, height = game.level_data.map_size.y}, {0,0}, 0, rl.RED)
+    
+    if game.boss_manager.is_boss_level {
+        boss_draw(game.game_sprite_atlas, game.boss_manager.boss, dt)
+    }
+
     rl.DrawTextureV(game.level_data.texture, rl.Vector2 {0,0}, rl.WHITE)
     
     if game.game_options.is_debug {
@@ -232,23 +238,24 @@ game_draw:: proc(game: ^Game, dt: f32) {
 
     experience_buff_draw(game.game_sprite_atlas, game.level_data.exp_buffs[:])
 
-    keypot_draw(game.game_sprite_atlas, game.game_options.is_debug, game.player.body.position, game.level_data.keys[:])
-
+    
     level_gate_draw(game.game_sprite_atlas, game.level_data)
     
     enemies_spawner_draw(game^, dt)
     
+    keypot_draw(game.game_sprite_atlas, game.game_options.is_debug, game.player.body.position, game.level_data.keys[:])
     
     Enemy_unit_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.enemy_units, dt)
   
-    if game.boss_manager.is_boss_level {
-        boss_draw(game.game_sprite_atlas, game.boss_manager.boss, &game.particle_system, dt)
-    }
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_side.enemy_bullets[:])
     
     player_draw(&game.player, game^, dt)
 
-    
+    if game.boss_manager.is_boss_level {
+
+        boss_skill_draw(game.game_sprite_atlas, game.boss_manager.boss, dt)
+    }
+
    
     
     player_ui_draw(game)
@@ -274,7 +281,7 @@ level_gate_draw:: proc(atlas: rl.Texture2D, level_data: Level_data) {
 
 keypot_draw :: proc(atlas: rl.Texture2D, is_debug: bool, player_pos: rl.Vector2, keys: []Key_pot) {
     key_atlas_sprite := SPRITE_MAP[KEY_SPRITE]
-    key_source := rl.Rectangle{x = key_atlas_sprite.x, y= key_atlas_sprite.y , width = key_atlas_sprite.w, height = key_atlas_sprite.h}
+    key_source := get_sprite_source_rect(key_atlas_sprite)
     for key in keys {
         if !key.collected {
             dest := rl.Rectangle{x = key.position.x, y= key.position.y , width = key_atlas_sprite.w, height = key_atlas_sprite.h}
@@ -291,7 +298,7 @@ keypot_draw :: proc(atlas: rl.Texture2D, is_debug: bool, player_pos: rl.Vector2,
 
 experience_buff_draw:: proc(atlas: rl.Texture2D, buffs: []Exp_buff) {
     exp_sprite := SPRITE_MAP[EXPERIENCE_BUFF_SPRITE]
-    exp_source := rl.Rectangle {x = exp_sprite.x, y= exp_sprite.y, width = exp_sprite.w, height= exp_sprite.h}
+    exp_source := get_sprite_source_rect(exp_sprite)
 
     for b in buffs {
         if !b.collected {
