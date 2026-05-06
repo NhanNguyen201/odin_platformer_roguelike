@@ -211,7 +211,7 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                 } else if skill.state == .CASTED   {
                     skill.timer.current -= dt 
                     if rl.CheckCollisionCircleRec(skill.pos_destination, skill.area_effect, get_body_rect(get_player(game^).body)) {
-                        player_apply_debuff({debuff_type = .BURNING, dmg = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
+                        player_apply_temp_buff({temp_buff_type = .BURNING, value = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
     
                     }
                 }
@@ -235,7 +235,7 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                     fireball_pos := get_fireball_position(skill^, dt)
     
                     if rl.CheckCollisionCircleRec(fireball_pos, skill.area_effect, get_body_rect(get_player(game^).body))  && get_player(game^).stats.health_stats.current_hp > 0 {
-                        player_apply_debuff({debuff_type = .BURNING, dmg = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
+                        player_apply_temp_buff({temp_buff_type = .BURNING, value = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
                     }
                 }
                 

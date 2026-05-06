@@ -7,7 +7,7 @@ import "core:math"
 
 Inittal_bullet_countdown :f32 : 1.
 PLAYER_MAX_HORIZONTAL_SPD : f32 : 130
-PLAYER_DEBUFF_TICK_TIME : f32 : 1.
+Player_temp_buff_TICK_TIME : f32 : 1.
 PLAYER_MAX_ACC : f32 : 7.5
 STOMPED_MAX_FALL_SPEED: f32 : 600
 PLAYER_ITEM_SLOT_NUMB: int : 6
@@ -77,7 +77,8 @@ Player :: struct {
     bullet_cd: Bullet_Countdown,
     anim_controller: Animation_controller,
     exp_controller: Experience_controller,
-    pocket_items: [PLAYER_ITEM_SLOT_NUMB] Player_item
+    pocket_items: [PLAYER_ITEM_SLOT_NUMB] Player_item,
+    input_controler : Player_input_controler
 }
 
 Body :: struct {
@@ -120,7 +121,7 @@ Player_stats :: struct {
     health_stats: Health_stats,
     dmg: f32,
     buffes: Player_buffes,
-    de_buffs: [dynamic] Player_debuff
+    temp_buffes: [dynamic] Player_temp_buff
 }
 
 Player_coins :: struct {
@@ -137,15 +138,17 @@ PLAYER_ACTION_SETTING :: enum {
     JUMP
 }
 
-Player_debuff :: struct {
-    debuff_type: Player_debuff_types,
+Player_temp_buff :: struct {
+    temp_buff_type: Temp_buff_types,
     tick_time: f32,
     time: Timer,
-    dmg: f32
+    value: f32
 }
 
-Player_debuff_types :: enum {
+Temp_buff_types :: enum {
     BURNING,
+    ATTACK,
+    SPEED
     // FREEZED
 }
 
@@ -266,7 +269,10 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 
     player.body.vel.x += player.body.acc.x
-    player.body.vel.x = clamp(player.body.vel.x, -PLAYER_MAX_HORIZONTAL_SPD * (1 + player.stats.buffes.mv_spd / 80), PLAYER_MAX_HORIZONTAL_SPD * (1 + player.stats.buffes.mv_spd / 80))
+
+    _, amount_speed_boost := get_player_is_boosted_by(player.stats.temp_buffes[:], .SPEED)
+    bounded_speed := (100 + amount_speed_boost + player.stats.buffes.mv_spd) / 100
+    player.body.vel.x = clamp(player.body.vel.x, -PLAYER_MAX_HORIZONTAL_SPD * bounded_speed, PLAYER_MAX_HORIZONTAL_SPD * bounded_speed)
     
     player.body.position.x += player.body.vel.x  * dt
 
@@ -316,7 +322,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.bullet_cd.current_time -= dt
     }
 
-    if rl.IsKeyPressed(.K) {
+    if rl.IsKeyPressed(get_input_from_controller(.SHOOT, player.input_controler)) {
         if player.bullet_cd.current_time < 0.01 {
             player.bullet_cd.current_time = player.bullet_cd.max_time * (1. - (player.stats.buffes.at_spd / 100))
             bullet := Bullet {direction = player.direction, dmg = player.stats.dmg + player.stats.buffes.damage, position = player.body.position}
@@ -328,11 +334,11 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
     resolve_player_and_bullet(player.body, player.stats.buffes, &player.stats.health_stats, &game.enemy_side.enemy_bullets)
     if player.stats.health_stats.current_hp > 0 && game.ui_controller.ui_scene != .GAME_OVER{
-        resolve_player_debuff_update(player, dt)
+        resolve_player_temp_buff_update(player, dt)
     }
 
     if player.stats.health_stats.current_hp > 0 && game.ui_controller.ui_scene == .NONE {
-        resolve_using_item(player)
+        resolve_using_item(player.input_controler, &player.pocket_items, player)
     }
 }
 
@@ -382,54 +388,65 @@ exp_buff_collect:: proc(player: ^Player, game: ^Game) {
     }
 }
 
-player_apply_debuff :: proc(debuff: Player_debuff, player: ^Player) {
-    for &current_debuff in player.stats.de_buffs {
-        if current_debuff.debuff_type == debuff.debuff_type {
-            current_debuff.time = debuff.time
-            current_debuff.dmg = max(current_debuff.dmg, debuff.dmg)
+player_apply_temp_buff :: proc(temp_buff: Player_temp_buff, player: ^Player) {
+    for &current_temp_buff in player.stats.temp_buffes {
+        if current_temp_buff.temp_buff_type == temp_buff.temp_buff_type {
+            current_temp_buff.time = temp_buff.time
+            current_temp_buff.value = max(current_temp_buff.value, temp_buff.value)
             
             return
         }
     }
-    if debuff.debuff_type == .BURNING {
+    if temp_buff.temp_buff_type == .BURNING {
        
-        append(&player.stats.de_buffs, Player_debuff {debuff_type = .BURNING, dmg = debuff.dmg, time = debuff.time, tick_time = PLAYER_DEBUFF_TICK_TIME})
+        append(&player.stats.temp_buffes, Player_temp_buff {temp_buff_type = .BURNING, value = temp_buff.value, time = temp_buff.time, tick_time = Player_temp_buff_TICK_TIME})
+    } else if temp_buff.temp_buff_type == .ATTACK {
+        append(&player.stats.temp_buffes, Player_temp_buff {temp_buff_type = .ATTACK, value = temp_buff.value, time = temp_buff.time})
+
+    } else if temp_buff.temp_buff_type == .SPEED {
+        append(&player.stats.temp_buffes, Player_temp_buff {temp_buff_type = .SPEED, value = temp_buff.value, time = temp_buff.time})
+
     }
 }
 
-resolve_player_debuff_update:: proc(player: ^Player, dt: f32) {
-    for i := len(player.stats.de_buffs) - 1; i >= 0; i -= 1 {
-        debuff := &player.stats.de_buffs[i]
+resolve_player_temp_buff_update:: proc(player: ^Player, dt: f32) {
+    for i := len(player.stats.temp_buffes) - 1; i >= 0; i -= 1 {
+        temp_buff := &player.stats.temp_buffes[i]
 
-        if debuff.time.current <= 0 {
-            unordered_remove(&player.stats.de_buffs, i)
+        if temp_buff.time.current <= 0 {
+            unordered_remove(&player.stats.temp_buffes, i)
             continue
         } else {
-            debuff.time.current -= dt
+            temp_buff.time.current -= dt
 
-            if debuff.debuff_type == .BURNING {
-                debuff.tick_time -= dt 
-                if debuff.tick_time < 0  && debuff.time.current > 0 {
-                    player_take_dmg(&player.stats.health_stats, player.stats.buffes, debuff.dmg)
-                    debuff.tick_time = PLAYER_DEBUFF_TICK_TIME
+            if temp_buff.temp_buff_type == .BURNING {
+                temp_buff.tick_time -= dt 
+                if temp_buff.tick_time < 0  && temp_buff.time.current > 0 {
+                    player_take_dmg(&player.stats.health_stats, player.stats.buffes, temp_buff.value)
+                    temp_buff.tick_time = Player_temp_buff_TICK_TIME
                 }
-            }
+            } 
         }
     }
 }
 
-resolve_using_item :: proc(player: ^Player) {
-    resolve_keyinput_and_item(.ONE, &player.pocket_items[0])
-    resolve_keyinput_and_item(.TWO, &player.pocket_items[1])
-    resolve_keyinput_and_item(.THREE, &player.pocket_items[2])
-    resolve_keyinput_and_item(.FOUR, &player.pocket_items[3])
-    resolve_keyinput_and_item(.FIVE, &player.pocket_items[4])
-    resolve_keyinput_and_item(.SIX, &player.pocket_items[5])
+resolve_using_item :: proc(input_controler: Player_input_controler, pocket_items: ^[PLAYER_ITEM_SLOT_NUMB] Player_item, player: ^Player) {
+    resolve_keyinput_and_item(get_input_from_controller(.ITEM_1, input_controler), &pocket_items[0], player)
+    resolve_keyinput_and_item(get_input_from_controller(.ITEM_2, input_controler), &pocket_items[1], player)
+    resolve_keyinput_and_item(get_input_from_controller(.ITEM_3, input_controler), &pocket_items[2], player)
+    resolve_keyinput_and_item(get_input_from_controller(.ITEM_4, input_controler), &pocket_items[3], player)
+    resolve_keyinput_and_item(get_input_from_controller(.ITEM_5, input_controler), &pocket_items[4], player)
+    resolve_keyinput_and_item(get_input_from_controller(.ITEM_6, input_controler), &pocket_items[5], player)
 }
 
-resolve_keyinput_and_item :: proc(key : rl.KeyboardKey, item: ^Player_item) {
+resolve_keyinput_and_item :: proc(key: rl.KeyboardKey, item: ^Player_item, player: ^Player) {
     if rl.IsKeyPressed(key) {
         if item.type != .NONE {
+            if item.type == .ATK_DMG {
+                player_apply_temp_buff({temp_buff_type = .ATTACK, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_ATK_AMOUNT }, player)
+            }  else if item.type == .SPEED {
+                player_apply_temp_buff({temp_buff_type = .SPEED, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_SPEED_AMOUNT }, player)
+            }
             item.type = .NONE
         }
     }
@@ -447,4 +464,12 @@ player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f
 
 get_player :: proc(game: Game) -> Player {
     return game.player
+}
+
+get_player_is_boosted_by :: proc(temp_buffs: []Player_temp_buff, boosted_type : Temp_buff_types) -> (bool, f32) {
+    for i:= 0; i< len(temp_buffs); i+= 1 {
+        if temp_buffs[i].temp_buff_type == boosted_type do return true, temp_buffs[i].value
+    }
+
+    return false, 0
 }

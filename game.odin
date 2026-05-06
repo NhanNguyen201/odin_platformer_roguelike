@@ -90,22 +90,25 @@ game_init:: proc() -> Game {
     game.player = Player {
         body = Body {
             size = PLAYER_SIZE,
+            direction = .RIGHT
         },
+
         stats = player_stats,
         bullet_cd = Bullet_Countdown {max_time =  Inittal_bullet_countdown, current_time = Inittal_bullet_countdown},
         exp_controller = Experience_controller {
             current = 0,
             level = player_level,
             require = EXPERIENCE_PER_LEVEL[player_level]
-        }
+        },
+        input_controler = get_default_input_controler()
         
     }
     game.ui_controller = {
         is_ui_screen = false,
         ui_scene = .NONE
     }
-    rl.HideCursor()
     game.game_options.is_hub = true
+    rl.HideCursor()
     load_atlas(&game)
     load_level(&game, game.current_level)
 
@@ -407,7 +410,7 @@ drop_game_mem:: proc(game : ^Game) {
     delete(game.level_data.keys)
     delete(game.level_data.exp_buffs)
     delete(game.boss_manager.boss.skill_queue)
-    delete(game.player.stats.de_buffs)
+    delete(game.player.stats.temp_buffes)
     rl.UnloadFont(game.fonts[FONT_BOLD])
     rl.UnloadFont(game.fonts[FONT_REG])
     rl.UnloadFont(game.fonts[FONT_THIN])
@@ -425,6 +428,6 @@ clear_game_mem:: proc(game: ^Game) {
     delete(game.boss_manager.boss.skill_queue)
     game.boss_manager.boss.skill_queue = nil
 
-    delete(game.player.stats.de_buffs)
-    game.player.stats.de_buffs = nil
+    delete(game.player.stats.temp_buffes)
+    game.player.stats.temp_buffes = nil
 }

@@ -1,5 +1,6 @@
 package main
 import rl "vendor:raylib"
+import "core:reflect"
 import "core:fmt"
 import "core:math"
 
@@ -13,7 +14,7 @@ UI_BUFF_PICK_SIZE : rl.Vector2 :{12, 12}
 UI_BUFF_TITLE_SIZE: f32 : 5
 UI_BUFF_DESCRIPTION_SIZE: f32: 4
 
-UI_SKILL_HUB_SIZE: rl.Vector2 : {120, 20} 
+UI_SKILL_HUB_SIZE: rl.Vector2 : {105, 15} 
 UI_SKILL_HUB_PADDING: rl.Vector2 : {2.5, 2.5}
 UI_SKILL_HUD_SLOT_SIZE : rl.Vector2: {15, 15}
 UI_MINI_MAP_SIZE: rl.Vector2 : {50, 45}
@@ -91,12 +92,12 @@ render_cursor :: proc (atlas: rl.Texture2D, game_options: Game_Options) {
     if cursor != .NONE  && game_options.cursor_controler.draw_cursor{
         if cursor == .DEFAULT {
             sprite_desc = SPRITE_MAP[UI_CURSIR_SPRITE_1]
-            source := rl.Rectangle {x = sprite_desc.x, y = sprite_desc.y, width = sprite_desc.w, height = sprite_desc.h}
+            source := get_sprite_source_rect(sprite_desc)
             dest := rl.Rectangle {x = game_options.ui_mouse_pos.x, y = game_options.ui_mouse_pos.y, width = UI_CURSIR_SIZE.x, height = UI_CURSIR_SIZE.y}
             rl.DrawTexturePro(atlas, source, dest, {dest.width / 2, dest.height / 2}, 0, rl.WHITE)
         } else if cursor == .HOVER {
             sprite_desc = SPRITE_MAP[UI_CURSIR_SPRITE_2]
-            source := rl.Rectangle {x = sprite_desc.x, y = sprite_desc.y, width = sprite_desc.w, height = sprite_desc.h}
+            source := get_sprite_source_rect(sprite_desc)
             dest := rl.Rectangle {x = game_options.ui_mouse_pos.x, y = game_options.ui_mouse_pos.y, width = UI_CURSIR_SIZE.x, height = UI_CURSIR_SIZE.y}
             rl.DrawTexturePro(atlas, source, dest, {dest.width / 2, dest.height / 2}, 0, rl.WHITE)
         }
@@ -104,7 +105,7 @@ render_cursor :: proc (atlas: rl.Texture2D, game_options: Game_Options) {
 }
 
 render_temp_cursor :: proc(atlas: rl.Texture2D, sprite_desc : Sprite_desc,  game_options: Game_Options) {
-    source := rl.Rectangle {x = sprite_desc.x, y = sprite_desc.y, width = sprite_desc.w, height = sprite_desc.h}
+    source := get_sprite_source_rect(sprite_desc)
     dest := rl.Rectangle {x = game_options.ui_mouse_pos.x, y = game_options.ui_mouse_pos.y, width = UI_CURSIR_SIZE.x, height = UI_CURSIR_SIZE.y}
     rl.DrawTexturePro(atlas, source, dest, {dest.width / 2, dest.height / 2}, 0, rl.WHITE)
 }
@@ -119,7 +120,9 @@ player_ui_draw:: proc(game: ^Game) {
     key_atlas_sprite := SPRITE_MAP[KEY_SPRITE]
 
     key_source := get_sprite_source_rect(key_atlas_sprite)
-    player_debuff_burned_sprite_source := get_sprite_source_rect(SPRITE_MAP[UI_PLAYER_DEBUFF_FIRE_SPRITE])
+    temp_buff_burned_sprite_source := get_sprite_source_rect(SPRITE_MAP[UI_PLAYER_TEMP_BUFF_FIRE_SPRITE])
+    temp_buff_attack_sprite_source := get_sprite_source_rect(SPRITE_MAP[UI_ITEM_ATK_SPRITE])
+    temp_buff_speed_sprite_source := get_sprite_source_rect(SPRITE_MAP[UI_ITEM_SPD_SPRITE])
 
     player := game.player
     
@@ -163,13 +166,27 @@ player_ui_draw:: proc(game: ^Game) {
     rl.DrawTextEx(game.fonts[FONT_REG], hp_text, {health_bar_dest.x + 2, health_bar_dest.y + 1}, 5, 0.2, rl.WHITE)
     // is_mouse_hover := rl.CheckCollisionPointRec(game.game_options.ui_mouse_pos, charactor_ui_rect)
     
-    for player_debuff, idx in player.stats.de_buffs {
-        debuff_dest := rl.Rectangle {x = ui_rect.x + 15 + f32(idx) * 11, y = ui_rect.y + 15, width = UI_MINI_MAP_ICON_SIZE, height = UI_MINI_MAP_ICON_SIZE}
-        if player_debuff.debuff_type == .BURNING {
-            rl.DrawTexturePro(game.game_sprite_atlas, player_debuff_burned_sprite_source, debuff_dest, 0, 0, rl.WHITE )
+    for temp_buff, idx in player.stats.temp_buffes {
+        temp_buff_dest := rl.Rectangle {x = ui_rect.x + 15 + f32(idx) * 11, y = ui_rect.y + 15, width = UI_MINI_MAP_ICON_SIZE, height = UI_MINI_MAP_ICON_SIZE}
+        if temp_buff.temp_buff_type == .BURNING {
+            rl.DrawTexturePro(game.game_sprite_atlas, temp_buff_burned_sprite_source, temp_buff_dest, 0, 0, rl.WHITE )
             rl.DrawRectangleV(
-                {debuff_dest.x, debuff_dest.y + debuff_dest.height * (1. - player_debuff.time.current / player_debuff.time.max_time)}, 
-                {debuff_dest.width, debuff_dest.height * player_debuff.time.current / player_debuff.time.max_time}, 
+                {temp_buff_dest.x, temp_buff_dest.y + temp_buff_dest.height * (1. - temp_buff.time.current / temp_buff.time.max_time)}, 
+                {temp_buff_dest.width, temp_buff_dest.height * temp_buff.time.current / temp_buff.time.max_time}, 
+                rl.Color {220, 220, 220, 180}
+            )
+        } else if temp_buff.temp_buff_type == .ATTACK {
+            rl.DrawTexturePro(game.game_sprite_atlas, temp_buff_attack_sprite_source, temp_buff_dest, 0, 0, rl.WHITE )
+            rl.DrawRectangleV(
+                {temp_buff_dest.x, temp_buff_dest.y + temp_buff_dest.height * (1. - temp_buff.time.current / temp_buff.time.max_time)}, 
+                {temp_buff_dest.width, temp_buff_dest.height * temp_buff.time.current / temp_buff.time.max_time}, 
+                rl.Color {220, 220, 220, 180}
+            )
+        } else if temp_buff.temp_buff_type == .SPEED {
+            rl.DrawTexturePro(game.game_sprite_atlas, temp_buff_speed_sprite_source, temp_buff_dest, 0, 0, rl.WHITE )
+            rl.DrawRectangleV(
+                {temp_buff_dest.x, temp_buff_dest.y + temp_buff_dest.height * (1. - temp_buff.time.current / temp_buff.time.max_time)}, 
+                {temp_buff_dest.width, temp_buff_dest.height * temp_buff.time.current / temp_buff.time.max_time}, 
                 rl.Color {220, 220, 220, 180}
             )
         }
@@ -206,7 +223,7 @@ player_ui_draw:: proc(game: ^Game) {
         player_buff_picking_scene_draw(game.game_sprite_atlas, game.fonts ,ui_rect, &game.game_options, &game.ui_controller, &game.player)
     }
     if game.game_options.is_hub {
-        skill_hud_draw(game.game_sprite_atlas, ui_rect, player)
+        skill_hud_draw(game.game_sprite_atlas, game.fonts[FONT_BOLD], ui_rect, player)
     }
     if game.game_options.is_paused && !game.ui_controller.is_ui_screen {
         paused_sign_draw(game.game_sprite_atlas, ui_rect)
@@ -291,41 +308,34 @@ pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Control
 
 
 
-skill_hud_draw :: proc(atlas: rl.Texture2D, ui_rect: rl.Rectangle, player: Player) {
+skill_hud_draw :: proc(atlas: rl.Texture2D, font: rl.Font,  ui_rect: rl.Rectangle, player: Player) {
     bullet_cd := player.bullet_cd
-
+    controls := get_item_keycode_to_array(player.input_controler)
 
     hud_rect := rl.Rectangle{x = ui_rect.x + ui_rect.width / 2 - UI_SKILL_HUB_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_SKILL_HUB_SIZE.y, width = UI_SKILL_HUB_SIZE.x, height = UI_SKILL_HUB_SIZE.y}
     rl.DrawRectangleRec(hud_rect, rl.Color{200,200,200, 180})
     
+    // Shoot skill display 
     shoot_source := get_sprite_source_rect(SPRITE_MAP[SHOOT_SKILL_SPRITE])
-    shoot_dest := rl.Rectangle { x = hud_rect.x + UI_SKILL_HUB_PADDING.x, y = hud_rect.y + UI_SKILL_HUB_PADDING.y, height = UI_SKILL_HUD_SLOT_SIZE.x, width = UI_SKILL_HUD_SLOT_SIZE.y}
+    shoot_dest := rl.Rectangle { x = hud_rect.x, y = hud_rect.y, height = UI_SKILL_HUD_SLOT_SIZE.x, width = UI_SKILL_HUD_SLOT_SIZE.y}
 
     rl.DrawTexturePro(atlas, shoot_source, shoot_dest, {0, 0}, 0, rl.WHITE)
     rl.DrawRectangleLinesEx(shoot_dest, 0.5, rl.BLACK)
 
     rl.DrawRectangleRec(rl.Rectangle{x = shoot_dest.x, y = shoot_dest.y + (bullet_cd.max_time - bullet_cd.current_time) / bullet_cd.max_time * shoot_dest.height, height = bullet_cd.current_time / bullet_cd.max_time * shoot_dest.height, width = shoot_dest.width}, rl.Color {0, 0, 0, 180 })
-
-    items_rect := rl.Rectangle { x = hud_rect.x + hud_rect.width - 30, y = hud_rect.y , width = 30, height = hud_rect.height}
+    // items display
+    items_rect := rl.Rectangle { x = hud_rect.x + UI_SKILL_HUD_SLOT_SIZE.x, y = hud_rect.y , width = hud_rect.width - UI_SKILL_HUD_SLOT_SIZE.x, height = hud_rect.height}
     rl.DrawRectangleRec(items_rect, rl.Color{225, 225, 225, 250})
 
-    item_1_slot := rl.Rectangle {x = items_rect.x + 1, y = items_rect.y + 1, width = 8, height = 8}
-    player_item_slot_draw(atlas, player.pocket_items[0], item_1_slot)
+    for item, item_idx in player.pocket_items {
+        item_slot := rl.Rectangle {x = items_rect.x + UI_SKILL_HUD_SLOT_SIZE.x * f32(item_idx), y = items_rect.y , width = UI_SKILL_HUD_SLOT_SIZE.x , height =  UI_SKILL_HUD_SLOT_SIZE.y }
+        player_item_slot_draw(atlas, player.pocket_items[item_idx], item_slot)
+        key_code_rect := rl.Rectangle {x = item_slot.x, y = item_slot.y + item_slot.height - 5, width = item_slot.width, height =  5.}
+        player_item_shortcut_draw(font, key_code_rect,  controls[item_idx])
 
-    item_2_slot := rl.Rectangle {x = items_rect.x + 11, y = items_rect.y + 1, width = 8, height = 8}
-    player_item_slot_draw(atlas, player.pocket_items[1], item_2_slot)
+    }
 
-    item_3_slot := rl.Rectangle {x = items_rect.x + 21, y = items_rect.y + 1, width = 8, height = 8}
-    player_item_slot_draw(atlas, player.pocket_items[2], item_3_slot)
-
-    item_4_slot := rl.Rectangle {x = items_rect.x + 1, y = items_rect.y + 11, width = 8, height = 8}
-    player_item_slot_draw(atlas, player.pocket_items[3], item_4_slot)
-
-    item_5_slot := rl.Rectangle {x = items_rect.x + 11, y = items_rect.y + 11, width = 8, height = 8}
-    player_item_slot_draw(atlas, player.pocket_items[4], item_5_slot)
-
-    item_6_slot := rl.Rectangle {x = items_rect.x + 21, y = items_rect.y + 11, width = 8, height = 8}
-    player_item_slot_draw(atlas, player.pocket_items[5], item_6_slot)
+    
 }
 
 mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, level_data: Level_data, boss_manager: Boss_level_manager,player: Body) {
@@ -425,7 +435,7 @@ get_distance:: proc(b1: rl.Vector2, b2: rl.Vector2) -> f32 {
 }
 
 unit_expression_draw:: proc(atlas: rl.Texture2D, sprite_desc: Sprite_desc, position: rl.Vector2) {
-    sprite_source := rl.Rectangle {x = sprite_desc.x, y= sprite_desc.y, width = sprite_desc.w, height = sprite_desc.h}
+    sprite_source := get_sprite_source_rect(sprite_desc)
     sprite_dest := rl.Rectangle {x = position.x, y= position.y, width = UI_UNIT_EXPRESSION_SIZE.x, height = UI_UNIT_EXPRESSION_SIZE.y}
     rl.DrawTexturePro(atlas, sprite_source, sprite_dest, get_rect_size(sprite_dest) / 2, 0, rl.WHITE)
 }
@@ -443,8 +453,10 @@ ui_box_draw:: proc(atlas: rl.Texture2D, dest: rl.Rectangle, is_hovered : bool = 
 player_item_slot_draw :: proc(atlas: rl.Texture2D, item: Player_item, dest: rl.Rectangle) -> string {
     item_tooltip : string
     @static tooltip: [3] string = {"Heal 30%% of max health", "Increase 30%% attack \n for 30 second", "Increase 30%% speed \n for 30 second"} 
+    draw_dest := rl.Rectangle {x = dest.x + 0.5, y = dest.y + 0.5, width = dest.width - 1, height = dest.height - 1}
     if item.type == .NONE {
-        rl.DrawRectangleRec(dest, rl.WHITE)
+        rl.DrawRectangleRec(draw_dest, rl.WHITE)
+        rl.DrawRectangleLinesEx(draw_dest, 0.25, rl.BLACK)
         return "None"
     } else {
         sprite_source : rl.Rectangle
@@ -460,12 +472,23 @@ player_item_slot_draw :: proc(atlas: rl.Texture2D, item: Player_item, dest: rl.R
             item_tooltip = tooltip[2]
 
         }
-        rl.DrawTexturePro(atlas, sprite_source, dest, 0, 0, rl.WHITE)
+        rl.DrawTexturePro(atlas, sprite_source, draw_dest, 0, 0, rl.WHITE)
+        rl.DrawRectangleLinesEx(draw_dest, 0.25, rl.BLACK)
+
         return item_tooltip
     }
 }
+player_item_shortcut_draw :: proc(font : rl.Font, dest: rl.Rectangle, input: rl.KeyboardKey ) {
+    key_text := get_key_name(input)
+    fmt_text := fmt.ctprintf(key_text)
+    measured, font_size, spacing := get_text_to_ui(font, fmt_text, 4, 0.05)
+    draw_dest := rl.Rectangle {x = dest.x + 0.5, y = dest.y + 0.5, width = dest.width - 1, height = dest.height - 1}
+    rl.DrawRectangleRec(draw_dest, rl.Color{255,255,255, 225})
+
+    rl.DrawTextPro(font, fmt_text, get_rect_center(draw_dest), measured / 2, 0, font_size, spacing, rl.BLACK)
+
+}
 
 get_text_to_ui :: proc(font: rl.Font, text: cstring, font_size: f32, spacing: f32) -> (rl.Vector2, f32, f32) {
-    measured := rl.MeasureTextEx(font, text, font_size, spacing)
-    return measured, font_size, spacing
+    return rl.MeasureTextEx(font, text, font_size, spacing), font_size, spacing
 }
