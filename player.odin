@@ -3,7 +3,6 @@
 package main
 import rl "vendor:raylib"
 import "core:math/rand"
-import "core:math"
 
 Inittal_bullet_countdown :f32 : 1.
 PLAYER_MAX_HORIZONTAL_SPD : f32 : 130
@@ -325,7 +324,8 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     if rl.IsKeyPressed(get_input_from_controller(.SHOOT, player.input_controler)) {
         if player.bullet_cd.current_time < 0.01 {
             player.bullet_cd.current_time = player.bullet_cd.max_time * (1. - (player.stats.buffes.at_spd / 100))
-            bullet := Bullet {direction = player.direction, dmg = player.stats.dmg + player.stats.buffes.damage, position = player.body.position}
+            _, dmg_buff := get_player_is_boosted_by(player.stats.temp_buffes[:], .ATTACK) 
+            bullet := Bullet {direction = player.direction, dmg = player.stats.dmg + player.stats.buffes.damage + dmg_buff, position = player.body.position}
             append(&game.player_bullets, bullet)
         }
 
@@ -338,7 +338,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 
     if player.stats.health_stats.current_hp > 0 && game.ui_controller.ui_scene == .NONE {
-        resolve_using_item(player.input_controler, &player.pocket_items, player)
+        resolve_using_item_from_keyboard(player.input_controler, &player.pocket_items, player)
     }
 }
 
@@ -348,15 +348,7 @@ player_draw :: proc(player: ^Player, game: Game, dt: f32) {
     anim := Player_animations[player.anim_controller.animation_name]
 
     draw_animation(game.game_sprite_atlas, &player.anim_controller, anim, PLAYER_SPRITE, player.is_flip, r, dt)
-    if game.game_options.is_debug {
-
-        frameheight :f32 = 10
-        rl.DrawRectangle(i32(player.body.position.x - 20), i32(player.body.position.y - 5), 5, i32(frameheight), rl.WHITE)
-        rl.DrawRectangle(i32(player.body.position.x - 20), i32(player.body.position.y - 5), 5, i32(player.anim_controller.current_timer / anim.frame_timer * frameheight), rl.BLUE)
-            
-
-        rl.DrawCircleLinesV(player.body.position, 1, rl.BLACK)
-    }
+   
 
 }
 
@@ -430,22 +422,24 @@ resolve_player_temp_buff_update:: proc(player: ^Player, dt: f32) {
     }
 }
 
-resolve_using_item :: proc(input_controler: Player_input_controler, pocket_items: ^[PLAYER_ITEM_SLOT_NUMB] Player_item, player: ^Player) {
-    resolve_keyinput_and_item(get_input_from_controller(.ITEM_1, input_controler), &pocket_items[0], player)
-    resolve_keyinput_and_item(get_input_from_controller(.ITEM_2, input_controler), &pocket_items[1], player)
-    resolve_keyinput_and_item(get_input_from_controller(.ITEM_3, input_controler), &pocket_items[2], player)
-    resolve_keyinput_and_item(get_input_from_controller(.ITEM_4, input_controler), &pocket_items[3], player)
-    resolve_keyinput_and_item(get_input_from_controller(.ITEM_5, input_controler), &pocket_items[4], player)
-    resolve_keyinput_and_item(get_input_from_controller(.ITEM_6, input_controler), &pocket_items[5], player)
+resolve_using_item_from_keyboard :: proc(input_controler: Player_input_controler, pocket_items: ^[PLAYER_ITEM_SLOT_NUMB] Player_item, player: ^Player) {
+
+    keycodes := get_item_keycode_to_array(input_controler)
+
+    for i:= 0; i < PLAYER_ITEM_SLOT_NUMB; i += 1 {
+        resolve_using_item_exec(keycodes[i], &pocket_items[i], player)
+    }
 }
 
-resolve_keyinput_and_item :: proc(key: rl.KeyboardKey, item: ^Player_item, player: ^Player) {
+resolve_using_item_exec :: proc(key: rl.KeyboardKey, item: ^Player_item, player: ^Player) {
     if rl.IsKeyPressed(key) {
         if item.type != .NONE {
             if item.type == .ATK_DMG {
                 player_apply_temp_buff({temp_buff_type = .ATTACK, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_ATK_AMOUNT }, player)
             }  else if item.type == .SPEED {
                 player_apply_temp_buff({temp_buff_type = .SPEED, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_SPEED_AMOUNT }, player)
+            } else if item.type == .HEAL {
+                player.stats.health_stats.current_hp = min(player.stats.health_stats.max_hp, player.stats.health_stats.current_hp  + player.stats.health_stats.max_hp * PLAYER_ITEM_HEAL_AMOUNT / 100)
             }
             item.type = .NONE
         }
@@ -456,7 +450,7 @@ player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f
     reduced_dmg := dmg * (1 - (player_buff.armor / 100))
 
     if health.current_hp > reduced_dmg {
-        // health.current_hp -= reduced_dmg
+        health.current_hp -= reduced_dmg
     } else {
         health.current_hp = 0
     }
