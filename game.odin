@@ -100,6 +100,7 @@ game_init:: proc() -> Game {
             level = player_level,
             require = EXPERIENCE_PER_LEVEL[player_level]
         },
+        pocket_items = {{type = .HEAL}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}},
         input_controler = get_default_input_controler()
         
     }
@@ -124,7 +125,7 @@ game_update:: proc(game: ^Game, dt: f32) {
         player_update(&game.player, game,  game.level_data.colliders[:], dt)
         
         enemies_spawner_update(game, dt)
-        Enemy_unit_update(game, dt) 
+        enemy_unit_update(game, dt) 
         
 
         for block_collider in game.level_data.colliders {
@@ -221,7 +222,6 @@ bullets_draw :: proc(atlas: rl.Texture2D, player_bullets: []Bullet, enemy_bullet
 
 game_draw:: proc(game: ^Game, dt: f32) {
     colliders := game.level_data.colliders
-    player_bullet_len := fmt.ctprintf("Player bullets: %d", len(game.player_bullets))
 
     rl.DrawTexturePro(game.game_background, {x =0, y= 0, width = f32(game.game_background.width), height= f32(game.game_background.height)}, {x= 0, y= 0, width = game.level_data.map_size.x, height = game.level_data.map_size.y}, {0,0}, 0, rl.WHITE)
     rl.DrawTexturePro(game.game_cloud_background, {x =0, y= 0, width = f32(game.game_cloud_background.width), height= f32(game.game_cloud_background.height)}, {x= 0, y= 0, width = game.level_data.map_size.x, height = game.level_data.map_size.y}, {0,0}, 0, rl.RED)
@@ -233,7 +233,6 @@ game_draw:: proc(game: ^Game, dt: f32) {
     rl.DrawTextureV(game.level_data.texture, rl.Vector2 {0,0}, rl.WHITE)
     
     if game.game_options.is_debug {
-        rl.DrawText(player_bullet_len, i32(game.player.body.position.x - 20), i32(game.player.body.position.y -20), 5, rl.BLACK)
         for cld in colliders {
             rl.DrawRectangle(i32(cld.x), i32(cld.y), i32(cld.width), i32(cld.height), rl.BLACK)
         }
@@ -244,11 +243,11 @@ game_draw:: proc(game: ^Game, dt: f32) {
     
     level_gate_draw(game.game_sprite_atlas, game.level_data)
     
-    enemies_spawner_draw(game^, dt)
+    enemies_spawner_draw(game.game_sprite_atlas, game.enemy_side.enemy_spawners[:], game.game_options.is_debug, dt)
     
     keypot_draw(game.game_sprite_atlas, game.game_options.is_debug, game.player.body.position, game.level_data.keys[:])
     
-    Enemy_unit_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.enemy_units, dt)
+    enemy_unit_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.enemy_units, dt)
   
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_side.enemy_bullets[:])
     
