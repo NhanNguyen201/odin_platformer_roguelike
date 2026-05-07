@@ -169,37 +169,36 @@ enemies_spawner_update:: proc(game: ^Game, dt: f32) {
 
 }
 
-enemies_spawner_draw:: proc(game: Game, dt: f32) {
+enemies_spawner_draw:: proc(atlas: rl.Texture2D, spawners: []Enemy_spawner_pot, is_debug: bool, dt: f32) {
     spawner_size := rl.Vector2 {13, 13}
     p_sprite := SPRITE_MAP[PORTAL_SPRITE]
     p_sprite_1 := SPRITE_MAP[PORTAL_SPRITE_1]
     p_sprite_2 := SPRITE_MAP[PORTAL_SPRITE_2]
-    p_dead_sprite := SPRITE_MAP[PORTAL_DEAD_SPRITE]
-    p_dead_sprite_source := rl.Rectangle{x = p_dead_sprite.x, y = p_dead_sprite.y, width = p_dead_sprite.w, height = p_dead_sprite.h}
-    for &enemy_spawner in game.enemy_side.enemy_spawners {
+  
+    p_dead_sprite_source := get_sprite_source_rect(SPRITE_MAP[PORTAL_DEAD_SPRITE])
+    for &enemy_spawner in spawners {
         dest := rl.Rectangle {x = enemy_spawner.position.x - spawner_size.x / 2 , y = enemy_spawner.position.y - spawner_size.y / 2, width = spawner_size.x, height = spawner_size.y}
-        source_portal := rl.Rectangle {x = p_sprite.x, y = p_sprite.y, width = p_sprite.w, height = p_sprite.h}
-        source_portal_1 := rl.Rectangle {x = p_sprite_1.x, y = p_sprite_1.y, width = p_sprite_1.w, height = p_sprite_1.h}
-        source_portal_2 := rl.Rectangle {x = p_sprite_2.x, y = p_sprite_2.y, width = p_sprite_2.w, height = p_sprite_2.h}
+        source_portal := get_sprite_source_rect(p_sprite)
+        source_portal_1 := get_sprite_source_rect(p_sprite_1)
+        source_portal_2 := get_sprite_source_rect(p_sprite_2)
         anime := Portal_animations[enemy_spawner.anim_controller.animation_name]
         if enemy_spawner.hp_stats.current_hp <= 0 {
             
-            rl.DrawTexturePro(game.game_sprite_atlas,  p_dead_sprite_source, dest, {0,0}, 0, rl.WHITE)
+            rl.DrawTexturePro(atlas,  p_dead_sprite_source, dest, 0, 0, rl.WHITE)
         } else {
-            draw_animation(game.game_sprite_atlas, &enemy_spawner.anim_controller, anime, PORTAL_SPRITE, false, dest, dt)
+            draw_animation(atlas, &enemy_spawner.anim_controller, anime, PORTAL_SPRITE, false, dest, dt)
         }
         dest_1 := dest
-        dest_1.y += f32(.25 * math.sin(rl.GetTime() ))
-        rl.DrawTexturePro(game.game_sprite_atlas, source_portal_1, dest_1, {0,0}, 0, rl.WHITE)
+        dest_1.y += f32(.75 * math.sin(rl.GetTime() ))
+        rl.DrawTexturePro(atlas, source_portal_1, dest_1, {0,0}, 0, rl.WHITE)
 
         dest_2 := dest
         dest_2.y += f32(.5 * math.cos(rl.GetTime() ))
-        rl.DrawTexturePro(game.game_sprite_atlas, source_portal_2, dest_2, {0, 0}, 0, rl.WHITE)
-        // rl.DrawCircleLinesV(enemy_spawner.position, 4, rl.BLACK)
+        rl.DrawTexturePro(atlas, source_portal_2, dest_2, {0, 0}, 0, rl.WHITE)
 
 
 
-        if game.game_options.is_debug {
+        if is_debug {
             respawn_ui_height :f32 = 10
             rl.DrawRectangle(i32(enemy_spawner.position.x - 20), i32(enemy_spawner.position.y - 5), 5, i32(respawn_ui_height), rl.WHITE)
             rl.DrawRectangle(i32(enemy_spawner.position.x - 20), i32(enemy_spawner.position.y - 5), 5, i32(enemy_spawner.re_spawn.time / enemy_spawner.re_spawn.max_time * respawn_ui_height), rl.BLUE)
@@ -210,7 +209,7 @@ enemies_spawner_draw:: proc(game: Game, dt: f32) {
 
 }
 
-Enemy_unit_update::proc (game: ^Game, dt: f32) {
+enemy_unit_update::proc (game: ^Game, dt: f32) {
     
 
     for i:= len(game.enemy_side.enemy_units) - 1; i >=0; i -= 1 {
@@ -430,7 +429,7 @@ Enemy_unit_update::proc (game: ^Game, dt: f32) {
     }
 }
 
-Enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: ^[dynamic]Enemy_unit, dt: f32) {
+enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: ^[dynamic]Enemy_unit, dt: f32) {
     for &enemy in e_unit {
         enemy_rect := get_enemy_body_rect(enemy.body)
         is_flip := enemy.body.direction != .RIGHT
