@@ -21,3 +21,10 @@ refresh_vender :: proc() -> (Player_item_type, Vendor_enemy_buff) {
     items :[3]Player_item_type = {.HEAL, .ATK_DMG, .SPEED}
     return rand.choice(items[:]), rand.choice_enum(Vendor_enemy_buff)
 }
+
+level_vendor_update :: proc(vendor_body: ^Body, cld: []rl.Rectangle, ui_controller: ^UI_Controller, player_position: rl.Vector2) {
+    for i:= 0; i < len(cld); i+= 1 {
+        resolve_vertical(vendor_body, cld[i])
+        resolve_horizontal(vendor_body, cld[i])
+    }
+}

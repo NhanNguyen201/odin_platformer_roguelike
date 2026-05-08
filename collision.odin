@@ -8,28 +8,25 @@ get_body_rect :: proc(body: Body) -> rl.Rectangle {
     return {body.position.x -  body.size.x / 2, body.position.y -  body.size.y / 2, body.size.x, body.size.y}
 
 }
-get_enemy_body_rect :: proc(body: Enemy_Body) -> rl.Rectangle {
-    return {body.position.x -  body.size.x / 2, body.position.y -  body.size.y / 2, body.size.x, body.size.y}
 
-}
 
-resolve_horizontal :: proc(player: ^Player, rect: rl.Rectangle) {
-    pr := get_body_rect(player.body)
+resolve_horizontal :: proc(body: ^Body, rect: rl.Rectangle) {
+    pr := get_body_rect(body^)
 
     if !rl.CheckCollisionRecs(pr, rect) do return
 
     if pr.x < rect.x {
-        player.body.position.x = rect.x - pr.width / 2
+        body.position.x = rect.x - pr.width / 2
     } else {
-        player.body.position.x = rect.x + rect.width  + pr.width / 2
+        body.position.x = rect.x + rect.width  + pr.width / 2
     } 
-    if !player.on_ground {
-        player.body.vel.x = 0
+    if !body.is_on_ground {
+        body.vel.x = 0
     }
 }
 
-resolve_enemy_horizontal :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
-    pr := get_enemy_body_rect(body^)
+resolve_enemy_horizontal :: proc(body: ^Body, rect: rl.Rectangle) {
+    pr := get_body_rect(body^)
 
     if !rl.CheckCollisionRecs(pr, rect) do return
 
@@ -45,27 +42,27 @@ resolve_enemy_horizontal :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
     body.vel.x *= -1
 }
 
-resolve_vertical :: proc( player : ^Player, rect : rl.Rectangle, verticle_acc : bool = false)  -> (bool, bool, bool) {
-    pr := get_body_rect(player.body)
+resolve_vertical :: proc( body : ^Body, rect : rl.Rectangle, verticle_acc : bool = false)  -> (bool, bool, bool) {
+    pr := get_body_rect(body^)
     if !rl.CheckCollisionRecs(pr, rect) {
         return false, false, false
     }
 
     if pr.y < rect.y {
        
-        player.body.position.y = rect.y - pr.height / 2
-        player.body.vel.y = 0
-        player.on_ground = true
+        body.position.y = rect.y - pr.height / 2
+        body.vel.y = 0
+        body.is_on_ground = true
         return true, true, verticle_acc 
     } else {
-        player.body.position.y = rect.y + rect.height + pr.height / 2
-        player.body.vel.y = 0
+        body.position.y = rect.y + rect.height + pr.height / 2
+        body.vel.y = 0
     }
     return true, false, false
 }
 
-resolve_enemy_vertical :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
-    pr := get_enemy_body_rect(body^)
+resolve_enemy_vertical :: proc(body: ^Body, rect: rl.Rectangle) {
+    pr := get_body_rect(body^)
 
 
     if !rl.CheckCollisionRecs(pr, rect) do return
@@ -81,7 +78,7 @@ resolve_enemy_vertical :: proc(body: ^Enemy_Body, rect: rl.Rectangle) {
 
 resolve_e_mele_attack:: proc(player: ^Player, enemy: ^Enemy_unit, force: f32, dt: f32) {
     player_rect := get_body_rect(player.body)
-    enemy_rect := get_enemy_body_rect(enemy.body)
+    enemy_rect := get_body_rect(enemy.body)
     if !rl.CheckCollisionRecs(player_rect, enemy_rect) do return
 
     enemy.combat_state = .PARTROL
@@ -90,8 +87,8 @@ resolve_e_mele_attack:: proc(player: ^Player, enemy: ^Enemy_unit, force: f32, dt
 
 }
 
-resolve_enemy_and_bullet:: proc(e_body: Enemy_Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
-    pr := get_enemy_body_rect(e_body)
+resolve_enemy_and_bullet:: proc(e_body: Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
+    pr := get_body_rect(e_body)
 
     for bullet, idx in bullets {
         bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
@@ -106,7 +103,7 @@ resolve_enemy_and_bullet:: proc(e_body: Enemy_Body, health_stats: ^Health_stats,
 
 }
 
-resolve_boss_and_bullet:: proc(b_body: Enemy_Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
+resolve_boss_and_bullet:: proc(b_body: Body, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
     for bullet, idx in bullets {
         bullet_rect := rl.Rectangle {x = bullet.position.x - BULLET_SIZE.x / 2, y = bullet.position.y - BULLET_SIZE.y / 2, width = BULLET_SIZE.x, height = BULLET_SIZE.y}
 

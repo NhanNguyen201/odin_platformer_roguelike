@@ -65,7 +65,7 @@ Boss_teleportation:: struct {
 }
 Boss :: struct {
     stats : Enemy_unit_stats,
-    body: Enemy_Body,
+    body: Body,
     status: Enemy_status,
     skill_queue: [dynamic] Boss_skill_cast,
     combat_state: Boss_combat_states,

@@ -70,8 +70,6 @@ Player :: struct {
     direction: BULLET_DIRECTION,
     stats: Player_stats,
     spawn_pos: rl.Vector2,
-    on_ground: bool,
-    is_flip: bool,
     money_coins: Player_coins,
     bullet_cd: Bullet_Countdown,
     anim_controller: Animation_controller,
@@ -85,7 +83,10 @@ Body :: struct {
     position: rl.Vector2,
     vel: rl.Vector2,
     direction : Player_direction,
-    acc: rl.Vector2
+    acc: rl.Vector2,
+    is_on_ground: bool,
+    is_flip: bool,
+
 }
 
 Experience_controller:: struct {
@@ -231,7 +232,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
     if rl.IsKeyDown(.LEFT) || rl.IsKeyDown(.A) {
         player.direction = .LEFT
-        player.is_flip = true
+        player.body.is_flip = true
         // player.body.vel.x = -(PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
         player.body.acc.x = -PLAYER_MAX_ACC
          if player.anim_controller.animation_name != RUN_ANI {
@@ -241,7 +242,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         }
     } else if rl.IsKeyDown(.RIGHT) || rl.IsKeyDown(.D) {
         player.direction = .RIGHT
-        player.is_flip = false
+        player.body.is_flip = false
 
         // player.body.vel.x = (PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
         player.body.acc.x = PLAYER_MAX_ACC
@@ -256,7 +257,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     } else {
         player.body.acc.x = 0
 
-        if player.on_ground {
+        if player.body.is_on_ground {
             player.body.vel.x  *= 0.8
         }
         if player.anim_controller.animation_name != IDLE_ANI {
@@ -279,31 +280,31 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
    
     jump_pressed := rl.IsKeyPressed(.SPACE) || rl.IsKeyPressed(.UP) || rl.IsKeyPressed(.W)
 
-    if jump_pressed && player.on_ground {
+    if jump_pressed && player.body.is_on_ground {
         player.body.vel.y = PlAYER_JUMP_VEL
-        player.on_ground = false
+        player.body.is_on_ground = false
     }
     
     stomp_pressed := rl.IsKeyDown(.S) || rl.IsKeyDown(.DOWN)
 
-    if stomp_pressed && !player.on_ground {
+    if stomp_pressed && !player.body.is_on_ground {
         player.body.acc.y = 50
     } else {
         player.body.acc.y = 0
     }
 
     for block_collider in game_collider_block {
-        resolve_horizontal(player, block_collider)
+        resolve_horizontal(&player.body, block_collider)
     }
 
     player.body.vel.y += player.body.acc.y
     player.body.vel.y = min(player.body.vel.y + (GRAVITY * dt), stomp_pressed ? STOMPED_MAX_FALL_SPEED : MAX_FALL_SPEED )
     
-    player.on_ground = false
+    player.body.is_on_ground = false
     player.body.position.y += player.body.vel.y * dt
 
     for block_collider in game_collider_block {
-        _, _, is_stomped_collided := resolve_vertical(player, block_collider, player.body.acc.y > 0)
+        _, _, is_stomped_collided := resolve_vertical(&player.body, block_collider, player.body.acc.y > 0)
         if is_stomped_collided  {
             add_particle(&game.particle_system, {
                 sprite_count = 4,
@@ -347,7 +348,7 @@ player_draw :: proc(player: ^Player, game: Game, dt: f32) {
 
     anim := Player_animations[player.anim_controller.animation_name]
 
-    draw_animation(game.game_sprite_atlas, &player.anim_controller, anim, PLAYER_SPRITE, player.is_flip, r, dt)
+    draw_animation(game.game_sprite_atlas, &player.anim_controller, anim, PLAYER_SPRITE, player.body.is_flip, r, dt)
    
 
 }

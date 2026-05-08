@@ -65,21 +65,12 @@ Enemy_unit_states :: enum {
 }
 
 
-Enemy_Body :: struct { 
-    size: rl.Vector2,
-    position: rl.Vector2,
-    vel: rl.Vector2,
-    direction : Enemy_directions
-}
-
-
 Enemy_unit :: struct {
     id: f32,
     enemy_type : Enemy_types,
-    body: Enemy_Body,
+    body: Body,
     status: Enemy_status,
     stats : Enemy_unit_stats,
-    on_ground: bool,
     combat_state: Enemy_unit_states,
     taunted_timer : Timer,
     anim_controller: Animation_controller,
@@ -267,7 +258,7 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                         enemy.body.vel.x =  remain_force * (enemy.attack.direction ? 1 : -1) * dt
                         enemy.body.position.x += enemy.body.vel.x
 
-                        if rl.CheckCollisionRecs(get_body_rect(get_player(game^).body), get_enemy_body_rect(enemy.body)) {
+                        if rl.CheckCollisionRecs(get_body_rect(get_player(game^).body), get_body_rect(enemy.body)) {
                             player_take_dmg(&game.player.stats.health_stats, get_player(game^).stats.buffes,enemy.stats.dmg)
                             resolve_e_mele_attack(&game.player, enemy, ENEMY_MELEE_PUSH_FORCE * remain_scale, dt)
                         }
@@ -278,8 +269,8 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                         }
                         for block_collider in game.level_data.colliders {
                             front_rect := rl.Rectangle {
-                                x = get_enemy_body_rect(enemy.body).x + (is_flip ? -5 : enemy.body.size.x ),
-                                y = get_rect_center(get_enemy_body_rect(enemy.body)).y - 2,
+                                x = get_body_rect(enemy.body).x + (is_flip ? -5 : enemy.body.size.x ),
+                                y = get_rect_center(get_body_rect(enemy.body)).y - 2,
                                 width = 5,
                                 height = 4
                             }
@@ -294,8 +285,8 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                 } 
                 case .RANGER : {
                     if enemy.combat_state == .PARTROL {
-                            under_rect := rl.Rectangle {x = get_rect_center(get_enemy_body_rect(enemy.body)).x - 10, y = enemy.body.position.y + enemy.body.size.y + 2, width = 20, height = 3}
-                            front_rect := rl.Rectangle {x = get_rect_center(get_enemy_body_rect(enemy.body)).x + (enemy.body.direction == .RIGHT ? enemy.body.size.x / 2 + 2 : - enemy.body.size.x / 2 - 10 - 2 ), y = enemy.body.position.y + enemy.body.size.y + 2, width = 10, height = 3}
+                            under_rect := rl.Rectangle {x = get_rect_center(get_body_rect(enemy.body)).x - 10, y = enemy.body.position.y + enemy.body.size.y + 2, width = 20, height = 3}
+                            front_rect := rl.Rectangle {x = get_rect_center(get_body_rect(enemy.body)).x + (enemy.body.direction == .RIGHT ? enemy.body.size.x / 2 + 2 : - enemy.body.size.x / 2 - 10 - 2 ), y = enemy.body.position.y + enemy.body.size.y + 2, width = 10, height = 3}
                             for block_collider in game.level_data.colliders {
                                 if !rl.CheckCollisionRecs(under_rect, block_collider) do continue
                                 if !rl.CheckCollisionRecs(front_rect, block_collider) {
@@ -417,7 +408,7 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
 
 enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: ^[dynamic]Enemy_unit, dt: f32) {
     for &enemy in e_unit {
-        enemy_rect := get_enemy_body_rect(enemy.body)
+        enemy_rect := get_body_rect(enemy.body)
         is_flip := enemy.body.direction != .RIGHT
         
 
@@ -615,7 +606,7 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                 enemy_type = .RANGER,
 
                 status = .ALIVE,
-                body = Enemy_Body {
+                body = Body {
                     position = enemy_spawner.position ,
                     size = Enemy_melee_SIZE,
                     vel = 20,
@@ -643,7 +634,7 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                 enemy_type = .SNIPER,
 
                 status = .ALIVE,
-                body = Enemy_Body {
+                body = Body {
                     position = enemy_spawner.position + spawn_offset,
                     size = Enemy_melee_SIZE,
                     direction = .RIGHT,
@@ -675,7 +666,7 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
            
 }
 
-e_ranger_shoot :: proc(enemy_bullet : ^[dynamic]Bullet, enemy_body: Enemy_Body, dmg: f32) {
+e_ranger_shoot :: proc(enemy_bullet : ^[dynamic]Bullet, enemy_body: Body, dmg: f32) {
     append(enemy_bullet, Bullet {
         direction = enemy_body.direction == .RIGHT ? .RIGHT : .LEFT,
         dmg = dmg,
