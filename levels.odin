@@ -58,36 +58,22 @@ Enemy_spawner_pot :: struct {
     hp_stats: Health_stats,
     position: rl.Vector2,
     destination: rl.Vector2,
-    re_contruct: Enemy_reconstruct,
-    re_spawn: Enemy_respawn,
+    re_contruct: Timer,
+    re_spawn: Timer,
+    state: Enemy_spawner_state,
     enemy_id: f32,
     enemy_type: Enemy_types,
     anim_controller: Animation_controller
 
 }
 
-Enemy_reconstruct :: struct {
-    max_time: f32,
-    time: f32
-}
-
-Enemy_respawn:: struct {
-    max_time: f32,
-    time: f32,
-    status: Enemy_spawner_status
-}
 
 Health_stats :: struct {
     max_hp: f32,
     current_hp: f32
 }
 
-Enemy :: struct {
-    id: f32,
-    hp_stats: Health_stats,
-    dmg: f32,
-    direction: Enemy_directions
-}
+
 
 Designed_Level : []Level = {
     Level {
@@ -127,7 +113,7 @@ get_level_data::proc (lvl: int) -> Level {
 load_level :: proc(game: ^Game, lvl: int)  {
     clear_game_mem(game)
     @static enemy_spawner_hp: f32 = 150
-    @static enemy_respawn_time: f32 = 2.5
+    @static enemy_respawn_time: f32 = 3.5
     @static enemy_recontruct_time: f32 = 5
     is_boss_level := get_is_boss_lvl(lvl)
 
@@ -228,14 +214,14 @@ load_level :: proc(game: ^Game, lvl: int)  {
                 max_hp = enemy_spawner_hp, 
                 current_hp = enemy_spawner_hp
             },
+            state = .EXIST,
             re_spawn = {
                 max_time = enemy_respawn_time,
-                status = .EXIST,
-                time = 2. 
+                current = 2. 
             },
             re_contruct ={
                 max_time = enemy_recontruct_time,
-                time = enemy_recontruct_time
+                current = enemy_recontruct_time
             },
             anim_controller =  {
                 animation_name = IDLE_ANI,
@@ -258,18 +244,18 @@ load_level :: proc(game: ^Game, lvl: int)  {
         enemy_spawner_pot := Enemy_spawner_pot {
             enemy_type = .RANGER,
             position = {x, y}, 
+            state = .EXIST,
             hp_stats = {
                 max_hp = enemy_spawner_hp, 
                 current_hp = enemy_spawner_hp
             },
             re_spawn = {
                 max_time = enemy_respawn_time,
-                status = .EXIST,
-                time = 2. 
+                current = 2. 
             },
             re_contruct ={
                 max_time = enemy_recontruct_time,
-                time = enemy_recontruct_time
+                current = enemy_recontruct_time
             },
             anim_controller =  {
                 animation_name = IDLE_ANI,
@@ -297,14 +283,14 @@ load_level :: proc(game: ^Game, lvl: int)  {
                 max_hp = enemy_spawner_hp, 
                 current_hp = enemy_spawner_hp
             },
+            state = .EXIST,
             re_spawn = {
                 max_time = enemy_respawn_time,
-                status = .EXIST,
-                time = 2. 
+                current = 2. 
             },
             re_contruct ={
                 max_time = enemy_recontruct_time,
-                time = enemy_recontruct_time
+                current = enemy_recontruct_time
             },
             anim_controller =  {
                 animation_name = IDLE_ANI,

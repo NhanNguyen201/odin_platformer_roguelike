@@ -24,7 +24,7 @@ ENEMY_MOVE_SPEED: f32 : 20
 ENEMY_SPAWNER_SIZE: rl.Vector2 : {8, 16}
 ENEMY_SPAWN_OFFSET_RANGE : f32 : 15
 
-Enemy_spawner_status :: enum {
+Enemy_spawner_state :: enum {
     EXIST,
     COUNT_DOWN
 }
@@ -43,11 +43,7 @@ Enemy_buffes :: struct {
 
 }
 
-Enemy_melee_states :: enum {
-    PARTROL,
-    TAUNTED,
-    ATTACK,
-}
+
 
 Enemy_attack :: struct {
     current: f32,
@@ -55,19 +51,9 @@ Enemy_attack :: struct {
     direction: bool
 }
 
-Enemy_range_states :: enum {
-    PATROL,
-    TAUNTED,
-    RELOAD // Tired
-}
 
 
 
-Enemy_sniper_targeting_states :: enum {
-    RELOAD,
-    AIMING,
-    TRIGGER
-}
 
 Enemy_unit_states :: enum {
     PARTROL,
@@ -145,21 +131,21 @@ enemies_spawner_update:: proc(game: ^Game, dt: f32) {
             }
             
             if is_enemy_dead  || !found {
-                enemy_spawner.re_spawn.time -= dt
+                enemy_spawner.re_spawn.current -= dt
     
-                if enemy_spawner.re_spawn.time < 0 {
-                    enemy_spawner.re_spawn.time =  enemy_spawner.re_spawn.max_time
+                if enemy_spawner.re_spawn.current < 0 {
+                    enemy_spawner.re_spawn.current =  enemy_spawner.re_spawn.max_time
                     spawn_enemy(game, enemy_spawner)
                 }
     
             }
                
         }else {
-            if enemy_spawner.re_contruct.time < 0 {
-                enemy_spawner.re_contruct.time = enemy_spawner.re_contruct.max_time
+            if enemy_spawner.re_contruct.current < 0 {
+                enemy_spawner.re_contruct.current = enemy_spawner.re_contruct.max_time
                 enemy_spawner.hp_stats.current_hp = enemy_spawner.hp_stats.max_hp
             }  else {
-                enemy_spawner.re_contruct.time -= dt
+                enemy_spawner.re_contruct.current -= dt
             }
         }
 
@@ -201,7 +187,7 @@ enemies_spawner_draw:: proc(atlas: rl.Texture2D, spawners: []Enemy_spawner_pot, 
         if is_debug {
             respawn_ui_height :f32 = 10
             rl.DrawRectangle(i32(enemy_spawner.position.x - 20), i32(enemy_spawner.position.y - 5), 5, i32(respawn_ui_height), rl.WHITE)
-            rl.DrawRectangle(i32(enemy_spawner.position.x - 20), i32(enemy_spawner.position.y - 5), 5, i32(enemy_spawner.re_spawn.time / enemy_spawner.re_spawn.max_time * respawn_ui_height), rl.BLUE)
+            rl.DrawRectangle(i32(enemy_spawner.position.x - 20), i32(enemy_spawner.position.y - 5), 5, i32(enemy_spawner.re_spawn.current / enemy_spawner.re_spawn.max_time * respawn_ui_height), rl.BLUE)
             
         }
     }

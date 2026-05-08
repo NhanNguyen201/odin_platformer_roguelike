@@ -234,14 +234,14 @@ game_draw:: proc(game: ^Game, dt: f32) {
     
     if game.game_options.is_debug {
         for cld in colliders {
-            rl.DrawRectangle(i32(cld.x), i32(cld.y), i32(cld.width), i32(cld.height), rl.BLACK)
+            rl.DrawRectangleRec(cld, rl.BLACK)
         }
     }
 
     experience_buff_draw(game.game_sprite_atlas, game.level_data.exp_buffs[:])
 
     
-    level_gate_draw(game.game_sprite_atlas, game.level_data)
+    level_gate_draw(game.game_sprite_atlas, game.level_data.gate_position, game.level_data.keys[:], game.level_data.collected_keys, game.level_data.is_complete)
     
     enemies_spawner_draw(game.game_sprite_atlas, game.enemy_side.enemy_spawners[:], game.game_options.is_debug, dt)
     
@@ -267,16 +267,16 @@ game_draw:: proc(game: ^Game, dt: f32) {
     particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
 }
 
-level_gate_draw:: proc(atlas: rl.Texture2D, level_data: Level_data) {
+level_gate_draw:: proc(atlas: rl.Texture2D, gate_position: rl.Vector2, keys: []Key_pot, key_collected: int, is_level_completed: bool) {
     sprite := SPRITE_MAP[LEVEL_GATE_SPRITE]
     source := rl.Rectangle{x = sprite.x, y= sprite.y, width = sprite.w, height = sprite.h}
-    dest := rl.Rectangle {x = level_data.gate_position.x - LEVEL_GATE_SIZE.x / 2, y = level_data.gate_position.y - LEVEL_GATE_SIZE.y / 2, width = LEVEL_GATE_SIZE.x, height = LEVEL_GATE_SIZE.y}
+    dest := rl.Rectangle {x = gate_position.x - LEVEL_GATE_SIZE.x / 2, y = gate_position.y - LEVEL_GATE_SIZE.y / 2, width = LEVEL_GATE_SIZE.x, height = LEVEL_GATE_SIZE.y}
 
-    rl.DrawCircle(i32(level_data.gate_position.x), i32(level_data.gate_position.y), 15, rl.Color{220, 220,220, 180})
-    rl.DrawTexturePro(atlas, source, dest, {0,0}, 0, level_data.is_complete ? rl.WHITE : rl.Color {117, 116, 116, 150})
+    rl.DrawCircle(i32(gate_position.x), i32(gate_position.y), 15, rl.Color{220, 220,220, 180})
+    rl.DrawTexturePro(atlas, source, dest, {0,0}, 0, is_level_completed ? rl.WHITE : rl.Color {117, 116, 116, 150})
     
-    for i:= 0; i < len(level_data.keys); i+= 1 {
-        rl.DrawCircle(i32(get_rect_center(dest).x) - i32(7 * (len(level_data.keys) - 1) / 2) + i32(i * 7), i32(level_data.gate_position.y - 15), 2, i < level_data.collected_keys ? rl.RED : rl.Color {118, 171, 252, 255})
+    for i:= 0; i < len(keys); i+= 1 {
+        rl.DrawCircle(i32(get_rect_center(dest).x) - i32(7 * (len(keys) - 1) / 2) + i32(i * 7), i32(gate_position.y - 15), 2, i < key_collected ? rl.RED : rl.Color {118, 171, 252, 255})
     } 
 
 }
