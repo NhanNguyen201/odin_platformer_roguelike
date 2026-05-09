@@ -42,7 +42,7 @@ resolve_enemy_horizontal :: proc(body: ^Body, rect: rl.Rectangle) {
     body.vel.x *= -1
 }
 
-resolve_vertical :: proc( body : ^Body, rect : rl.Rectangle, verticle_acc : bool = false)  -> (bool, bool, bool) {
+resolve_vertical :: proc( body : ^Body, rect : rl.Rectangle, vertical_acc : bool = false)  -> (bool, bool, bool) {
     pr := get_body_rect(body^)
     if !rl.CheckCollisionRecs(pr, rect) {
         return false, false, false
@@ -53,7 +53,7 @@ resolve_vertical :: proc( body : ^Body, rect : rl.Rectangle, verticle_acc : bool
         body.position.y = rect.y - pr.height / 2
         body.vel.y = 0
         body.is_on_ground = true
-        return true, true, verticle_acc 
+        return true, true, vertical_acc 
     } else {
         body.position.y = rect.y + rect.height + pr.height / 2
         body.vel.y = 0
