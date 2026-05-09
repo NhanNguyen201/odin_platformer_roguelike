@@ -196,26 +196,21 @@ refresh_shop:: proc(shop: ^Shop_manager) {
 
 resolve_buy_item :: proc(shop: ^Shop_manager, item_idx: int, player_items: ^[PLAYER_ITEM_SLOT_NUMB]Player_item, player_coins: ^Player_coins) -> (bool, Shop_item_purchase_error) {
     found := false
-    found_pocket_slot := false
     found_pockket_idx :int = 0
     
     
     if item_idx > SHOP_ITEM_SLOT_NUM do return false, .INVALID_ACTION
 
-    for i := 0; i < PLAYER_ITEM_SLOT_NUMB; i += 1 {
-        if player_items[i].type == .NONE {
-            found_pocket_slot = true
-            found_pockket_idx = i
-            break
-        }
-    }
-    if !found_pocket_slot {
-        return false, .POCKET_FULL
-    }
-
     shop_item := shop.items[item_idx]
-
     if shop_item.item_status == .SOLD do return false, .SOLD
+
+    empty_slot, full_slot_error := get_player_pocket_empty_slot(player_items^)
+    
+    if full_slot_error != .NONE {
+        return false, full_slot_error
+    } else {
+        found_pockket_idx = empty_slot
+    }
     
     if player_coins.val < shop_item.price {
         return false, .NOT_ENOUGH_COINS
@@ -225,6 +220,16 @@ resolve_buy_item :: proc(shop: ^Shop_manager, item_idx: int, player_items: ^[PLA
         player_coins.val -= shop_item.price
         return true, .NONE
     }
+}
+
+get_player_pocket_empty_slot :: proc(player_items: [PLAYER_ITEM_SLOT_NUMB]Player_item) -> (int, Shop_item_purchase_error) {
+    for i := 0; i < PLAYER_ITEM_SLOT_NUMB; i += 1 {
+        if player_items[i].type == .NONE {
+            return i, .NONE
+        }
+    }
+
+    return 0, .POCKET_FULL
 }
 
 player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Rectangle, dt: f32) {
@@ -309,7 +314,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
             add_particle(&game.particle_system, {
                 sprite_count = 4,
                 timer = {max_time = 0.5, current = 0.5},
-                sprite_source = get_sprite_source_rect(SPRITE_MAP[EFFECT_PLAYER_STOMP]),
+                sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_EFFECT_PLAYER_STOMP_SPRITE]),
                 size = {24, 12},
                 is_blur = true,
                 is_scaled = true,
@@ -343,12 +348,12 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 }
 
-player_draw :: proc(player: ^Player, game: Game, dt: f32) {
-    r := get_body_rect(player.body)
+player_draw :: proc(atlas: rl.Texture2D, player: ^Player, dt: f32) {
+    body_rect := get_body_rect(player.body)
 
     anim := Player_animations[player.anim_controller.animation_name]
 
-    draw_animation(game.game_sprite_atlas, &player.anim_controller, anim, PLAYER_SPRITE, player.body.is_flip, r, dt)
+    draw_animation(atlas, &player.anim_controller, anim, PLAYER_SPRITE, player.body.is_flip, body_rect, dt)
    
 
 }
@@ -367,7 +372,6 @@ exp_buff_collect:: proc(player: ^Player, game: ^Game) {
         player.exp_controller.current += EXPERIENCE_BUFF_AMOUNT
         
         if player.exp_controller.current >= player.exp_controller.require.val {
-            game.ui_controller.is_ui_screen = true
             game.game_options.is_paused = true
             game.ui_controller.ui_scene = .BUFFES_PICK
 
@@ -428,22 +432,26 @@ resolve_using_item_from_keyboard :: proc(input_controler: Player_input_controler
     keycodes := get_item_keycode_to_array(input_controler)
 
     for i:= 0; i < PLAYER_ITEM_SLOT_NUMB; i += 1 {
-        resolve_using_item_exec(keycodes[i], &pocket_items[i], player)
+        resolve_using_item_by_key(keycodes[i], &pocket_items[i], player)
     }
 }
 
-resolve_using_item_exec :: proc(key: rl.KeyboardKey, item: ^Player_item, player: ^Player) {
+resolve_using_item_by_key :: proc(key: rl.KeyboardKey, item: ^Player_item, player: ^Player) {
     if rl.IsKeyPressed(key) {
         if item.type != .NONE {
-            if item.type == .ATK_DMG {
-                player_apply_temp_buff({temp_buff_type = .ATTACK, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_ATK_AMOUNT }, player)
-            }  else if item.type == .SPEED {
-                player_apply_temp_buff({temp_buff_type = .SPEED, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_SPEED_AMOUNT }, player)
-            } else if item.type == .HEAL {
-                player.stats.health_stats.current_hp = min(player.stats.health_stats.max_hp, player.stats.health_stats.current_hp  + player.stats.health_stats.max_hp * PLAYER_ITEM_HEAL_AMOUNT / 100)
-            }
+            resolve_using_item(item^, player)
             item.type = .NONE
         }
+    }
+}
+
+resolve_using_item :: proc(item: Player_item, player: ^Player) {
+    if item.type == .ATK_DMG {
+        player_apply_temp_buff({temp_buff_type = .ATTACK, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_ATK_AMOUNT }, player)
+    }  else if item.type == .SPEED {
+        player_apply_temp_buff({temp_buff_type = .SPEED, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_SPEED_AMOUNT }, player)
+    } else if item.type == .HEAL {
+        player.stats.health_stats.current_hp = min(player.stats.health_stats.max_hp, player.stats.health_stats.current_hp  + player.stats.health_stats.max_hp * PLAYER_ITEM_HEAL_AMOUNT / 100)
     }
 }
 
