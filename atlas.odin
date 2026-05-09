@@ -72,18 +72,26 @@ UI_CURSIR_SPRITE_2 :: "Ui_cursor_sprite_2"
 UI_PLAYER_TEMP_BUFF_FIRE_SPRITE :: "Ui_player_temp_buff_fire_sprite"
 UI_BOX_SPRITE :: "Ui_box_sprite"
 UI_SCREEN_SPRITE :: "Ui_screen_sprite"
-EFFECT_PLAYER_STOMP :: "Effect_player_stomp"
+UI_EFFECT_PLAYER_STOMP_SPRITE :: "Ui_effect_player_stomp_sprite"
 UI_COIN_PARTICLE_SPRITE :: "Ui_coin_particle_sprite" 
 UI_ITEM_HEAL_SPRITE :: "Ui_item_heal_sprite"
 UI_ITEM_ATK_SPRITE :: "Ui_item_atk_sprite"
 UI_ITEM_SPD_SPRITE :: "Ui_item_spd_sprite"
-
+UI_BUFF_SLOT_SPRITE :: "Ui_buff_slot_sprite"
 UI_SHOP_SOLDOUT :: "Ui_shop_soldout"
 UI_SHOP_POCKET_FULL :: "Ui_shop_pocket_full"
 UI_SHOP_INVALID :: "Ui_shop_invalid"
 UI_SHOP_NOT_ENOUGH_MONEY :: "Ui_shop_not_enough_money"
 UI_SHOP_SUCCESS :: "Ui_shop_success"
 
+LEVEL_VENDOR_SPRITE :: "Level_vendor_sprite"
+LEVEL_VENDOR_NEAR_SPRITE :: "Level_vendor_near_sprite"
+LEVEL_VENDOR_OPEN_SPRITE :: "Level_vendor_open_sprite"
+LEVEL_VENDOR_E_BUFF_HP_SPRITE :: "Level_vendor_e_buff_hp_sprite"
+LEVEL_VENDOR_E_BUFF_ATTACK_SPRITE :: "Level_vendor_e_buff_attack_sprite"
+LEVEL_VENDOR_E_BUFF_COOLDOWN_SPRITE :: "Level_vendor_e_buff_cooldown_sprite"
+GOOD_WITCH_SPRITE :: "Good_witch_sprite"
+BAD_WITCH_SPRITE :: "Bad_witch_sprite"
 
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
@@ -143,19 +151,28 @@ SPRITE_MAP := map[string]Sprite_desc {
     GAME_OVER_SPRITE = {x = 0, y = 512, w = 144, h = 96},
     GAME_START_SPRITE = {x = 144, y = 512, w = 144, h = 96},
     UI_PLAYER_TEMP_BUFF_FIRE_SPRITE = {x = 208, y = 64, h =16, w = 16},
-    EFFECT_PLAYER_STOMP = {x = 0, y = 96, w = 128, h = 16},
+    UI_EFFECT_PLAYER_STOMP_SPRITE = {x = 0, y = 96, w = 128, h = 16},
     UI_BOX_SPRITE = {x = 0, y = 720, w = 64, h = 32},
     UI_SCREEN_SPRITE = {x = 0, y = 752, w = 80, h = 48},
     UI_COIN_PARTICLE_SPRITE = {x = 64, y = 80, w = 16, h = 16 },
     UI_ITEM_HEAL_SPRITE = {x = 0, y = 672, w = 48, h = 48},
     UI_ITEM_ATK_SPRITE = {x = 48, y = 672, w = 48, h = 48},
     UI_ITEM_SPD_SPRITE = {x = 96, y = 672, w = 48, h = 48},
-
+    UI_BUFF_SLOT_SPRITE = {x = 0, y = 880, w = 80, h = 96},
     UI_SHOP_NOT_ENOUGH_MONEY = {x = 0, y = 800, w = 48, h = 32},
     UI_SHOP_SOLDOUT = {x = 144, y = 800, w = 48, h = 32},
     UI_SHOP_POCKET_FULL = {x = 48, y = 800, w = 48, h = 32},
     UI_SHOP_INVALID = {x = 96, y = 800, w = 48, h = 32},
     UI_SHOP_SUCCESS = {x = 192, y = 800, w = 48, h = 32},
+    // 
+    LEVEL_VENDOR_SPRITE = {x = 0, y = 832, w = 48, h = 48},
+    LEVEL_VENDOR_NEAR_SPRITE = { x= 144, y =832, w= 64, h = 32},
+    LEVEL_VENDOR_OPEN_SPRITE = { x= 208, y =832, w= 64, h = 32},
+    LEVEL_VENDOR_E_BUFF_HP_SPRITE = { x= 0, y =112, w= 32, h = 32},
+    LEVEL_VENDOR_E_BUFF_ATTACK_SPRITE = { x= 32, y =112, w= 32, h = 32},
+    LEVEL_VENDOR_E_BUFF_COOLDOWN_SPRITE = { x= 64, y =112, w= 32, h = 32},
+    GOOD_WITCH_SPRITE = {x = 48, y = 832, w = 48, h = 48},
+    BAD_WITCH_SPRITE = {x = 96, y = 832, w = 48, h = 48},
 }
 
 load_atlas:: proc(game: ^Game) {
