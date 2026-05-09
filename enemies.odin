@@ -40,7 +40,9 @@ Enemy_types :: enum {
 }
 
 Enemy_buffes :: struct {
-
+    hp: f32,
+    attack: f32,
+    cooldown: f32
 }
 
 
@@ -442,7 +444,7 @@ enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: 
                         // taunted_aura_sprte_source := rl.Rectangle {x = taunted_aura_sprite.x, y= taunted_aura_sprite.y, width = taunted_aura_sprite.w, height = taunted_aura_sprite.h}
                         // taunted_aura_sprite_dest := rl.Rectangle {x = enemy_rect.x + enemy_rect.width - 10, y = enemy_rect.y - 10, width = 16, height = 16}
                         rl.DrawTexturePro(atlas, taunted_source, enemy_rect, {0, 0}, 0, rl.WHITE)
-                        unit_expression_draw(atlas, SPRITE_MAP[E_TAUNTED_AURA_SPRITE], enemy.body.position + {8, -8})
+                        unit_expression_draw(atlas, SPRITE_MAP[E_TAUNTED_AURA_SPRITE], UI_UNIT_EXPRESSION_SIZE, enemy.body.position + {8, -8})
                         // rl.DrawTexturePro(atlas, taunted_aura_sprte_source, taunted_aura_sprite_dest, {0, 0}, 0, rl.WHITE)
                         // draw_animation(atlas, &enemy.anim_controller, anim, E_MELEE_SPRITE, is_flip, enemy_rect, dt)
                     }
@@ -469,7 +471,7 @@ enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: 
                         taunted_sprite_source := get_sprite_source_rect(taunted_sprite, is_flip)
                         
                         rl.DrawTexturePro(atlas, taunted_sprite_source, enemy_rect, 0, 0, rl.WHITE)
-                        unit_expression_draw(atlas, SPRITE_MAP[E_TAUNTED_AURA_SPRITE], enemy.body.position + {8, -8})
+                        unit_expression_draw(atlas, SPRITE_MAP[E_TAUNTED_AURA_SPRITE], UI_UNIT_EXPRESSION_SIZE, enemy.body.position + {8, -8})
 
                     } else if enemy.combat_state == .RELOAD{
                         if enemy.anim_controller.animation_name != RELOAD_ANI {
@@ -480,7 +482,7 @@ enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: 
                         
                         draw_animation(atlas, &enemy.anim_controller, anim, E_RANGER_SPRITE, is_flip, enemy_rect, dt)
 
-                        unit_expression_draw(atlas, SPRITE_MAP[E_RELOAD_AURA_SPRITE], enemy.body.position + {8, -8})
+                        unit_expression_draw(atlas, SPRITE_MAP[E_RELOAD_AURA_SPRITE], UI_UNIT_EXPRESSION_SIZE, enemy.body.position + {8, -8})
                     }
                 }
             }
@@ -501,7 +503,7 @@ enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: 
                 }
 
                 if enemy.combat_state == .RELOAD{
-                    unit_expression_draw(atlas, SPRITE_MAP[E_RELOAD_AURA_SPRITE], enemy.body.position + {8, -8})
+                    unit_expression_draw(atlas, SPRITE_MAP[E_RELOAD_AURA_SPRITE], UI_UNIT_EXPRESSION_SIZE, enemy.body.position + {8, -8})
                 } else if enemy.combat_state == .AIMING {
                     sprite := SPRITE_MAP[E_SNIPER_AIMING_SPRITE]
                     sprite_source := get_sprite_source_rect(sprite)
