@@ -27,7 +27,8 @@ BULLET_DIRECTION :: enum {
 Enemy_side :: struct {
     enemy_units: [dynamic] Enemy_unit,
     enemy_spawners: [dynamic] Enemy_spawner_pot,
-    enemy_bullets: [dynamic] Bullet
+    enemy_bullets: [dynamic] Bullet,
+    enemy_stat_buffes: Enemy_buffes
 } 
 
 Game_Options :: struct {
@@ -75,10 +76,14 @@ Game :: struct {
     player_bullets: [dynamic] Bullet,
     enemy_side: Enemy_side,
     boss_manager: Boss_level_manager,
-    shop_manager: Shop_manager
+    shop_manager: Shop_manager,
+    level_vendor: Level_vendor,
+    slow_motion_manager: Slow_motion
 }
  
-
+Slow_motion:: struct {
+    is_slow_motion: bool
+}
 
 
 game_init:: proc() -> Game {
@@ -104,10 +109,7 @@ game_init:: proc() -> Game {
         input_controler = get_default_input_controler()
         
     }
-    game.ui_controller = {
-        is_ui_screen = false,
-        ui_scene = .NONE
-    }
+    game.ui_controller.ui_scene = .NONE
     game.game_options.is_hub = true
     rl.HideCursor()
     load_atlas(&game)
@@ -142,8 +144,9 @@ game_update:: proc(game: ^Game, dt: f32) {
             boss_skill_update(&game.boss_manager.boss, game, dt)
         }
         level_gate_update(game)
-        
+        level_vendor_update(&game.level_vendor, game.level_data.colliders[:], &game.ui_controller, &game.game_options, game.player.body.position, dt)
         bullets_update(game, dt)
+
     }
     
 }
@@ -155,7 +158,6 @@ game_post_update:: proc(game: ^Game, dt: f32) {
 
     if game.player.stats.health_stats.current_hp <= 0 {
         game.game_options.is_paused = true
-        game.ui_controller.is_ui_screen = true
         game.ui_controller.ui_scene = .GAME_OVER
     }
 }
@@ -174,10 +176,11 @@ game_pre_update:: proc(game: ^Game, dt: f32) {
     }
     
     if rl.IsKeyPressed(.L){
-        if game.ui_controller.is_ui_screen {
-            game.ui_controller.is_ui_screen = false
-        }
+        
         game.game_options.is_paused = !game.game_options.is_paused
+    }
+    if rl.IsKeyPressed(.SLASH) {
+        game.slow_motion_manager.is_slow_motion = !game.slow_motion_manager.is_slow_motion
     }
 }
 
@@ -193,7 +196,6 @@ level_gate_update :: proc(game: ^Game) {
         player_rect := get_body_rect(game.player.body)
 
         if rl.CheckCollisionRecs(gate, player_rect) {
-            game.ui_controller.is_ui_screen = true
             game.game_options.is_paused = true
             game.ui_controller.ui_scene = .END_LEVEL
             game.ui_controller.transition_time = 0.5
@@ -247,19 +249,20 @@ game_draw:: proc(game: ^Game, dt: f32) {
     
     keypot_draw(game.game_sprite_atlas, game.game_options.is_debug, game.player.body.position, game.level_data.keys[:])
     
+    level_vendor_draw(game.game_sprite_atlas, game.level_vendor.body, game.level_vendor.is_disabled, game.level_vendor.is_player_near, game.level_vendor.can_open, dt)
+
     enemy_unit_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.enemy_units, dt)
   
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_side.enemy_bullets[:])
     
-    player_draw(&game.player, game^, dt)
+    player_draw(game.game_sprite_atlas, &game.player, dt)
 
     if game.boss_manager.is_boss_level {
 
         boss_skill_draw(game.game_sprite_atlas, game.boss_manager.boss, dt)
     }
 
-   
-    
+     
     player_ui_draw(game)
     game_ui_scene_draw(game, dt)
     
@@ -290,7 +293,7 @@ keypot_draw :: proc(atlas: rl.Texture2D, is_debug: bool, player_pos: rl.Vector2,
 
             rl.DrawTexturePro(atlas, key_source, dest, {dest.width / 2, dest.height /2}, 0, key.disabled ? rl.Color{255, 255, 255, 160}  : rl.WHITE)
             if key.disabled {
-                unit_expression_draw(atlas, SPRITE_MAP[KEY_DISABLE_AURA_SPRITE], key.position + {8, -8})
+                unit_expression_draw(atlas, SPRITE_MAP[KEY_DISABLE_AURA_SPRITE], UI_UNIT_EXPRESSION_SIZE, key.position + {8, -8})
 
             }
         }
@@ -396,6 +399,8 @@ game_restart :: proc(game: ^Game) {
         level = player_level,
         require = EXPERIENCE_PER_LEVEL[player_level]
     }
+    game.player.pocket_items = {{type = .HEAL}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}}
+    game.player.money_coins.val = 0
     game.current_level = start_level
     load_level(game, start_level)
 }
