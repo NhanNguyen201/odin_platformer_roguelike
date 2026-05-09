@@ -49,7 +49,7 @@ get_input_from_controller :: proc(control_dest: Player_control_destination, p_i_
     return key
 }
 
-get_key_name:: proc(key: rl.KeyboardKey) -> string {
+get_keycode_name:: proc(key: rl.KeyboardKey) -> string {
     return reflect.enum_string(key)
 }
 

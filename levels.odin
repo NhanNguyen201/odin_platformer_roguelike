@@ -115,6 +115,8 @@ load_level :: proc(game: ^Game, lvl: int)  {
     @static enemy_spawner_hp: f32 = 150
     @static enemy_respawn_time: f32 = 3.5
     @static enemy_recontruct_time: f32 = 5
+    @static level_vendor_suggest_range: f32 = 60
+    @static level_vendor_open_range: f32 = 20
     is_boss_level := get_is_boss_lvl(lvl)
 
     level := get_level_data(lvl)
@@ -132,12 +134,10 @@ load_level :: proc(game: ^Game, lvl: int)  {
     
     if lvl == 0 {
         game.ui_controller.ui_scene = .GAME_START
-        game.ui_controller.is_ui_screen = true
         game.game_options.is_paused = true
     } else if is_boss_level {
         game.ui_controller.ui_scene = .BOSS_ENTRANCE
         game.ui_controller.transition_time = BOSS_SCENE_TRANSITION_TIME
-        game.ui_controller.is_ui_screen = true
         game.game_options.is_paused = true
         game.boss_manager.map_size = game.level_data.map_size
         spawn_boss(&game.boss_manager)
@@ -145,7 +145,6 @@ load_level :: proc(game: ^Game, lvl: int)  {
         game.ui_controller.ui_scene = .START_LEVEL
         game.ui_controller.transition_time = 1.
 
-        game.ui_controller.is_ui_screen = true
         game.game_options.is_paused = true
     }
 
@@ -333,5 +332,14 @@ load_level :: proc(game: ^Game, lvl: int)  {
     spawn_pos_y := f32(spawn_pos_parsed["y"].(json.Float))
     game.player.spawn_pos = {spawn_pos_x, spawn_pos_y}
     game.player.body.position = game.player.spawn_pos
+
+    new_level_vendor_item, new_level_vendor_e_buff := refresh_vender()
+    game.level_vendor.is_disabled = false
+    game.level_vendor.body.position = {level.level_size.x - 50, 100}
+    game.level_vendor.body.size = LEVEL_VENDOR_SIZE
+    game.level_vendor.item = new_level_vendor_item
+    game.level_vendor.enemy_buff = new_level_vendor_e_buff
+    game.level_vendor.suggest_range = level_vendor_suggest_range
+    game.level_vendor.open_range = level_vendor_open_range
 }
 

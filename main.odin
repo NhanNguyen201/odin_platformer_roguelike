@@ -48,12 +48,12 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
+        slow_dt := game.slow_motion_manager.is_slow_motion ? dt / 2 : dt 
         
+        game_pre_update(&game, slow_dt)
         
-        game_pre_update(&game, dt)
-        
-        game_update(&game, dt)
-        game_post_update(&game, dt)
+        game_update(&game, slow_dt)
+        game_post_update(&game, slow_dt)
         
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
@@ -64,7 +64,7 @@ main :: proc() {
         
         // rl.BeginShaderMode(shader)
         rl.BeginMode2D(game.camera)
-        game_draw(&game, dt)
+        game_draw(&game, slow_dt)
         rl.EndMode2D()
         // rl.EndShaderMode()
         rl.EndDrawing()
