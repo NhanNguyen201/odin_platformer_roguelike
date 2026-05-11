@@ -12,7 +12,7 @@ BOSS_DMG: f32 : 50
 BOSS_IDLE_TIME: f32: 5.
 BOSS_ARGO_TIME: f32: 5.
 MAX_BOSS_NUMB : int : 2
-BOSS_FIREBALL_FLY_SPD : f32 : 25
+BOSS_FIREBALL_FLY_SPD : f32 : 120
 BOSS_MOVE_POS_NUMB: int : 8
 Boss_levels : [MAX_BOSS_NUMB] int= {1, 10}
 
@@ -86,9 +86,11 @@ get_is_boss_lvl :: proc(curent_lvl : int) -> bool {
 }
 
 get_fireball_position :: proc(skill : Boss_skill_cast, dt: f32) -> rl.Vector2 {
-    scale := 500 / (math.sqrt_f32(math.pow((skill.pos_destination - skill.pos_from).x, 2) + math.pow((skill.pos_destination - skill.pos_from).y, 2) ))
-    return skill.pos_from + scale * (skill.pos_destination - skill.pos_from) * BOSS_FIREBALL_FLY_SPD  * (skill.timer.max_time - skill.timer.current) * dt
+    past_time :f32 = skill.timer.max_time - skill.timer.current
+    scale := BOSS_FIREBALL_FLY_SPD / (math.sqrt_f32(math.pow((skill.pos_destination - skill.pos_from).x, 2) + math.pow((skill.pos_destination - skill.pos_from).y, 2) ))
+    return skill.pos_from + scale * (skill.pos_destination - skill.pos_from) * BOSS_FIREBALL_FLY_SPD  * past_time  * dt
 }
+
 get_grab_pos :: proc(from: rl.Vector2, dest : rl.Vector2, timer: Timer) -> rl.Vector2 {
     return dest + (from - dest) * (timer.current / timer.max_time)
 }
@@ -149,7 +151,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                 boss.state_timer.current = 2.
                 new_boss_destinations := get_boss_move_pos(game.boss_manager.map_size)
                 new_pos := rand.choice(new_boss_destinations[:])
-                travel_time := get_distance(new_pos, boss.body.position) / 250
+                travel_time := get_distance(new_pos, boss.body.position) / 80
                 boss.teleportation.timer = {current = travel_time, max_time = travel_time }
                 boss.teleportation.new_position = new_pos
                 boss.combat_state = .TELE_CAST
@@ -229,7 +231,9 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                     skill.pos_destination = get_player(game^).body.position
                     skill.pos_from = boss.body.position
                     if skill.trigger.current < 0 {
-                       
+                        travel_time := get_distance(skill.pos_destination, skill.pos_from) / (BOSS_FIREBALL_FLY_SPD / 2)
+
+                        skill.timer = {max_time = travel_time, current = travel_time}
                         skill.state = .CASTED
                     }
                 } else if skill.state == .CASTED {
