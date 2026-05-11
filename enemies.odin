@@ -379,9 +379,7 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                 resolve_enemy_horizontal(&enemy.body, block_collider)
             }
 
-        }
-
-        if enemy.status == .IS_GRAB {
+        } else if enemy.status == .IS_GRAB {
             if len(game.boss_manager.boss.skill_queue) == 0 {
                 enemy.status = .ALIVE
             }
@@ -389,6 +387,11 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                 skill  := game.boss_manager.boss.skill_queue[i]
                 if skill.target.id == enemy.id {
                     enemy.body.position = get_grab_pos(skill.pos_from, skill.pos_destination, skill.timer)
+                    if skill.timer.current <= 2 * dt {
+                        for block_collider in game.level_data.colliders {
+                            resolve_enemy_vertical(&enemy.body, block_collider)
+                        }
+                    }
                 }
             }
         }
