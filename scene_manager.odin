@@ -34,8 +34,8 @@ scene_manager_update :: proc(game: ^Game, dt: f32 ) {
         }
     } else if game.ui_controller.ui_scene == .GAME_START {
          if rl.IsKeyReleased(.ENTER) {
-            game.game_options.is_paused = false
-            game.ui_controller.ui_scene = .NONE
+            load_level(game, game.current_level)
+
         }
     } else if game.ui_controller.ui_scene == .GAME_OVER {
         if rl.IsKeyReleased(.K) {
