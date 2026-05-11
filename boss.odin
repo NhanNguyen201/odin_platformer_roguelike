@@ -145,11 +145,13 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
             
             if boss.state_timer.current < 0 {
                 clear(&boss.skill_queue)
-                new_poss := get_boss_move_pos(game.boss_manager.map_size)
 
                 boss.state_timer.current = 2.
-                boss.teleportation.timer = {current = 1., max_time = 1. }
-                boss.teleportation.new_position = rand.choice(new_poss[:])
+                new_boss_destinations := get_boss_move_pos(game.boss_manager.map_size)
+                new_pos := rand.choice(new_boss_destinations[:])
+                travel_time := get_distance(new_pos, boss.body.position) / 250
+                boss.teleportation.timer = {current = travel_time, max_time = travel_time }
+                boss.teleportation.new_position = new_pos
                 boss.combat_state = .TELE_CAST
             }
         } else if boss.combat_state == .TELE_CAST {
@@ -227,6 +229,7 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                     skill.pos_destination = get_player(game^).body.position
                     skill.pos_from = boss.body.position
                     if skill.trigger.current < 0 {
+                       
                         skill.state = .CASTED
                     }
                 } else if skill.state == .CASTED {
@@ -266,6 +269,8 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                             skill.timer = {current = 0, max_time = 0}
                         } else {
                             game.enemy_side.enemy_units[found_idx].status = .IS_GRAB
+                            travel_time := get_distance(skill.pos_destination, skill.pos_from) / 250 
+                            skill.timer = {current = travel_time, max_time = travel_time}
                         }
                         skill.state = .CASTED
                     }
