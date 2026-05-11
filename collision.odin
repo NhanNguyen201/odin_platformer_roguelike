@@ -63,11 +63,12 @@ resolve_vertical :: proc( body : ^Body, rect : rl.Rectangle, vertical_acc : bool
 
 resolve_enemy_vertical :: proc(body: ^Body, rect: rl.Rectangle) {
     pr := get_body_rect(body^)
+    rect_center := get_rect_center(rect)
 
 
     if !rl.CheckCollisionRecs(pr, rect) do return
 
-     if pr.y < rect.y {
+     if pr.y < rect_center.y {
         body.position.y = rect.y - pr.height / 2
         body.vel.y = 0
     } else {
