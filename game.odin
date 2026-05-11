@@ -109,11 +109,11 @@ game_init:: proc() -> Game {
         input_controler = get_default_input_controler()
         
     }
-    game.ui_controller.ui_scene = .NONE
-    game.game_options.is_hub = true
-    rl.HideCursor()
     load_atlas(&game)
-    load_level(&game, game.current_level)
+    game.ui_controller.ui_scene = .GAME_START
+    game.game_options.is_hub = true
+    game.game_options.is_paused = true
+    rl.HideCursor()
 
 
     return game
@@ -187,7 +187,7 @@ game_pre_update:: proc(game: ^Game, dt: f32) {
 level_gate_update :: proc(game: ^Game) {
     
 
-    if game.level_data.collected_keys == len(game.level_data.keys) {
+    if game.level_data.collected_keys > 0 &&  game.level_data.collected_keys == len(game.level_data.keys) {
         game.level_data.is_complete = true
     }
 
