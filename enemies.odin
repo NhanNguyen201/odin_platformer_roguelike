@@ -4,22 +4,25 @@ import "core:math"
 import "core:math/rand"
 
 ENEMY_GRAVITY: f32: 120
-
+ENEMY_MAX_CD_REDUCE: f32 :80
+ENEMY_BASE_HP: f32 : 100
+ENEMY_BASE_ATK: f32 : 35
 ENEMY_AIMING_TRIGGER_DUR : f32 : 0.8
 ENEMY_AIMING_SPD: f32: 0.12
 ENEMY_AIMING_RADIUS: f32: 20.
-ENEMY_AIMING_RELOAD_DUR :f32 : 3.
+ENEMY_SNIPER_RELOAD_TIMER :f32 : 3.
 
 ENEMY_RANGER_RELOAD_TIME : f32 : 2.
 ENEMY_RANGER_TAUNTED_RANGE: f32 : 100.
 ENEMY_RANGER_TAUNTED_DUR: f32: .5
+ENEMY_MELEE_SIZE : rl.Vector2 : {15, 15}
 
 ENEMY_MELEE_TAUNTED_RANGE: f32 : 60
 ENEMY_MELEE_PULSE_FORCE: f32 : 200
 ENEMY_MELEE_ATTACK_TIME: f32 : 0.7
 ENEMY_MELEE_PUSH_FORCE: f32: 60
 ENEMY_MELEE_TAUNTED_DUR: f32: .8
-
+ENEMY_MELEE_RELOAD_TIME: f32 : 1.5
 ENEMY_MOVE_SPEED: f32 : 20
 ENEMY_SPAWNER_SIZE: rl.Vector2 : {8, 16}
 ENEMY_SPAWN_OFFSET_RANGE : f32 : 15
@@ -45,17 +48,10 @@ Enemy_buffes :: struct {
     cooldown: f32
 }
 
-
-
 Enemy_attack :: struct {
-    current: f32,
-    max_time : f32,
+    timer : Timer,
     direction: bool
 }
-
-
-
-
 
 Enemy_unit_states :: enum {
     PARTROL,
@@ -216,6 +212,9 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
             switch enemy.enemy_type {
                 case .MELEE: {
                     if enemy.combat_state == .PARTROL {
+                        if enemy.reload.current > 0 {
+                            enemy.reload.current -= dt
+                        }
                         enemy.body.vel.x = ENEMY_MOVE_SPEED * (enemy.body.direction == .RIGHT ? 1 : -1)
                         enemy.body.position.x += dt * enemy.body.vel.x 
                         
@@ -227,7 +226,7 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                                     break
                                 }
                             }
-                            if !behind_cld  {
+                            if !behind_cld {
                                 enemy.taunted_timer.current = enemy.taunted_timer.max_time
         
                                 enemy.combat_state = .TAUNTED
@@ -237,6 +236,9 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                         
                             
                     } else if enemy.combat_state == .TAUNTED  {
+                        if enemy.reload.current > 0 {
+                            enemy.reload.current -= dt
+                        }
                         enemy.body.direction = get_player(game^).body.position.x - enemy.body.position.x > 0 ? .RIGHT : .LEFT
                         enemy.taunted_timer.current -= dt
                         
@@ -247,15 +249,15 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                                 enemy.combat_state = .PARTROL
                             }
                         }
-                        if enemy.taunted_timer.current <= 0 {
-                            enemy.attack.current = enemy.attack.max_time
+                        if enemy.taunted_timer.current <= 0  && enemy.reload.current <= 0 {
+                            enemy.attack.timer.current = enemy.attack.timer.max_time
                             enemy.attack.direction = get_player(game^).body.position.x - enemy.body.position.x > 0
                             enemy.combat_state = .ATTACK
                         }
                     } else if enemy.combat_state == .ATTACK  {
                         is_flip := enemy.body.direction != .RIGHT 
-                        enemy.attack.current -= dt
-                        remain_scale := 0.2 + 0.8 * enemy.attack.current / enemy.attack.max_time
+                        enemy.attack.timer.current -= dt
+                        remain_scale := 0.2 + 0.8 * enemy.attack.timer.current / enemy.attack.timer.max_time
                         remain_force :=  ENEMY_MELEE_PULSE_FORCE * remain_scale
                         enemy.body.vel.x =  remain_force * (enemy.attack.direction ? 1 : -1) * dt
                         enemy.body.position.x += enemy.body.vel.x
@@ -265,22 +267,25 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                             resolve_e_mele_attack(&game.player, enemy, ENEMY_MELEE_PUSH_FORCE * remain_scale, dt)
                         }
                         
-                        if enemy.attack.current <= 0 {
+                        if enemy.attack.timer.current <= 0 {
                             enemy.taunted_timer.current = enemy.taunted_timer.max_time
                             enemy.combat_state = .PARTROL
                         }
                         for block_collider in game.level_data.colliders {
                             front_rect := rl.Rectangle {
-                                x = get_body_rect(enemy.body).x + (is_flip ? -5 : enemy.body.size.x ),
+                                x = get_body_rect(enemy.body).x + (is_flip ? - enemy.body.size.x / 2 : enemy.body.size.x / 2),
                                 y = get_rect_center(get_body_rect(enemy.body)).y - 2,
-                                width = 5,
+                                width = enemy.body.size.x / 2,
                                 height = 4
                             }
                             if rl.CheckCollisionRecs(block_collider, front_rect) {
                                 enemy.taunted_timer.current = enemy.taunted_timer.max_time
+                                enemy.reload.current = enemy.reload.max_time
+
                                 enemy.combat_state = .PARTROL
 
                             }
+                            
                         }
                     }
                     
@@ -354,7 +359,7 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                             }
             
                             add_particle(&game.particle_system, Particle {
-                                timer = {current = 0.2, max_time = 0.3},
+                                timer = make_timer_from(0.3),
                                 position = enemy.targeting.current_aiming_point,
                                 sprite_source = sprite_source,
                                 is_blur = true,
@@ -366,7 +371,7 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                             enemy.targeting.reload.current = enemy.targeting.reload.max_time
                             enemy.combat_state = .RELOAD
                         }
-                    } else {
+                    } else if enemy.combat_state == .RELOAD{
                         enemy.targeting.reload.current -= dt
                         if enemy.targeting.reload.current <= 0 {
                             enemy.combat_state =.AIMING
@@ -539,12 +544,13 @@ enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: 
 
 
 spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
+    buffs := game.enemy_side.enemy_stat_buffes
     stats := Enemy_unit_stats {
         health_stats = {
-            max_hp = 100,
-            current_hp = 100
+            max_hp = ENEMY_BASE_HP * (1 + buffs.hp / 100),
+            current_hp = ENEMY_BASE_HP * (1 + buffs.hp / 100)
         },
-        dmg = 25
+        dmg = ENEMY_BASE_ATK * (1 + buffs.attack / 100)
     }
     found := false
 
@@ -572,7 +578,7 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
 
                     enemy.body.position = enemy_spawner.position + spawn_offset
                     enemy.combat_state = .RELOAD
-                    enemy.targeting.reload.current = 0.5
+                    enemy.targeting.reload.current = enemy.targeting.reload.max_time
                     enemy.targeting.current_aiming_point = enemy_spawner.position + spawn_offset
                     enemy.body.vel = 0
                 }
@@ -588,18 +594,15 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                 status = .ALIVE,
                 body = {
                     position = enemy_spawner.position,
-                    size = Enemy_melee_SIZE,
+                    size = ENEMY_MELEE_SIZE,
                     direction = .RIGHT,
                     vel = 20,
                 },
-                taunted_timer = {
-                    max_time = ENEMY_MELEE_TAUNTED_DUR,
-                    current = ENEMY_MELEE_TAUNTED_DUR
-                },
+                taunted_timer = make_timer_from(ENEMY_MELEE_TAUNTED_DUR),
                 attack = {
-                    current = ENEMY_MELEE_ATTACK_TIME,
-                    max_time = ENEMY_MELEE_ATTACK_TIME,
+                    timer = make_timer_from(ENEMY_MELEE_ATTACK_TIME),
                 },
+                reload =  make_timer_from(ENEMY_MELEE_RELOAD_TIME * (1 - (min(ENEMY_MAX_CD_REDUCE, buffs.cooldown)) / 100)),
                 combat_state = .PARTROL,
                 stats = stats,
             }
@@ -613,19 +616,13 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                 status = .ALIVE,
                 body = Body {
                     position = enemy_spawner.position ,
-                    size = Enemy_melee_SIZE,
+                    size = ENEMY_MELEE_SIZE,
                     vel = 20,
                     direction = .RIGHT
                 },
                 stats = stats,
-                taunted_timer = {
-                    max_time = ENEMY_RANGER_TAUNTED_DUR,
-                    current = ENEMY_RANGER_TAUNTED_DUR
-                },
-                reload = {
-                    current = ENEMY_RANGER_RELOAD_TIME,
-                    max_time = ENEMY_RANGER_RELOAD_TIME
-                },
+                taunted_timer = make_timer_from(ENEMY_RANGER_TAUNTED_DUR),
+                reload =  make_timer_from(ENEMY_RANGER_RELOAD_TIME * (1 - (min(ENEMY_MAX_CD_REDUCE, buffs.cooldown)) / 100)),
                 combat_state = .PARTROL,
                     
             }
@@ -641,7 +638,7 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                 status = .ALIVE,
                 body = Body {
                     position = enemy_spawner.position + spawn_offset,
-                    size = Enemy_melee_SIZE,
+                    size = ENEMY_MELEE_SIZE,
                     direction = .RIGHT,
                     vel = 0,
                 },
@@ -651,14 +648,8 @@ spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
                 
                 targeting = {
                     aiming_radius = ENEMY_AIMING_RADIUS,
-                    reload = {
-                        current = 0.5,
-                        max_time = ENEMY_AIMING_RELOAD_DUR
-                    },
-                    trigger = {
-                        current = ENEMY_AIMING_TRIGGER_DUR,
-                        max_time = ENEMY_AIMING_TRIGGER_DUR
-                    },
+                    reload = make_timer_from(ENEMY_SNIPER_RELOAD_TIMER * (1 - (min(ENEMY_MAX_CD_REDUCE, buffs.cooldown)) / 100)),
+                    trigger = make_timer_from(ENEMY_AIMING_TRIGGER_DUR),
                     target = get_player(game^).body.position,
                     current_aiming_point = enemy_spawner.position + spawn_offset
 

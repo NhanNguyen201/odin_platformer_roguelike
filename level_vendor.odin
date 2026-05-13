@@ -79,7 +79,7 @@ resolve_accept_vendor_deal :: proc(vendor_item: Player_item_type, vendor_enemy_b
             enemy_buff_stats.attack += 15
         }
         case .COOLDOWN: {
-            enemy_buff_stats.cooldown += 15
+            enemy_buff_stats.cooldown = min(enemy_buff_stats.cooldown + 15, ENEMY_MAX_CD_REDUCE)
         }
     }
     player_pocket_slot, empty_slot_error := get_player_pocket_empty_slot(player.pocket_items)
