@@ -56,7 +56,7 @@ scene_manager_update :: proc(game: ^Game, dt: f32 ) {
 }
 
 game_ui_scene_draw::proc(game: ^Game, dt: f32) {
-    ui_rect := get_ui_scene_rect(game^)
+    ui_rect := get_ui_scene_rect(game.player.body.position, game.camera)
 
     // boss entrance
     if game.ui_controller.ui_scene == .BOSS_ENTRANCE {
@@ -140,7 +140,7 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
                 switch bought_err {
                     case .INVALID_ACTION : {
                         add_particle(&game.particle_system, {
-                            timer ={ max_time = 0.5, current = 0.5},
+                            timer = make_timer_from(0.5),
                             size = {30, 20},
                             vel = {0, -20},
                             position = get_rect_center(buy_text_rect) + {10, -10},
@@ -150,7 +150,7 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
                     }
                     case .NOT_ENOUGH_COINS : {
                         add_particle(&game.particle_system, {
-                            timer ={ max_time = 0.5, current =0.5},
+                            timer = make_timer_from(0.5),
                             size = {30, 20},
                             vel = {0, -20},
                             position = get_rect_center(buy_text_rect) + {10, -10},
@@ -160,7 +160,7 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
                     }
                     case .POCKET_FULL : {
                         add_particle(&game.particle_system, {
-                            timer ={ max_time = 0.5, current =0.5},
+                            timer = make_timer_from(0.5),
                             size = {30, 20},
                             vel = {0, -20},
                             position = get_rect_center(buy_text_rect) + {10, -10},
@@ -170,7 +170,7 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
                     }
                     case .SOLD : {
                         add_particle(&game.particle_system, {
-                            timer ={ max_time = 0.5, current =0.5},
+                            timer = make_timer_from(0.5),
                             size = {30, 20},
                             vel = {0, -20},
                             position = get_rect_center(buy_text_rect) + {10, -10},
@@ -180,7 +180,7 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
                     }
                     case .NONE : {
                         add_particle(&game.particle_system, {
-                            timer ={ max_time = 0.5, current =0.5},
+                            timer = make_timer_from(0.5),
                             size = {30, 20},
                             vel = {0, -20},
                             position = get_rect_center(buy_text_rect) + {10, -10},
@@ -260,9 +260,9 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
     } 
 }
 
-get_ui_scene_rect :: proc (game: Game) -> rl.Rectangle {
-    ui_x_start := game.player.body.position.x +  + UI_PADDING.x - game.camera.offset.x / 4
-    ui_y_start := game.player.body.position.y +  + UI_PADDING.y - game.camera.offset.y / 4
+get_ui_scene_rect :: proc (player_pos: rl.Vector2, camera: rl.Camera2D) -> rl.Rectangle {
+    ui_x_start := player_pos.x +  + UI_PADDING.x - camera.offset.x / 4
+    ui_y_start := player_pos.y +  + UI_PADDING.y - camera.offset.y / 4
 
     ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x / 2 
     ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y / 2

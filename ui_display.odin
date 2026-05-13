@@ -126,7 +126,7 @@ player_ui_draw:: proc(game: ^Game) {
 
     player := game.player
     
-    ui_rect := get_ui_scene_rect(game^)
+    ui_rect := get_ui_scene_rect(game.player.body.position, game.camera)
 
     
     pause := fmt.ctprintf("%t", game.game_options.is_paused)
@@ -195,8 +195,8 @@ player_ui_draw:: proc(game: ^Game) {
     key_dest :=  rl.Rectangle {x = get_rect_center(avatar_dest).x, y = get_rect_center(avatar_dest).y + 25 , height = 12, width = 12}
     rl.DrawTexturePro(game.game_sprite_atlas, key_source, key_dest, {key_source.width  / 2 , key_source.height / 2}, 0, rl.WHITE)
 
-    keycode_text := fmt.ctprintf(":%d/%d", game.level_data.collected_keys, len(game.level_data.keys))
-    rl.DrawTextEx(game.fonts[FONT_BOLD], keycode_text, {key_dest.x + 8, key_dest.y - 5}, 8, .5, rl.WHITE)
+    key_collected_text := fmt.ctprintf(":%d/%d", game.level_data.collected_keys, len(game.level_data.keys))
+    rl.DrawTextEx(game.fonts[FONT_BOLD], key_collected_text, {key_dest.x + 8, key_dest.y - 5}, 8, .5, rl.WHITE)
     
     // Draw experience
     rl.DrawRectangleRec(
@@ -317,7 +317,7 @@ skill_hud_draw :: proc(atlas: rl.Texture2D, font: rl.Font,  ui_rect: rl.Rectangl
     rl.DrawTexturePro(atlas, shoot_source, shoot_dest, {0, 0}, 0, rl.WHITE)
     rl.DrawRectangleLinesEx(shoot_dest, 0.5, rl.BLACK)
 
-    rl.DrawRectangleRec(rl.Rectangle{x = shoot_dest.x, y = shoot_dest.y + (bullet_cd.max_time - bullet_cd.current_time) / bullet_cd.max_time * shoot_dest.height, height = bullet_cd.current_time / bullet_cd.max_time * shoot_dest.height, width = shoot_dest.width}, rl.Color {0, 0, 0, 180 })
+    rl.DrawRectangleRec(rl.Rectangle{x = shoot_dest.x, y = shoot_dest.y + (bullet_cd.max_time - bullet_cd.current) / bullet_cd.max_time * shoot_dest.height, height = bullet_cd.current / bullet_cd.max_time * shoot_dest.height, width = shoot_dest.width}, rl.Color {0, 0, 0, 180 })
     // items display
     items_rect := rl.Rectangle { x = hud_rect.x + UI_SKILL_HUD_SLOT_SIZE.x, y = hud_rect.y , width = hud_rect.width - UI_SKILL_HUD_SLOT_SIZE.x, height = hud_rect.height}
     rl.DrawRectangleRec(items_rect, rl.Color{225, 225, 225, 250})
