@@ -81,7 +81,7 @@ resolve_e_mele_attack:: proc(player: ^Player, enemy: ^Enemy_unit, force: f32, dt
     player_rect := get_body_rect(player.body)
     enemy_rect := get_body_rect(enemy.body)
     if !rl.CheckCollisionRecs(player_rect, enemy_rect) do return
-
+    enemy.reload.current = enemy.reload.max_time
     enemy.combat_state = .PARTROL
 
     player.body.vel.x += (-enemy.body.position.x + player.body.position.x) * force 
@@ -146,11 +146,8 @@ resolve_bullet_collider_collision:: proc(game: ^Game, bullets: ^[dynamic]Bullet,
         // pos := rl.Collision
         unordered_remove(bullets, idx)
         add_particle(&game.particle_system, Particle {
-            timer = {
-                current = 0.3,
-                max_time = 0.3
-            } ,
-            position = {bullet.position.x, bullet.position.y},
+            timer = make_timer_from(0.5),
+            position = bullet.position,
             sprite_source = sprite_source,
             is_blur = true,
             is_scaled = true,

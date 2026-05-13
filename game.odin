@@ -3,7 +3,6 @@
 package main
 
 import rl "vendor:raylib"
-import "core:fmt"
 
 BULLET_BASE_DMG: f32 : 30
 GRAVITY: f32: 250
@@ -12,7 +11,6 @@ PLAYER_MOVE_SPD: f32 : 140
 PlAYER_JUMP_VEL: f32: -240
 MAX_FALL_SPEED: f32: 300
 BULLET_SIZE: rl.Vector2 : {6, 6}
-Enemy_melee_SIZE : rl.Vector2 : {15, 15}
 
 LEVEL_GATE_SIZE : rl.Vector2 : {12, 12}
 MONEY_COINS_PER_KEY : f32 : 20
@@ -99,7 +97,7 @@ game_init:: proc() -> Game {
         },
 
         stats = player_stats,
-        bullet_cd = Bullet_Countdown {max_time =  Inittal_bullet_countdown, current_time = Inittal_bullet_countdown},
+        bullet_cd = make_timer_from(Inittal_bullet_countdown),
         exp_controller = Experience_controller {
             current = 0,
             level = player_level,
@@ -109,6 +107,7 @@ game_init:: proc() -> Game {
         input_controler = get_default_input_controler()
         
     }
+
     load_atlas(&game)
     game.ui_controller.ui_scene = .GAME_START
     game.game_options.is_hub = true
@@ -187,7 +186,7 @@ game_pre_update:: proc(game: ^Game, dt: f32) {
 level_gate_update :: proc(game: ^Game) {
     
 
-    if game.level_data.collected_keys > 0 &&  game.level_data.collected_keys == len(game.level_data.keys) {
+    if  game.level_data.collected_keys == len(game.level_data.keys) {
         game.level_data.is_complete = true
     }
 
@@ -334,7 +333,7 @@ key_collect:: proc(player: Player, game: ^Game) {
                 vel = {0, -100},
                 is_blur = true,
                 is_scaled = true,
-                timer = {max_time = 0.5, current = 0.5}
+                timer = make_timer_from(0.5)
 
 
             })

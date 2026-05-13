@@ -111,31 +111,30 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                 append(&boss.skill_queue,  Boss_skill_cast {
                     area_effect = 20.,
                     skill = .EXPLODE,
-                    trigger = {current = 1.},
-                    timer = { current = 1.5},
+                    trigger = make_rand_timer(0, 1.2),
+                    timer = make_rand_timer(1.5, 2.),
                 })
                 append(&boss.skill_queue,  Boss_skill_cast {
                     area_effect = 30.,
                     skill = .EXPLODE,
-                    trigger = {current = 3.},
-                    timer = { current = 1.5},
-                    delay = {current = 2.5, max_time = 2.5}
+                    trigger = make_rand_timer(1., 2.),
+                    timer = make_rand_timer(2, 4.),
+                    delay = make_rand_timer(2., 3.)
                 })
                 append(&boss.skill_queue,  Boss_skill_cast {
                     area_effect = 40.,
                     skill = .FIREBALL,
-                    timer = { current = 4, max_time = 4},
                     trigger = {current = 0.5},
-                    delay = {current = 4, max_time = 4}
+                    delay = make_rand_timer(3., 4.)
                     
                 })
                  append(&boss.skill_queue,  Boss_skill_cast {
                     area_effect = 40.,
                     skill = .GRAB,
                     target = {id = grab_unit.id},
-                    timer = { current = 2, max_time = 2},
-                    trigger = {current =0.5, max_time = 0.5},
-                    delay = {current = 0, max_time = 0},
+                    trigger = make_timer_from(0.55),
+                    delay = make_rand_timer(0., 1.)
+
                     
                 })
                 boss.state_timer.current = 9.
@@ -152,7 +151,7 @@ boss_update :: proc(boss: ^Boss, game: ^Game, dt: f32)  {
                 new_boss_destinations := get_boss_move_pos(game.boss_manager.map_size)
                 new_pos := rand.choice(new_boss_destinations[:])
                 travel_time := get_distance(new_pos, boss.body.position) / 80
-                boss.teleportation.timer = {current = travel_time, max_time = travel_time }
+                boss.teleportation.timer = make_timer_from(travel_time)
                 boss.teleportation.new_position = new_pos
                 boss.combat_state = .TELE_CAST
             }
@@ -205,7 +204,7 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                     if skill.trigger.current < 0 {
                         skill.state = .CASTED 
                         add_particle(&game.particle_system, Particle {
-                            timer ={ max_time = skill.timer.current, current = skill.timer.current },
+                            timer = make_timer_from(skill.timer.current),
                             position = skill.pos_destination,
                             sprite_source = get_sprite_source_rect(SPRITE_MAP[BOSS_EXPLOSIONS_SPRITE]),
                             sprite_count = 5,
@@ -215,7 +214,7 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                 } else if skill.state == .CASTED   {
                     skill.timer.current -= dt 
                     if rl.CheckCollisionCircleRec(skill.pos_destination, skill.area_effect, get_body_rect(get_player(game^).body)) {
-                        player_apply_temp_buff({temp_buff_type = .BURNING, value = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
+                        player_apply_temp_buff({temp_buff_type = .BURNING, value = 10, time = make_timer_from(2.5)}, &game.player)
     
                     }
                 }
@@ -233,7 +232,7 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                     if skill.trigger.current < 0 {
                         travel_time := get_distance(skill.pos_destination, skill.pos_from) / (BOSS_FIREBALL_FLY_SPD / 2)
 
-                        skill.timer = {max_time = travel_time, current = travel_time}
+                        skill.timer = make_timer_from(travel_time)
                         skill.state = .CASTED
                     }
                 } else if skill.state == .CASTED {
@@ -242,7 +241,7 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                     fireball_pos := get_fireball_position(skill^, dt)
     
                     if rl.CheckCollisionCircleRec(fireball_pos, skill.area_effect, get_body_rect(get_player(game^).body))  && get_player(game^).stats.health_stats.current_hp > 0 {
-                        player_apply_temp_buff({temp_buff_type = .BURNING, value = 10, time = {max_time  = 2.5, current = 2.5}}, &game.player)
+                        player_apply_temp_buff({temp_buff_type = .BURNING, value = 10, time = make_timer_from(2.5)}, &game.player)
                     }
                 }
                 
@@ -270,11 +269,11 @@ boss_skill_update :: proc(boss: ^Boss, game: ^Game, dt: f32) {
                     }
                     if skill.trigger.current <= 0 {
                         if !found {
-                            skill.timer = {current = 0, max_time = 0}
+                            skill.timer = make_timer_from(0)
                         } else {
                             game.enemy_side.enemy_units[found_idx].status = .IS_GRAB
                             travel_time := get_distance(skill.pos_destination, skill.pos_from) / 250 
-                            skill.timer = {current = travel_time, max_time = travel_time}
+                            skill.timer = make_timer_from(travel_time)
                         }
                         skill.state = .CASTED
                     }
@@ -405,4 +404,13 @@ get_boss_move_pos :: proc(map_size: rl.Vector2) -> [BOSS_MOVE_POS_NUMB] rl.Vecto
         {map_size.x, map_size.y * 0.75},
         {0, map_size.y * 0.75},
     }
+}
+
+make_rand_timer :: proc(min: f32, max: f32) -> Timer {
+    rand_time:f32 = rand.float32() * (max - min) + min
+    return {max_time = rand_time, current = rand_time}
+}
+
+make_timer_from :: proc(t: f32) -> Timer {
+    return {max_time = t, current = t}
 }

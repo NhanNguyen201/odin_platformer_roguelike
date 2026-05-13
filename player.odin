@@ -59,10 +59,6 @@ Stat_buff:: enum {
     AR
 }
 
-Bullet_Countdown :: struct {
-    max_time: f32,
-    current_time: f32
-}
 
 
 Player :: struct {
@@ -71,7 +67,7 @@ Player :: struct {
     stats: Player_stats,
     spawn_pos: rl.Vector2,
     money_coins: Player_coins,
-    bullet_cd: Bullet_Countdown,
+    bullet_cd: Timer,
     anim_controller: Animation_controller,
     exp_controller: Experience_controller,
     pocket_items: [PLAYER_ITEM_SLOT_NUMB] Player_item,
@@ -323,13 +319,13 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         }
     }
 
-    if player.bullet_cd.current_time > 0 {
-        player.bullet_cd.current_time -= dt
+    if player.bullet_cd.current > 0 {
+        player.bullet_cd.current -= dt
     }
 
     if rl.IsKeyPressed(get_input_from_controller(.SHOOT, player.input_controler)) {
-        if player.bullet_cd.current_time < 0.01 {
-            player.bullet_cd.current_time = player.bullet_cd.max_time * (1. - (player.stats.buffes.at_spd / 100))
+        if player.bullet_cd.current < 0.01 {
+            player.bullet_cd.current = player.bullet_cd.max_time * (1. - (player.stats.buffes.at_spd / 100))
             _, dmg_buff := get_player_is_boosted_by(player.stats.temp_buffes[:], .ATTACK) 
             bullet := Bullet {direction = player.direction, dmg = player.stats.dmg + player.stats.buffes.damage + dmg_buff, position = player.body.position}
             append(&game.player_bullets, bullet)
