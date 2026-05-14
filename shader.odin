@@ -5,7 +5,8 @@ import "core:c"
 Shader_locations :: struct {
     res_loc : c.int,
     screen_size_loc: c.int,
-    light_loc: c.int
+    light_loc: c.int,
+    uTime: c.int
 }
 
 Shader_args :: struct {
@@ -22,10 +23,11 @@ get_shader_locs :: proc(shader: rl.Shader) -> Shader_locations {
        
     screenSizeLoc := rl.GetShaderLocation(shader, "screenSize")
     lightPosLoc   := rl.GetShaderLocation(shader, "lightPos")
-
+    uTimeLoc := rl.GetShaderLocation(shader, "uTime")
     return {
         res_loc = resolutionLoc,
         screen_size_loc = screenSizeLoc,
-        light_loc = lightPosLoc
+        light_loc = lightPosLoc,
+        uTime = uTimeLoc
     }
 }
