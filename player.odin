@@ -3,8 +3,10 @@
 package main
 import rl "vendor:raylib"
 import "core:math/rand"
-
-Inittal_bullet_countdown :f32 : 1.
+PLAYER_SIZE: rl.Vector2: {12, 12}
+PLAYER_MOVE_SPD: f32 : 140
+PlAYER_JUMP_VEL: f32: -240
+PLAYER_BULLET_CD :f32 : 1.
 PLAYER_MAX_HORIZONTAL_SPD : f32 : 130
 Player_temp_buff_TICK_TIME : f32 : 1.
 PLAYER_MAX_ACC : f32 : 7.5

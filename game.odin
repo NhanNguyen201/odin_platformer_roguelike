@@ -6,9 +6,7 @@ import rl "vendor:raylib"
 
 BULLET_BASE_DMG: f32 : 30
 GRAVITY: f32: 250
-PLAYER_SIZE: rl.Vector2: {12, 12}
-PLAYER_MOVE_SPD: f32 : 140
-PlAYER_JUMP_VEL: f32: -240
+
 MAX_FALL_SPEED: f32: 300
 BULLET_SIZE: rl.Vector2 : {6, 6}
 
@@ -20,6 +18,11 @@ BULLET_DIRECTION :: enum {
     DOWN,
     LEFT,
     RIGHT
+}
+
+Game_screen_mode :: enum {
+    FIXED,
+    FULLSCREEN
 }
 
 Enemy_side :: struct {
@@ -76,9 +79,12 @@ Game :: struct {
     boss_manager: Boss_level_manager,
     shop_manager: Shop_manager,
     level_vendor: Level_vendor,
-    slow_motion_manager: Slow_motion
+    slow_motion_manager: Slow_motion,
+    shader: rl.Shader,
+    shader_args: Shader_args,
+    screen_mode: Game_screen_mode
 }
- 
+
 Slow_motion:: struct {
     is_slow_motion: bool
 }
@@ -97,7 +103,7 @@ game_init:: proc() -> Game {
         },
 
         stats = player_stats,
-        bullet_cd = make_timer_from(Inittal_bullet_countdown),
+        bullet_cd = make_timer_from(PLAYER_BULLET_CD),
         exp_controller = Experience_controller {
             current = 0,
             level = player_level,
@@ -153,12 +159,28 @@ game_update:: proc(game: ^Game, dt: f32) {
 game_post_update:: proc(game: ^Game, dt: f32) {
     
     camera_update(&game.camera, game.player)       
+
     particles_systems_update(&game.particle_system, dt)
 
     if game.player.stats.health_stats.current_hp <= 0 {
         game.game_options.is_paused = true
         game.ui_controller.ui_scene = .GAME_OVER
     }
+    // lightPos := game.player.body.position
+    screenPos := rl.GetWorldToScreen2D(
+        get_rect_center(get_body_rect(game.player.body)),
+        game.camera,
+    )
+    shader_locs := get_shader_locs(game.shader)
+
+    rl.SetShaderValue(
+        game.shader,
+        shader_locs.light_loc,
+        &screenPos[0],
+        rl.ShaderUniformDataType.VEC2,
+    )
+
+    
 }
 
 game_pre_update:: proc(game: ^Game, dt: f32) {
@@ -260,8 +282,9 @@ game_draw:: proc(game: ^Game, dt: f32) {
 
         boss_skill_draw(game.game_sprite_atlas, game.boss_manager.boss, dt)
     }
-
-     
+    
+}
+game_ui_draw:: proc(game: ^Game, dt: f32) {
     player_ui_draw(game)
     game_ui_scene_draw(game, dt)
     
@@ -400,6 +423,7 @@ game_restart :: proc(game: ^Game) {
     }
     game.player.pocket_items = {{type = .HEAL}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}}
     game.player.money_coins.val = 0
+    game.enemy_side.enemy_stat_buffes = {}
     game.current_level = start_level
     load_level(game, start_level)
 }
