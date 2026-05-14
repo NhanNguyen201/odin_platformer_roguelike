@@ -33,6 +33,7 @@ Enemy_side :: struct {
 } 
 
 Game_Options :: struct {
+    game_time: f32,
     cursor_controler: UI_Cursor_Controller,
     is_debug: bool,
     is_paused: bool,
@@ -157,7 +158,6 @@ game_update:: proc(game: ^Game, dt: f32) {
 }
 
 game_post_update:: proc(game: ^Game, dt: f32) {
-    
     camera_update(&game.camera, game.player)       
 
     particles_systems_update(&game.particle_system, dt)
@@ -180,7 +180,12 @@ game_post_update:: proc(game: ^Game, dt: f32) {
         rl.ShaderUniformDataType.VEC2,
     )
 
-    
+    rl.SetShaderValue(
+        game.shader,
+        shader_locs.uTime,
+        &game.game_options.game_time,
+        rl.ShaderUniformDataType.FLOAT
+    )
 }
 
 game_pre_update:: proc(game: ^Game, dt: f32) {
@@ -202,6 +207,9 @@ game_pre_update:: proc(game: ^Game, dt: f32) {
     }
     if rl.IsKeyPressed(.SLASH) {
         game.slow_motion_manager.is_slow_motion = !game.slow_motion_manager.is_slow_motion
+    }
+    if game.ui_controller.ui_scene == .NONE && !game.game_options.is_paused{
+        game.game_options.game_time += dt
     }
 }
 
