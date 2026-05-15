@@ -36,14 +36,21 @@ void main() {
 
     vec2 pixelPos = fragTexCoord * screenSize;
 
-    float get_noise = noise(vec2(pixelPos.x * 3. + uTime * .5, pixelPos.y * 3.) );
-    
+    float get_noise = noise(vec2(pixelPos.x * 0.07 , pixelPos.y * 0.07 - uTime * .75) );
+    vec2 offset = vec2(0, -.05);
     vec3 distorted = vec3(
-        step(0.5,  length(texel.rgb))
-        // step(0.5, texel.g * 0.8 + 0.2 * noise(vec2(pixelPos.x * 0.2 + uTime * .5, pixelPos.y * .2) )),
-        // step(0.5, texel.b * 0.8 + 0.2 * noise(vec2(pixelPos.x * 0.1 + uTime * .5, pixelPos.y * 0.2) ))
+       texel.rgb * 0.8 + texture(texture0, fragTexCoord + offset * sin(get_noise) ).rgb * 0.6
+     
     );
-    vec4 outsideColor = vec4(distorted * 0.4 + 0.6 * texel.rgb, 1.);
+    vec3 step_vec = texel.rgb;
+    step_vec.r *= 0.55;
+    step_vec.b *= 0.33;
+    vec4 outsideColor = mix(
+        vec4(mix(distorted, vec3(0), step(0.1, 1. - length(distorted))) , 1.), 
+        vec4(texel.rgb , 1.), 
+        step(0.5,  1.- length(step_vec ))
+    );
+    
     float dist = distance(pixelPos, lightPos);
 
     // Radius of visible area

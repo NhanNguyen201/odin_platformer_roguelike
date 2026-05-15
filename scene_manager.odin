@@ -261,11 +261,11 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
 }
 
 get_ui_scene_rect :: proc (player_pos: rl.Vector2, camera: rl.Camera2D) -> rl.Rectangle {
-    ui_x_start := player_pos.x +  + UI_PADDING.x - camera.offset.x / 4
-    ui_y_start := player_pos.y +  + UI_PADDING.y - camera.offset.y / 4
+    ui_x_start := player_pos.x  + UI_PADDING.x  - camera.offset.x / 4
+    ui_y_start := player_pos.y + UI_PADDING.y  - camera.offset.y / 4
 
-    ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x / 2 
-    ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y / 2
+    ui_width := f32(rl.GetScreenWidth() / 4) - UI_PADDING.x * 2
+    ui_height := f32(rl.GetScreenHeight() / 4)  - UI_PADDING.y * 2
     
     return {x = ui_x_start, y = ui_y_start, width = ui_width, height = ui_height}
 }

@@ -3,7 +3,7 @@ import rl "vendor:raylib"
 import "core:fmt"
 import "core:math"
 
-UI_PADDING : rl.Vector2 : {8, 8}
+UI_PADDING : rl.Vector2 : {1, 1}
 UI_BUFF_PICK_PADDING: rl.Vector2 : {4, 25}
 UI_BUFF_PICK_ROW_HEIGHT :f32: 60 
 UI_BUFF_PICK_SLOT_SIZE: rl.Vector2 : {50, 60}
@@ -192,12 +192,15 @@ player_ui_draw:: proc(game: ^Game) {
         }
     }
 
-    key_dest :=  rl.Rectangle {x = get_rect_center(avatar_dest).x, y = get_rect_center(avatar_dest).y + 25 , height = 12, width = 12}
-    rl.DrawTexturePro(game.game_sprite_atlas, key_source, key_dest, {key_source.width  / 2 , key_source.height / 2}, 0, rl.WHITE)
+    key_dest :=  rl.Rectangle {x = ui_rect.x, y = avatar_dest.y + avatar_dest.height + 10 , height = 12, width = 12}
+    rl.DrawTexturePro(game.game_sprite_atlas, key_source, key_dest, 0, 0, rl.WHITE)
 
     key_collected_text := fmt.ctprintf(":%d/%d", game.level_data.collected_keys, len(game.level_data.keys))
-    rl.DrawTextEx(game.fonts[FONT_BOLD], key_collected_text, {key_dest.x + 8, key_dest.y - 5}, 8, .5, rl.WHITE)
+    rl.DrawTextEx(game.fonts[FONT_BOLD], key_collected_text, {key_dest.x + key_dest.width, key_dest.y + 2.5}, 8, .5, rl.WHITE)
     
+    witch_draw(game.game_sprite_atlas, game.game_witches.good_witch, get_sprite_source_rect(SPRITE_MAP[GOOD_WITCH_SPRITE]),{x =ui_rect.x , y = key_dest.y + key_dest.height + 5, width = 15, height = 15})
+    witch_draw(game.game_sprite_atlas, game.game_witches.bad_witch,get_sprite_source_rect(SPRITE_MAP[BAD_WITCH_SPRITE]), {x = ui_rect.x, y = key_dest.y + key_dest.height + 20, width = 15, height = 15})
+  
     // Draw experience
     rl.DrawRectangleRec(
         rl.Rectangle{x = ui_rect.x + 15, y = ui_rect.y + HEALTH_BAR_SIZE.y + 1, width = EXPERIENCE_BAR_SIZE.x, height = EXPERIENCE_BAR_SIZE.y },
@@ -222,6 +225,8 @@ player_ui_draw:: proc(game: ^Game) {
     if game.game_options.is_hub {
         skill_hud_draw(game.game_sprite_atlas, game.fonts[FONT_BOLD], ui_rect, player)
     }
+
+      
     if game.game_options.is_paused && game.ui_controller.ui_scene == .NONE {
         paused_sign_draw(game.game_sprite_atlas, ui_rect)
     }
@@ -329,8 +334,6 @@ skill_hud_draw :: proc(atlas: rl.Texture2D, font: rl.Font,  ui_rect: rl.Rectangl
         player_item_shortcut_draw(font, key_code_rect,  controls[item_idx])
 
     }
-
-    
 }
 
 mini_map_draw ::proc (atlas: rl.Texture2D, ui_rect: rl.Rectangle, level_data: Level_data, boss_manager: Boss_level_manager,player: Body) {

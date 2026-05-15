@@ -92,6 +92,7 @@ LEVEL_VENDOR_E_BUFF_ATTACK_SPRITE :: "Level_vendor_e_buff_attack_sprite"
 LEVEL_VENDOR_E_BUFF_COOLDOWN_SPRITE :: "Level_vendor_e_buff_cooldown_sprite"
 GOOD_WITCH_SPRITE :: "Good_witch_sprite"
 BAD_WITCH_SPRITE :: "Bad_witch_sprite"
+WITCH_AURA_SPRITE :: "Witch_aura_sprite"
 
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
@@ -173,6 +174,7 @@ SPRITE_MAP := map[string]Sprite_desc {
     LEVEL_VENDOR_E_BUFF_COOLDOWN_SPRITE = { x= 64, y =112, w= 32, h = 32},
     GOOD_WITCH_SPRITE = {x = 48, y = 832, w = 48, h = 48},
     BAD_WITCH_SPRITE = {x = 96, y = 832, w = 48, h = 48},
+    WITCH_AURA_SPRITE = {x = 64, y = 720, w = 32, h = 32}
 }
 
 load_atlas:: proc(game: ^Game) {

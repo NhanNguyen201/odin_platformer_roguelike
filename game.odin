@@ -83,7 +83,13 @@ Game :: struct {
     slow_motion_manager: Slow_motion,
     shader: rl.Shader,
     shader_args: Shader_args,
-    screen_mode: Game_screen_mode
+    screen_mode: Game_screen_mode,
+    game_witches: Game_witches_manager
+}
+
+Game_witches_manager :: struct {
+    good_witch: Witch,
+    bad_witch: Witch
 }
 
 Slow_motion:: struct {
@@ -120,8 +126,23 @@ game_init:: proc() -> Game {
     game.game_options.is_hub = true
     game.game_options.is_paused = true
     rl.HideCursor()
-
-
+    game.game_witches.good_witch = {
+        cast_timer = make_timer_from(3.),
+        reload = make_timer_from(5.),
+        type = .GOOD,
+        state = .RELOAD,
+        is_active = true,
+        spell_tick_timer = make_timer_from(WITCH_HEAL_TICK)
+        
+    }
+    game.game_witches.bad_witch = {
+        cast_timer = make_timer_from(3.),
+        reload = make_timer_from(5.),
+        type = .BAD,
+        state = .RELOAD,
+        is_active = true,
+        spell_tick_timer = make_timer_from(WITCH_ENEMY_ATK_TICK)
+    }
     return game
 }
 
@@ -151,6 +172,8 @@ game_update:: proc(game: ^Game, dt: f32) {
         }
         level_gate_update(game)
         level_vendor_update(&game.level_vendor, game.level_data.colliders[:], &game.ui_controller, &game.game_options, game.player.body.position, dt)
+        witch_update(&game.game_witches.good_witch, game, dt)
+        witch_update(&game.game_witches.bad_witch, game, dt)
         bullets_update(game, dt)
 
     }
@@ -280,6 +303,9 @@ game_draw:: proc(game: ^Game, dt: f32) {
     
     level_vendor_draw(game.game_sprite_atlas, game.level_vendor.body, game.level_vendor.is_disabled, game.level_vendor.is_player_near, game.level_vendor.can_open, dt)
 
+    witch_bless_draw(game.game_sprite_atlas, game.game_witches.good_witch)
+    witch_bless_draw(game.game_sprite_atlas, game.game_witches.bad_witch)
+
     enemy_unit_draw(game.game_sprite_atlas, game.game_options, &game.enemy_side.enemy_units, dt)
   
     bullets_draw(game.game_sprite_atlas, game.player_bullets[:], game.enemy_side.enemy_bullets[:])
@@ -293,7 +319,10 @@ game_draw:: proc(game: ^Game, dt: f32) {
     
 }
 game_ui_draw:: proc(game: ^Game, dt: f32) {
+    ui_rect := get_ui_scene_rect(game.player.body.position, game.camera)
+
     player_ui_draw(game)
+    
     game_ui_scene_draw(game, dt)
     
     render_cursor(game.game_sprite_atlas, game.game_options)
@@ -412,7 +441,7 @@ bullets_update :: proc (game: ^Game, dt: f32) {
 
 camera_update :: proc(camera : ^rl.Camera2D, player: Player) {
     camera.offset = {f32(rl.GetScreenWidth() / 2), f32(rl.GetScreenHeight() / 2)}
-    camera.target = player.body.position + PLAYER_SIZE / 2
+    camera.target = get_rect_center(get_body_rect(player.body))
 }
 
 game_restart :: proc(game: ^Game) {

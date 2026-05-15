@@ -353,7 +353,7 @@ player_draw :: proc(atlas: rl.Texture2D, player: ^Player, dt: f32) {
 
     draw_animation(atlas, &player.anim_controller, anim, PLAYER_SPRITE, player.body.is_flip, body_rect, dt)
    
-
+    // rl.DrawRectangleRec(body_rect, rl.WHITE)
 }
 
 exp_buff_collect:: proc(player: ^Player, game: ^Game) {
@@ -445,9 +445,9 @@ resolve_using_item_by_key :: proc(key: rl.KeyboardKey, item: ^Player_item, playe
 
 resolve_using_item :: proc(item: Player_item, player: ^Player) {
     if item.type == .ATK_DMG {
-        player_apply_temp_buff({temp_buff_type = .ATTACK, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_ATK_AMOUNT }, player)
+        player_apply_temp_buff({temp_buff_type = .ATTACK, time = make_timer_from(30.), value = PLAYER_ITEM_ATK_AMOUNT }, player)
     }  else if item.type == .SPEED {
-        player_apply_temp_buff({temp_buff_type = .SPEED, time = {max_time = 30, current = 30}, value = PLAYER_ITEM_SPEED_AMOUNT }, player)
+        player_apply_temp_buff({temp_buff_type = .SPEED, time = make_timer_from(30.), value = PLAYER_ITEM_SPEED_AMOUNT }, player)
     } else if item.type == .HEAL {
         player.stats.health_stats.current_hp = min(player.stats.health_stats.max_hp, player.stats.health_stats.current_hp  + player.stats.health_stats.max_hp * PLAYER_ITEM_HEAL_AMOUNT / 100)
     }
@@ -457,7 +457,7 @@ player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f
     reduced_dmg := dmg * (1 - (player_buff.armor / 100))
 
     if health.current_hp > reduced_dmg {
-        health.current_hp -= reduced_dmg
+        // health.current_hp -= reduced_dmg
     } else {
         health.current_hp = 0
     }
