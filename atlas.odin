@@ -41,7 +41,9 @@ BOSS_NOSE_SPRITE :: "Boss_nose_sprite"
 BOSS_BEARD_SPRITE :: "Boss_beard_sprite"
 BOSS_HAND_SPRITE :: "Boss_hand_sprite"
 BOSS_FIREBALL_SPRITE :: "Boss_fireball_sprite"
+BOSS_FIREBALL_WARNING_SPRITE :: "Boss_fireball_warning_sprite"
 BOSS_EXPLOSIONS_SPRITE :: "Boss_explosion_sprite"
+BOSS_EXPLOSIONS_WARNING_SPRITE :: "Boss_explosions_warning_sprite"
 BOSS_AIMING_SPRITE :: "Boss_aiming_sprite"
 PLAYER_SPRITE :: "Player_sprite"
 PORTAL_SPRITE :: "Portal_sprite"
@@ -93,6 +95,10 @@ LEVEL_VENDOR_E_BUFF_COOLDOWN_SPRITE :: "Level_vendor_e_buff_cooldown_sprite"
 GOOD_WITCH_SPRITE :: "Good_witch_sprite"
 BAD_WITCH_SPRITE :: "Bad_witch_sprite"
 WITCH_AURA_SPRITE :: "Witch_aura_sprite"
+GOOD_WTICH_BUFF_SPRITE :: "Good_witch_buff"
+BAD_WTICH_BUFF_SPRITE :: "Bad_witch_buff"
+GET_HEAL_SPRITE :: "Get_heal_sprite"
+GET_ATK_SPRITE :: "Get_atk_sprite"
 
 SPRITE_MAP := map[string]Sprite_desc {
     KEY_SPRITE = {x = 16, y = 64, w = 16, h = 16 },
@@ -127,7 +133,9 @@ SPRITE_MAP := map[string]Sprite_desc {
     BOSS_BEARD_SPRITE = {x = 704, y = 32, w = 32, h = 32},
     BOSS_HAND_SPRITE = {x = 736, y = 0, w = 64, h = 32},
     BOSS_FIREBALL_SPRITE = {x = 0, y = 608, w = 144, h = 64, count = 3},
+    BOSS_FIREBALL_WARNING_SPRITE = {x = 48, y = 80, w = 16, h = 16},
     BOSS_EXPLOSIONS_SPRITE = {x = 320, y = 176, w = 160, h = 32, count = 5},
+    BOSS_EXPLOSIONS_WARNING_SPRITE = {x = 32, y = 80, w = 16, h = 16},
     BOSS_AIMING_SPRITE = {x = 288, y = 144, h= 32, w =32},
     PLAYER_SPRITE = {x = 64, y = 208, w = 320, h = 64, count = 5},
     BULLET_SPRITE = {x = 0, y = 64, w = 16, h = 16},
@@ -174,7 +182,11 @@ SPRITE_MAP := map[string]Sprite_desc {
     LEVEL_VENDOR_E_BUFF_COOLDOWN_SPRITE = { x= 64, y =112, w= 32, h = 32},
     GOOD_WITCH_SPRITE = {x = 48, y = 832, w = 48, h = 48},
     BAD_WITCH_SPRITE = {x = 96, y = 832, w = 48, h = 48},
-    WITCH_AURA_SPRITE = {x = 64, y = 720, w = 32, h = 32}
+    WITCH_AURA_SPRITE = {x = 64, y = 720, w = 32, h = 32},
+    GOOD_WTICH_BUFF_SPRITE = {x = 0, y = 976, w = 64, h = 64},
+    BAD_WTICH_BUFF_SPRITE = {x = 64, y = 976, w = 64, h = 64},
+    GET_HEAL_SPRITE = {x = 80, y =80, h =16, w = 16},
+    GET_ATK_SPRITE = {x = 96, y =80, h =16, w = 16}
 }
 
 load_atlas:: proc(game: ^Game) {
