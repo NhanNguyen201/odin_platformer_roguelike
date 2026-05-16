@@ -3,6 +3,7 @@
 package main
 import rl "vendor:raylib"
 import "core:math/rand"
+import "core:math"
 PLAYER_SIZE: rl.Vector2: {12, 12}
 PLAYER_MOVE_SPD: f32 : 140
 PlAYER_JUMP_VEL: f32: -240
@@ -112,7 +113,8 @@ Player_buffes :: struct {
     damage: f32,
     armor: f32,
     mv_spd: f32,
-    at_spd: f32
+    at_spd: f32,
+    witch_range: f32
 }
 
 Player_stats :: struct {
@@ -342,7 +344,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 
     if player.stats.health_stats.current_hp > 0 && game.ui_controller.ui_scene == .NONE {
-        resolve_using_item_from_keyboard(player.input_controler, &player.pocket_items, player)
+        resolve_using_item_from_keyboard(player.input_controler, &player.pocket_items, player, &game.particle_system)
     }
 }
 
@@ -425,31 +427,42 @@ resolve_player_temp_buff_update:: proc(player: ^Player, dt: f32) {
     }
 }
 
-resolve_using_item_from_keyboard :: proc(input_controler: Player_input_controler, pocket_items: ^[PLAYER_ITEM_SLOT_NUMB] Player_item, player: ^Player) {
+resolve_using_item_from_keyboard :: proc(input_controler: Player_input_controler, pocket_items: ^[PLAYER_ITEM_SLOT_NUMB] Player_item, player: ^Player, particle_system: ^Particles_systems) {
 
     keycodes := get_item_keycode_to_array(input_controler)
 
     for i:= 0; i < PLAYER_ITEM_SLOT_NUMB; i += 1 {
-        resolve_using_item_by_key(keycodes[i], &pocket_items[i], player)
+        resolve_using_item_by_key(keycodes[i], &pocket_items[i], player, particle_system)
     }
 }
 
-resolve_using_item_by_key :: proc(key: rl.KeyboardKey, item: ^Player_item, player: ^Player) {
+resolve_using_item_by_key :: proc(key: rl.KeyboardKey, item: ^Player_item, player: ^Player, particle_system: ^Particles_systems) {
     if rl.IsKeyPressed(key) {
         if item.type != .NONE {
-            resolve_using_item(item^, player)
+            resolve_using_item(item^, player, particle_system)
             item.type = .NONE
         }
     }
 }
 
-resolve_using_item :: proc(item: Player_item, player: ^Player) {
+resolve_using_item :: proc(item: Player_item, player: ^Player, particle_system: ^Particles_systems) {
     if item.type == .ATK_DMG {
         player_apply_temp_buff({temp_buff_type = .ATTACK, time = make_timer_from(30.), value = PLAYER_ITEM_ATK_AMOUNT }, player)
     }  else if item.type == .SPEED {
         player_apply_temp_buff({temp_buff_type = .SPEED, time = make_timer_from(30.), value = PLAYER_ITEM_SPEED_AMOUNT }, player)
     } else if item.type == .HEAL {
         player.stats.health_stats.current_hp = min(player.stats.health_stats.max_hp, player.stats.health_stats.current_hp  + player.stats.health_stats.max_hp * PLAYER_ITEM_HEAL_AMOUNT / 100)
+        add_particle(particle_system, {
+            is_blur = true,
+            is_scaled = true,
+            sprite_count = 1,
+            position = player.body.position,
+            timer =make_timer_from(0.5),
+            size = {20,20},
+            sprite_source = get_sprite_source_rect(SPRITE_MAP[GET_HEAL_SPRITE]),
+            vel = {10 * math.sin_f32(f32(rl.GetTime())), -40}
+
+        })
     }
 }
 
@@ -457,7 +470,7 @@ player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f
     reduced_dmg := dmg * (1 - (player_buff.armor / 100))
 
     if health.current_hp > reduced_dmg {
-        // health.current_hp -= reduced_dmg
+        health.current_hp -= reduced_dmg
     } else {
         health.current_hp = 0
     }

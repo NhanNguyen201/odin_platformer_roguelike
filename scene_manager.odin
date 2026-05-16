@@ -8,10 +8,17 @@ UI_SHOP_ITEM_SLOT_SIZE : rl.Vector2 : {60, 100}
 
 // in pre update 
 scene_manager_update :: proc(game: ^Game, dt: f32 ) {
+    
+    if game.ui_controller.ui_scene == .GAME_START {
+         if rl.IsKeyReleased(.ENTER) {
+            load_level(game, game.current_level)
+
+        }
+    } else if game.ui_controller.ui_scene == .BOSS_ENTRANCE { 
     // Boss entrance scene update
-    if game.ui_controller.ui_scene == .BOSS_ENTRANCE { 
+
         if game.ui_controller.transition_time > 0  {
-            game.ui_controller.transition_time -= dt    
+            game.ui_controller.transition_time -= game.game_options.is_menu ? 0 : dt    
 
         } else {
             game.game_options.is_paused = false
@@ -21,7 +28,7 @@ scene_manager_update :: proc(game: ^Game, dt: f32 ) {
     } else if game.ui_controller.ui_scene == .START_LEVEL  { 
         // Level start
         if game.ui_controller.transition_time > 0 {
-            game.ui_controller.transition_time -= dt    
+            game.ui_controller.transition_time -= game.game_options.is_menu ? 0 : dt        
 
         } else {
             game.game_options.is_paused = false
@@ -32,12 +39,7 @@ scene_manager_update :: proc(game: ^Game, dt: f32 ) {
             load_level(game, game.current_level + 1)
 
         }
-    } else if game.ui_controller.ui_scene == .GAME_START {
-         if rl.IsKeyReleased(.ENTER) {
-            load_level(game, game.current_level)
-
-        }
-    } else if game.ui_controller.ui_scene == .GAME_OVER {
+    } else  if game.ui_controller.ui_scene == .GAME_OVER {
         if rl.IsKeyReleased(.K) {
             game_restart(game)
         }
@@ -252,7 +254,7 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
         }
 
         if is_accept_hovered && rl.IsMouseButtonPressed(.LEFT) {
-            resolve_accept_vendor_deal(game.level_vendor.item, game.level_vendor.enemy_buff, &game.player, &game.enemy_side.enemy_stat_buffes)
+            resolve_accept_vendor_deal(game.level_vendor.item, game.level_vendor.enemy_buff, &game.player, &game.enemy_side.enemy_stat_buffes, &game.particle_system)
             game.game_options.is_paused = false
             game.ui_controller.ui_scene = .NONE
             game.level_vendor.is_disabled = true

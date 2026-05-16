@@ -227,10 +227,10 @@ player_ui_draw:: proc(game: ^Game) {
     }
 
       
-    if game.game_options.is_paused && game.ui_controller.ui_scene == .NONE {
+    if game.game_options.is_paused && !game.game_options.is_menu {
         paused_sign_draw(game.game_sprite_atlas, ui_rect)
     }
-
+    
     if game.boss_manager.is_boss_level {
         boss_healthbar_rect := rl.Rectangle {x = ui_rect.x + ui_rect.width / 2 - UI_BOSS_HEALTH_BAR_SIZE.x / 2, y = ui_rect.y, width = UI_BOSS_HEALTH_BAR_SIZE.x, height = UI_BOSS_HEALTH_BAR_SIZE.y}
         rl.DrawRectangleRec(boss_healthbar_rect, rl.GRAY)
@@ -491,4 +491,11 @@ get_text_to_ui :: proc(font: rl.Font, text: cstring, font_size: f32, spacing: f3
     text_size := rl.MeasureTextEx(font, text, font_size, spacing)
 
     return text_size, font_size, spacing
+}
+
+game_menu_draw :: proc(game: ^Game, ui_rect : rl.Rectangle) {
+    @static menu_size := rl.Vector2 {120, 160}
+    menu_rect := rl.Rectangle {x = ui_rect.x + ui_rect.width / 2 - menu_size.x / 2, y = ui_rect.y + 10, width = menu_size.x, height = menu_size.y}
+    rl.DrawTexturePro(game.game_sprite_atlas, get_sprite_source_rect(SPRITE_MAP[UI_BUFF_SLOT_SPRITE]), menu_rect, 0, 0, rl.Color {100,100,100, 255})
+    // rl.DrawRectangleRec(menu_rect, rl.Color {100,100,100, 200})
 }
