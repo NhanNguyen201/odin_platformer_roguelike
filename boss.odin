@@ -14,7 +14,7 @@ BOSS_ARGO_TIME: f32: 5.
 MAX_BOSS_NUMB : int : 2
 BOSS_FIREBALL_FLY_SPD : f32 : 120
 BOSS_MOVE_POS_NUMB: int : 8
-Boss_levels : [MAX_BOSS_NUMB] int= {1, 10}
+Boss_levels : [MAX_BOSS_NUMB] int= {0, 10}
 
 Boss_level_manager :: struct {
     is_boss_level : bool,
@@ -332,15 +332,22 @@ boss_skill_draw :: proc(atlas: rl.Texture2D, boss: Boss, dt: f32) {
             if skill.skill == .EXPLODE {
                 if skill.state == .TRIGGER {
                     sprite_source := get_sprite_source_rect(SPRITE_MAP[BOSS_AIMING_SPRITE])
-                    sprite_dest := rl.Rectangle{x = skill.pos_destination.x, y= skill.pos_destination.y, width = skill.area_effect * 2, height = skill.area_effect * 2}
-                    rl.DrawTexturePro(atlas, sprite_source, sprite_dest, get_rect_size(sprite_dest) / 2, 0, rl.WHITE)
+                    sprite_dest := rl.Rectangle{x = skill.pos_destination.x - skill.area_effect, y= skill.pos_destination.y - skill.area_effect, width = skill.area_effect * 2, height = skill.area_effect * 2}
+                    rl.DrawTexturePro(atlas, sprite_source, sprite_dest, 0, 0, rl.WHITE)
+                    warning_source := get_sprite_source_rect(SPRITE_MAP[BOSS_EXPLOSIONS_WARNING_SPRITE])
+                    warning_dest := rl.Rectangle {x = get_rect_center(sprite_dest).x + skill.area_effect * math.sin_f32(135), y = get_rect_center(sprite_dest).y + skill.area_effect * math.cos_f32(135), width = 30, height = 30}
+                    rl.DrawTexturePro(atlas, warning_source, warning_dest, 0, 0, rl.WHITE)
+
                 }
                 
             } else if skill.skill == .FIREBALL {
                 if skill.state == .TRIGGER {
                     sprite_source := get_sprite_source_rect(SPRITE_MAP[BOSS_AIMING_SPRITE])
-                    sprite_dest := rl.Rectangle{x = skill.pos_destination.x, y= skill.pos_destination.y, width = skill.area_effect * 2, height = skill.area_effect * 2}
-                    rl.DrawTexturePro(atlas, sprite_source, sprite_dest, get_rect_size(sprite_dest) / 2, 0, rl.WHITE)
+                    sprite_dest := rl.Rectangle{x = skill.pos_destination.x - skill.area_effect, y= skill.pos_destination.y - skill.area_effect, width = skill.area_effect * 2, height = skill.area_effect * 2}
+                    rl.DrawTexturePro(atlas, sprite_source, sprite_dest, 0, 0, rl.WHITE)
+                    warning_source := get_sprite_source_rect(SPRITE_MAP[BOSS_FIREBALL_WARNING_SPRITE])
+                    warning_dest := rl.Rectangle {x = get_rect_center(sprite_dest).x + skill.area_effect * math.sin_f32(135), y = get_rect_center(sprite_dest).y + skill.area_effect * math.cos_f32(135), width = 30, height = 30}
+                    rl.DrawTexturePro(atlas, warning_source, warning_dest, 0, 0, rl.WHITE)
                 }  else  if skill.state == .CASTED {
                     fireball_pos := get_fireball_position(skill, dt)
                     angle := math.atan2_f32((skill.pos_destination - skill.pos_from).y,  (skill.pos_destination - skill.pos_from).x) * (180. / math.PI) + 90
@@ -351,8 +358,8 @@ boss_skill_draw :: proc(atlas: rl.Texture2D, boss: Boss, dt: f32) {
                     frame_width := fireball_sprite.w / f32(fireball_sprite.count)
                     new_sprite_source := rl.Rectangle {x = fireball_sprite.x + (frame_width * current_frame), y = fireball_sprite.y, width = frame_width , height = fireball_sprite.h}
 
-                    dest := rl.Rectangle {x = fireball_pos.x  , y = fireball_pos.y , width = skill.area_effect * 2, height = skill.area_effect * 2 * (4 / 3)}
-                    rl.DrawTexturePro(atlas, new_sprite_source, dest, {dest.width / 2, dest.height / 2 - 8}, angle , rl.WHITE)
+                    dest := rl.Rectangle {x = fireball_pos.x - skill.area_effect, y = fireball_pos.y - skill.area_effect, width = skill.area_effect * 2, height = skill.area_effect * 2 * (4 / 3)}
+                    rl.DrawTexturePro(atlas, new_sprite_source, dest, {0, -8}, angle , rl.WHITE)
 
                 
                 }
