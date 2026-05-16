@@ -64,57 +64,12 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
-        slow_dt := game.slow_motion_manager.is_slow_motion ? dt / 2 : dt 
+        slow_dt := game.slow_motion_manager.is_slow_motion ? dt * 0.5 : dt 
         shader_target := game.shader_args.target
         
 
         if rl.IsKeyPressed(.F11) {
-            shader_loccations := get_shader_locs(game.shader)
-
-            game.screen_mode = game.screen_mode == .FIXED ? .FULLSCREEN : .FIXED
-
-            if game.screen_mode == .FULLSCREEN {
-
-                monitor := rl.GetCurrentMonitor()
-
-                monitorWidth  := rl.GetMonitorWidth(monitor)
-                monitorHeight := rl.GetMonitorHeight(monitor)
-
-                rl.SetWindowSize(
-                    monitorWidth,
-                    monitorHeight,
-                )
-
-                rl.ToggleFullscreen()
-                game.shader_args.screen_resolution = [2]f32 {
-                    f32(monitorWidth),
-                    f32(monitorHeight),
-                }
-                rl.SetShaderValue(
-                    game.shader,
-                    shader_loccations.screen_size_loc,
-                    &game.shader_args.screen_resolution[0],
-                    rl.ShaderUniformDataType.VEC2,
-                )
-            } else if game.screen_mode == .FIXED {
-
-                rl.ToggleFullscreen()
-
-                rl.SetWindowSize(
-                    SCREEN_WIDTH,
-                    SCREEN_HEIGHT,
-                )
-                game.shader_args.screen_resolution = [2]f32 {
-                    f32(SCREEN_WIDTH),
-                    f32(SCREEN_HEIGHT),
-                }
-                rl.SetShaderValue(
-                    game.shader,
-                    shader_loccations.screen_size_loc,
-                    &game.shader_args.screen_resolution[0],
-                    rl.ShaderUniformDataType.VEC2,
-                )
-            }
+            toggle_full_screen(&game)
         }
         if rl.IsWindowResized() {
             shader_loccations := get_shader_locs(game.shader)
@@ -128,29 +83,18 @@ main :: proc() {
                 screenWidth,
                 screenHeight,
             )
-
-            // game.shader_args.screen_resolution = [2]f32 {
-            //     f32(screenWidth),
-            //     f32(screenHeight),
-            // }
-            // rl.SetShaderValue(
-            //     game.shader,
-            //     shader_loccations.screen_size_loc,
-            //     &game.shader_args.screen_resolution[0],
-            //     rl.ShaderUniformDataType.VEC2,
-            // )
             
         }
         game_pre_update(&game, slow_dt)
         
-        game_update(&game, slow_dt)
-        game_post_update(&game, slow_dt)
+        game_update(&game, game.game_options.is_paused ? 0 : slow_dt)
+        game_post_update(&game, game.game_options.is_paused ? 0 : slow_dt)
         // Draw texture from the game
         rl.BeginTextureMode(shader_target)
 
         rl.ClearBackground(rl.BLACK)
         rl.BeginMode2D(game.camera)
-        game_draw(&game, slow_dt)
+        game_draw(&game, game.game_options.is_paused ? 0 : slow_dt)
         rl.EndMode2D()
        
         rl.EndTextureMode()
@@ -174,7 +118,7 @@ main :: proc() {
         )
         rl.EndShaderMode()
         rl.BeginMode2D(game.camera)
-        game_ui_draw(&game, slow_dt)
+        game_ui_draw(&game, game.game_options.is_paused ? 0 : slow_dt)
         rl.EndMode2D()
 
         rl.EndDrawing()
