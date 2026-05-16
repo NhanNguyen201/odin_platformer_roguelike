@@ -127,8 +127,8 @@ game_init:: proc() -> Game {
     game.game_options.is_paused = true
     rl.HideCursor()
     game.game_witches.good_witch = {
-        cast_timer = make_timer_from(3.),
-        reload = make_timer_from(5.),
+        cast_timer = make_timer_from(GOOD_WITCH_CAST_TIME),
+        reload = make_timer_from(GOOD_WTICH_COOLDOWN),
         type = .GOOD,
         state = .RELOAD,
         is_active = true,
@@ -136,8 +136,8 @@ game_init:: proc() -> Game {
         
     }
     game.game_witches.bad_witch = {
-        cast_timer = make_timer_from(3.),
-        reload = make_timer_from(5.),
+        cast_timer = make_timer_from(BAD_WITCH_CAST_TIME),
+        reload = make_timer_from(BAD_WTICH_COOLDOWN),
         type = .BAD,
         state = .RELOAD,
         is_active = true,
@@ -224,9 +224,15 @@ game_pre_update:: proc(game: ^Game, dt: f32) {
         game.game_options.is_mini_map = !game.game_options.is_mini_map
     }
     
-    if rl.IsKeyPressed(.L){
+    if rl.IsKeyPressed(.L) && !game.game_options.is_menu && game.ui_controller.ui_scene == .NONE{
         
         game.game_options.is_paused = !game.game_options.is_paused
+    }
+    if rl.IsKeyPressed(.P) {
+        game.game_options.is_menu = !game.game_options.is_menu
+        if game.ui_controller.ui_scene == .NONE {
+            game.game_options.is_paused = !game.game_options.is_paused
+        }
     }
     if rl.IsKeyPressed(.SLASH) {
         game.slow_motion_manager.is_slow_motion = !game.slow_motion_manager.is_slow_motion
@@ -297,7 +303,7 @@ game_draw:: proc(game: ^Game, dt: f32) {
     
     level_gate_draw(game.game_sprite_atlas, game.level_data.gate_position, game.level_data.keys[:], game.level_data.collected_keys, game.level_data.is_complete)
     
-    enemies_spawner_draw(game.game_sprite_atlas, game.enemy_side.enemy_spawners[:], game.game_options.is_debug, dt)
+    enemies_spawner_draw(game.game_sprite_atlas, game.enemy_side.enemy_spawners[:], game.game_options.is_debug, game.game_options.game_time, dt)
     
     keypot_draw(game.game_sprite_atlas, game.game_options.is_debug, game.player.body.position, game.level_data.keys[:])
     
@@ -324,7 +330,9 @@ game_ui_draw:: proc(game: ^Game, dt: f32) {
     player_ui_draw(game)
     
     game_ui_scene_draw(game, dt)
-    
+    if game.game_options.is_menu {
+        game_menu_draw(game, ui_rect)
+    }
     render_cursor(game.game_sprite_atlas, game.game_options)
     particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
 }
@@ -460,6 +468,7 @@ game_restart :: proc(game: ^Game) {
     }
     game.player.pocket_items = {{type = .HEAL}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}}
     game.player.money_coins.val = 0
+    game.game_options.is_menu = false
     game.enemy_side.enemy_stat_buffes = {}
     game.current_level = start_level
     load_level(game, start_level)
@@ -494,4 +503,53 @@ clear_game_mem:: proc(game: ^Game) {
 
     delete(game.player.stats.temp_buffes)
     game.player.stats.temp_buffes = nil
+}
+
+toggle_full_screen :: proc(game: ^Game) {
+    shader_loccations := get_shader_locs(game.shader)
+
+    game.screen_mode = game.screen_mode == .FIXED ? .FULLSCREEN : .FIXED
+
+    if game.screen_mode == .FULLSCREEN {
+
+        monitor := rl.GetCurrentMonitor()
+
+        monitorWidth  := rl.GetMonitorWidth(monitor)
+        monitorHeight := rl.GetMonitorHeight(monitor)
+
+        rl.SetWindowSize(
+            monitorWidth,
+            monitorHeight,
+        )
+
+        rl.ToggleFullscreen()
+        game.shader_args.screen_resolution = [2]f32 {
+            f32(monitorWidth),
+            f32(monitorHeight),
+        }
+        rl.SetShaderValue(
+            game.shader,
+            shader_loccations.screen_size_loc,
+            &game.shader_args.screen_resolution[0],
+            rl.ShaderUniformDataType.VEC2,
+        )
+    } else if game.screen_mode == .FIXED {
+
+        rl.ToggleFullscreen()
+
+        rl.SetWindowSize(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+        )
+        game.shader_args.screen_resolution = [2]f32 {
+            f32(SCREEN_WIDTH),
+            f32(SCREEN_HEIGHT),
+        }
+        rl.SetShaderValue(
+            game.shader,
+            shader_loccations.screen_size_loc,
+            &game.shader_args.screen_resolution[0],
+            rl.ShaderUniformDataType.VEC2,
+        )
+    }
 }
