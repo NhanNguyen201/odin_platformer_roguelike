@@ -70,7 +70,7 @@ level_vendor_draw:: proc(atlas: rl.Texture2D, body: Body, disabled: bool, is_nea
     }
 }
 
-resolve_accept_vendor_deal :: proc(vendor_item: Player_item_type, vendor_enemy_buff: Vendor_enemy_buff, player: ^Player, enemy_buff_stats: ^Enemy_buffes) {
+resolve_accept_vendor_deal :: proc(vendor_item: Player_item_type, vendor_enemy_buff: Vendor_enemy_buff, player: ^Player, enemy_buff_stats: ^Enemy_buffes, particle_system: ^Particles_systems) {
     switch vendor_enemy_buff {
         case .HP : {
             enemy_buff_stats.hp += 15
@@ -86,6 +86,6 @@ resolve_accept_vendor_deal :: proc(vendor_item: Player_item_type, vendor_enemy_b
     if empty_slot_error == .NONE {
         player.pocket_items[player_pocket_slot].type = vendor_item
     } else {
-        resolve_using_item({type = vendor_item}, player)
+        resolve_using_item({type = vendor_item}, player, particle_system)
     }
 }
