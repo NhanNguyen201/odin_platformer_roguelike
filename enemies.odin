@@ -144,7 +144,7 @@ enemies_spawner_update:: proc(game: ^Game, dt: f32) {
 
 }
 
-enemies_spawner_draw:: proc(atlas: rl.Texture2D, spawners: []Enemy_spawner_pot, is_debug: bool, dt: f32) {
+enemies_spawner_draw:: proc(atlas: rl.Texture2D, spawners: []Enemy_spawner_pot, is_debug: bool, game_time: f32, dt: f32) {
     spawner_size := rl.Vector2 {13, 13}
     p_sprite := SPRITE_MAP[PORTAL_SPRITE]
     p_sprite_1 := SPRITE_MAP[PORTAL_SPRITE_1]
@@ -164,11 +164,11 @@ enemies_spawner_draw:: proc(atlas: rl.Texture2D, spawners: []Enemy_spawner_pot, 
             draw_animation(atlas, &enemy_spawner.anim_controller, anime, PORTAL_SPRITE, false, dest, dt)
         }
         dest_1 := dest
-        dest_1.y += f32(.75 * math.sin(rl.GetTime() ))
+        dest_1.y += f32(.75 * math.sin(game_time ))
         rl.DrawTexturePro(atlas, source_portal_1, dest_1, {0,0}, 0, rl.WHITE)
 
         dest_2 := dest
-        dest_2.y += f32(.5 * math.cos(rl.GetTime() ))
+        dest_2.y += f32(.5 * math.cos(game_time ))
         rl.DrawTexturePro(atlas, source_portal_2, dest_2, {0, 0}, 0, rl.WHITE)
 
 
