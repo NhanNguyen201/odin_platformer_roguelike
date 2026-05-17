@@ -240,6 +240,9 @@ game_pre_update:: proc(game: ^Game, dt: f32) {
     if game.ui_controller.ui_scene == .NONE && !game.game_options.is_paused{
         game.game_options.game_time += dt
     }
+    if rl.IsKeyPressed(.F11) {
+        toggle_full_screen(game)
+    }
 }
 
 level_gate_update :: proc(game: ^Game) {
@@ -328,13 +331,13 @@ game_ui_draw:: proc(game: ^Game, dt: f32) {
     ui_rect := get_ui_scene_rect(game.player.body.position, game.camera)
 
     player_ui_draw(game)
+    particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
     
     game_ui_scene_draw(game, dt)
     if game.game_options.is_menu {
-        game_menu_draw(game, ui_rect)
+        game_menu_render(game, ui_rect)
     }
     render_cursor(game.game_sprite_atlas, game.game_options)
-    particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
 }
 
 level_gate_draw:: proc(atlas: rl.Texture2D, gate_position: rl.Vector2, keys: []Key_pot, key_collected: int, is_level_completed: bool) {
@@ -527,12 +530,6 @@ toggle_full_screen :: proc(game: ^Game) {
             f32(monitorWidth),
             f32(monitorHeight),
         }
-        rl.SetShaderValue(
-            game.shader,
-            shader_loccations.screen_size_loc,
-            &game.shader_args.screen_resolution[0],
-            rl.ShaderUniformDataType.VEC2,
-        )
     } else if game.screen_mode == .FIXED {
 
         rl.ToggleFullscreen()
@@ -545,11 +542,22 @@ toggle_full_screen :: proc(game: ^Game) {
             f32(SCREEN_WIDTH),
             f32(SCREEN_HEIGHT),
         }
-        rl.SetShaderValue(
-            game.shader,
-            shader_loccations.screen_size_loc,
-            &game.shader_args.screen_resolution[0],
-            rl.ShaderUniformDataType.VEC2,
-        )
     }
+    rl.SetShaderValue(
+        game.shader,
+        shader_loccations.screen_size_loc,
+        &game.shader_args.screen_resolution[0],
+        rl.ShaderUniformDataType.VEC2,
+    )
+
+    shader_target := game.shader_args.target
+
+    rl.UnloadRenderTexture(shader_target)
+
+    game.shader_args.target = rl.LoadRenderTexture(
+        i32(game.shader_args.screen_resolution[0]),
+        i32(game.shader_args.screen_resolution[1]),
+    )
+
+           
 }

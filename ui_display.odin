@@ -267,14 +267,12 @@ player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, fonts: map[string] rl
         rl.DrawTextEx(fonts[FONT_REG], fmt.ctprint(buff.description), {slot_rect.x + 4, slot_rect.y + UI_BUFF_PICK_SLOT_ICON_PADDING.y +  UI_BUFF_PICK_SIZE.y + 2}, UI_BUFF_DESCRIPTION_SIZE, 0.1, rl.BLACK)
         
         pick_rect := rl.Rectangle {x = get_rect_center(slot_rect).x - 10, y = slot_rect.y + slot_rect.height - 15, width = 20, height = 10}
-        ui_box_draw(atlas, pick_rect, is_ui_component_hover(game_options^, pick_rect), rl.Color{220,220,220,255}, rl.Color{50,50,150,255})
+        is_pick_rect_hover := is_ui_component_hover(game_options^, pick_rect)
+        ui_box_draw(atlas, pick_rect, is_pick_rect_hover, rl.Color{220,220,220,255}, rl.Color{50,50,150,255})
         rl.DrawTextPro(fonts[FONT_REG], choose_text, {pick_rect.x + 3, pick_rect.y + 3}, {0, 0}, 0, 5, 0.01, rl.BLACK)
 
-        if rl.CheckCollisionPointRec(game_options.ui_mouse_pos, pick_rect) {
-            if rl.IsMouseButtonDown(.LEFT) {
-                pick_buff_handle(game_options, ui_controller, player, buff.buff, buff.val)
-
-            }
+        if is_pick_rect_hover && rl.IsMouseButtonDown(.LEFT) && !game_options.is_menu  {
+            pick_buff_handle(game_options, ui_controller, player, buff.buff, buff.val)
         }
     }
 }
@@ -493,9 +491,37 @@ get_text_to_ui :: proc(font: rl.Font, text: cstring, font_size: f32, spacing: f3
     return text_size, font_size, spacing
 }
 
-game_menu_draw :: proc(game: ^Game, ui_rect : rl.Rectangle) {
+game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
     @static menu_size := rl.Vector2 {120, 160}
+    @static is_full_screen_text := "Full screen option"
+    @static menu_done_text := "Done"
     menu_rect := rl.Rectangle {x = ui_rect.x + ui_rect.width / 2 - menu_size.x / 2, y = ui_rect.y + 10, width = menu_size.x, height = menu_size.y}
     rl.DrawTexturePro(game.game_sprite_atlas, get_sprite_source_rect(SPRITE_MAP[UI_BUFF_SLOT_SPRITE]), menu_rect, 0, 0, rl.Color {100,100,100, 255})
-    // rl.DrawRectangleRec(menu_rect, rl.Color {100,100,100, 200})
+    // full screen
+    full_screen_input_rect := rl.Rectangle {x = menu_rect.x + 10, y = menu_rect.y + 20, width = 16, height = 16}
+    rl.DrawTexturePro(game.game_sprite_atlas, get_sprite_source_rect(SPRITE_MAP[UI_CHECK_INPUT_SPRITE]), full_screen_input_rect, 0,0, rl.WHITE)
+    is_full_screen_hover := is_ui_component_hover(game.game_options, full_screen_input_rect)
+    if is_full_screen_hover && rl.IsMouseButtonPressed(.LEFT) {
+        toggle_full_screen(game)
+    }
+    if game.screen_mode == .FULLSCREEN {
+        rl.DrawTexturePro(game.game_sprite_atlas, get_sprite_source_rect(SPRITE_MAP[UI_CHECKED_SPRITE]), full_screen_input_rect, 0,0, rl.WHITE)
+    }
+    fmt_full_screen_text := fmt.ctprint(is_full_screen_text)
+    full_screen_text_measure, font_size, spacing := get_text_to_ui(game.fonts[FONT_REG], fmt_full_screen_text, 10, 0.2)
+    rl.DrawTextPro(game.fonts[FONT_REG], fmt_full_screen_text, {full_screen_input_rect.x + 20, full_screen_input_rect.y + full_screen_input_rect.height / 2}, {0, full_screen_text_measure.y / 2}, 0, font_size, spacing, rl.WHITE)
+    
+    // Menu done button
+    menu_done_rect := rl.Rectangle {x = menu_rect.x + menu_rect.width / 2 - 30, y = menu_rect.y + menu_rect.height - 40, width = 60, height = 20}
+    is_menu_done_hover := is_ui_component_hover(game.game_options, menu_done_rect)
+    ui_box_draw(game.game_sprite_atlas, menu_done_rect, is_menu_done_hover, rl.Color {80, 80, 150, 255}, rl.Color {80,80,255, 255})
+    fmt_done_text := fmt.ctprint(menu_done_text)
+    done_text_measure, _, _ := get_text_to_ui(game.fonts[FONT_REG], fmt_done_text, font_size, spacing)
+    rl.DrawTextPro(game.fonts[FONT_REG], fmt_done_text, get_rect_center(menu_done_rect), done_text_measure / 2, 0, font_size, spacing, rl.WHITE)
+    if is_menu_done_hover && rl.IsMouseButtonPressed(.LEFT) {
+        game.game_options.is_menu = false
+        if game.ui_controller.ui_scene == .NONE {
+            game.game_options.is_paused = false
+        }
+    }
 }

@@ -247,13 +247,13 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
         ui_box_draw(game.game_sprite_atlas, accept_rect, is_accept_hovered, rl.BLUE, rl.GRAY)
         rl.DrawTextPro(game.fonts[FONT_BOLD], fmt_accept_text, get_rect_center(accept_rect), accept_text_size / 2, 0, font_size, spacing, rl.WHITE)
 
-        if is_deny_hovered && rl.IsMouseButtonPressed(.LEFT) {
+        if is_deny_hovered && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.is_menu {
             game.game_options.is_paused = false
             game.ui_controller.ui_scene = .NONE
             game.level_vendor.is_disabled = true
         }
 
-        if is_accept_hovered && rl.IsMouseButtonPressed(.LEFT) {
+        if is_accept_hovered && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.is_menu {
             resolve_accept_vendor_deal(game.level_vendor.item, game.level_vendor.enemy_buff, &game.player, &game.enemy_side.enemy_stat_buffes, &game.particle_system)
             game.game_options.is_paused = false
             game.ui_controller.ui_scene = .NONE

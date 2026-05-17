@@ -68,23 +68,7 @@ main :: proc() {
         shader_target := game.shader_args.target
         
 
-        if rl.IsKeyPressed(.F11) {
-            toggle_full_screen(&game)
-        }
-        if rl.IsWindowResized() {
-            shader_loccations := get_shader_locs(game.shader)
-            
-            screenWidth  := rl.GetScreenWidth()
-            screenHeight := rl.GetScreenHeight()
-
-            rl.UnloadRenderTexture(shader_target)
-
-            game.shader_args.target = rl.LoadRenderTexture(
-                screenWidth,
-                screenHeight,
-            )
-            
-        }
+       
         game_pre_update(&game, slow_dt)
         
         game_update(&game, game.game_options.is_paused ? 0 : slow_dt)

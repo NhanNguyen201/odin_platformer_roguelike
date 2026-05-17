@@ -85,7 +85,8 @@ UI_SHOP_POCKET_FULL :: "Ui_shop_pocket_full"
 UI_SHOP_INVALID :: "Ui_shop_invalid"
 UI_SHOP_NOT_ENOUGH_MONEY :: "Ui_shop_not_enough_money"
 UI_SHOP_SUCCESS :: "Ui_shop_success"
-
+UI_CHECK_INPUT_SPRITE :: "Ui_check_input_sprite"
+UI_CHECKED_SPRITE :: "Ui_checked_sprite"
 LEVEL_VENDOR_SPRITE :: "Level_vendor_sprite"
 LEVEL_VENDOR_NEAR_SPRITE :: "Level_vendor_near_sprite"
 LEVEL_VENDOR_OPEN_SPRITE :: "Level_vendor_open_sprite"
@@ -173,6 +174,8 @@ SPRITE_MAP := map[string]Sprite_desc {
     UI_SHOP_POCKET_FULL = {x = 48, y = 800, w = 48, h = 32},
     UI_SHOP_INVALID = {x = 96, y = 800, w = 48, h = 32},
     UI_SHOP_SUCCESS = {x = 192, y = 800, w = 48, h = 32},
+    UI_CHECK_INPUT_SPRITE = {x = 112, y = 80, w = 16, h = 16},
+    UI_CHECKED_SPRITE = {x = 128, y = 80, w = 16, h = 16},
     // 
     LEVEL_VENDOR_SPRITE = {x = 0, y = 832, w = 48, h = 48},
     LEVEL_VENDOR_NEAR_SPRITE = { x= 144, y =832, w= 64, h = 32},
