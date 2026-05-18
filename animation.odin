@@ -21,6 +21,11 @@ Animation_controller :: struct {
     current_timer: f32,
 }
 
+Particle_layer :: enum {
+    LOW, 
+    HIGH
+}
+
 Particle :: struct {
     position: rl.Vector2,
     sprite_source: rl.Rectangle,
@@ -31,7 +36,8 @@ Particle :: struct {
     sprite_count: int,
     rotation: f32,
     size: rl.Vector2,
-    vel: rl.Vector2
+    vel: rl.Vector2,
+    layer: Particle_layer
 }
 
 Particles_systems :: struct {
@@ -121,32 +127,36 @@ particle_update :: proc(p : ^Particle, dt : f32) {
     p.position += p.vel * dt
 }
 
-particles_systems_update :: proc(particle_sys: ^Particles_systems, dt: f32) {
+particles_systems_update :: proc(particle_sys: ^Particles_systems, particle_layer: Particle_layer, dt: f32) {
     for i:= 0; i < particle_sys.particles.len; i += 1 {
 
         if particle_sys.particles.data[i].timer.current - dt <= 0 {
             small_array.unordered_remove(&particle_sys.particles, i)
             continue
         } else {
-            particle_update(&particle_sys.particles.data[i], dt)
+            if particle_sys.particles.data[i].layer == particle_layer {
+                particle_update(&particle_sys.particles.data[i], dt)
+            }
         }
     }
 }
 
-particls_systems_draw:: proc(atlas: rl.Texture2D, particle_sys: Particles_systems, dt: f32) {
+particles_systems_draw:: proc(atlas: rl.Texture2D, particle_sys: Particles_systems, particle_layer: Particle_layer) {
     // particle_sprite := SPRITE_MAP[PARTICLE_SPRITE]
     // particle_soure := rl.Rectangle {x = particle_sprite.x, y = particle_sprite.y, width = particle_sprite.w, height = particle_sprite.h}
     for i:= 0; i < particle_sys.particles.len; i += 1 {
         p := small_array.get(particle_sys.particles, i)
-        time_left := p.timer.max_time - p.timer.current
-        sprite_count := max(p.sprite_count, 1)
-        current_frame := math.floor_f32(time_left / p.timer.max_time * f32(sprite_count))
-        frame_width := p.sprite_source.width / f32(sprite_count)
-        new_sprite_source := rl.Rectangle {x = p.sprite_source.x + (frame_width * current_frame), y = p.sprite_source.y, width = frame_width * (p.is_flip ? -1 : 1), height = p.sprite_source.height}
-        scale :=  p.is_scaled ? 1. + .5 * time_left / p.timer.max_time : 1
-        tint := p.is_blur ? rl.Color {255, 255, 255, u8(55 +  200 * p.timer.current / p.timer.max_time)} : rl.WHITE
-        dest := rl.Rectangle {x = p.position.x  , y = p.position.y , width = p.size.x * scale, height = p.size.y * scale}
-        rl.DrawTexturePro(atlas, new_sprite_source, dest, {dest.width / 2, dest.height / 2}, p.rotation , tint)
+        if p.layer == particle_layer {
+            time_left := p.timer.max_time - p.timer.current
+            sprite_count := max(p.sprite_count, 1)
+            current_frame := math.floor_f32(time_left / p.timer.max_time * f32(sprite_count))
+            frame_width := p.sprite_source.width / f32(sprite_count)
+            new_sprite_source := rl.Rectangle {x = p.sprite_source.x + (frame_width * current_frame), y = p.sprite_source.y, width = frame_width * (p.is_flip ? -1 : 1), height = p.sprite_source.height}
+            scale :=  p.is_scaled ? 1. + .5 * time_left / p.timer.max_time : 1
+            tint := p.is_blur ? rl.Color {255, 255, 255, u8(55 +  200 * p.timer.current / p.timer.max_time)} : rl.WHITE
+            dest := rl.Rectangle {x = p.position.x  , y = p.position.y , width = p.size.x * scale, height = p.size.y * scale}
+            rl.DrawTexturePro(atlas, new_sprite_source, dest, {dest.width / 2, dest.height / 2}, p.rotation , tint)
+        } else do continue
     }
 }
 // math.sin_f32( (p.duration - p.time_left) / p.duration) * 90

@@ -14,7 +14,7 @@ BOSS_ARGO_TIME: f32: 5.
 MAX_BOSS_NUMB : int : 2
 BOSS_FIREBALL_FLY_SPD : f32 : 120
 BOSS_MOVE_POS_NUMB: int : 8
-Boss_levels : [MAX_BOSS_NUMB] int= {0, 10}
+Boss_levels : [MAX_BOSS_NUMB] int= {1, 10}
 
 Boss_level_manager :: struct {
     is_boss_level : bool,

@@ -57,7 +57,7 @@ scene_manager_update :: proc(game: ^Game, dt: f32 ) {
     }
 }
 
-game_ui_scene_draw::proc(game: ^Game, dt: f32) {
+game_ui_scene_draw::proc(game: ^Game) {
     ui_rect := get_ui_scene_rect(game.player.body.position, game.camera)
 
     // boss entrance
@@ -139,58 +139,31 @@ game_ui_scene_draw::proc(game: ^Game, dt: f32) {
             
             if is_text_hovered && rl.IsMouseButtonPressed(.LEFT) {
                 _, bought_err := resolve_buy_item(&game.shop_manager, i, &game.player.pocket_items, &game.player.money_coins)
+                particle_sprite_source := get_sprite_source_rect(SPRITE_MAP[UI_SHOP_SUCCESS])
                 switch bought_err {
                     case .INVALID_ACTION : {
-                        add_particle(&game.particle_system, {
-                            timer = make_timer_from(0.5),
-                            size = {30, 20},
-                            vel = {0, -20},
-                            position = get_rect_center(buy_text_rect) + {10, -10},
-                            sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_SHOP_INVALID])
-
-                        })
+                        particle_sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_SHOP_INVALID])
                     }
                     case .NOT_ENOUGH_COINS : {
-                        add_particle(&game.particle_system, {
-                            timer = make_timer_from(0.5),
-                            size = {30, 20},
-                            vel = {0, -20},
-                            position = get_rect_center(buy_text_rect) + {10, -10},
-                            sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_SHOP_NOT_ENOUGH_MONEY])
-
-                        })
+   
+                        particle_sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_SHOP_NOT_ENOUGH_MONEY])
                     }
                     case .POCKET_FULL : {
-                        add_particle(&game.particle_system, {
-                            timer = make_timer_from(0.5),
-                            size = {30, 20},
-                            vel = {0, -20},
-                            position = get_rect_center(buy_text_rect) + {10, -10},
-                            sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_SHOP_POCKET_FULL])
-
-                        })
+                        particle_sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_SHOP_POCKET_FULL])
                     }
                     case .SOLD : {
-                        add_particle(&game.particle_system, {
-                            timer = make_timer_from(0.5),
-                            size = {30, 20},
-                            vel = {0, -20},
-                            position = get_rect_center(buy_text_rect) + {10, -10},
-                            sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_SHOP_SOLDOUT])
-
-                        })
+                        particle_sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_SHOP_SOLDOUT])
                     }
-                    case .NONE : {
-                        add_particle(&game.particle_system, {
-                            timer = make_timer_from(0.5),
-                            size = {30, 20},
-                            vel = {0, -20},
-                            position = get_rect_center(buy_text_rect) + {10, -10},
-                            sprite_source = get_sprite_source_rect(SPRITE_MAP[UI_SHOP_SUCCESS])
-
-                        })
-                    }
+                    case .NONE: {}
                 }
+                add_particle(&game.particle_system,  {
+                    timer = make_timer_from(0.5),
+                    size = {30, 20},
+                    vel = {0, -20},
+                    position = get_rect_center(buy_text_rect) + {10, -10},
+                    sprite_source = particle_sprite_source,
+                    layer = .HIGH
+                })
             }
         }
         next_level_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - UI_NEXT_LEVEL_RECT_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_NEXT_LEVEL_RECT_SIZE.y - 10, width = UI_NEXT_LEVEL_RECT_SIZE.x, height = UI_NEXT_LEVEL_RECT_SIZE.y}

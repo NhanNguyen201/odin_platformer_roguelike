@@ -71,8 +71,8 @@ main :: proc() {
        
         game_pre_update(&game, slow_dt)
         
-        game_update(&game, game.game_options.is_paused ? 0 : slow_dt)
-        game_post_update(&game, game.game_options.is_paused ? 0 : slow_dt)
+        game_update(&game, slow_dt)
+        game_post_update(&game, slow_dt)
         // Draw texture from the game
         rl.BeginTextureMode(shader_target)
 
@@ -102,7 +102,7 @@ main :: proc() {
         )
         rl.EndShaderMode()
         rl.BeginMode2D(game.camera)
-        game_ui_draw(&game, game.game_options.is_paused ? 0 : slow_dt)
+        game_ui_draw(&game)
         rl.EndMode2D()
 
         rl.EndDrawing()

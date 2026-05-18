@@ -175,15 +175,16 @@ game_update:: proc(game: ^Game, dt: f32) {
         witch_update(&game.game_witches.good_witch, game, dt)
         witch_update(&game.game_witches.bad_witch, game, dt)
         bullets_update(game, dt)
+        particles_systems_update(&game.particle_system, .LOW, dt)
 
     }
+    particles_systems_update(&game.particle_system, .HIGH, dt)
     
 }
 
 game_post_update:: proc(game: ^Game, dt: f32) {
     camera_update(&game.camera, game.player)       
 
-    particles_systems_update(&game.particle_system, dt)
 
     if game.player.stats.health_stats.current_hp <= 0 {
         game.game_options.is_paused = true
@@ -212,7 +213,8 @@ game_post_update:: proc(game: ^Game, dt: f32) {
 }
 
 game_pre_update:: proc(game: ^Game, dt: f32) {
-    scene_manager_update(game, dt)
+   
+
     if rl.IsKeyPressed(.F2) {
         game.game_options.is_debug = !game.game_options.is_debug
     }
@@ -243,6 +245,7 @@ game_pre_update:: proc(game: ^Game, dt: f32) {
     if rl.IsKeyPressed(.F11) {
         toggle_full_screen(game)
     }
+    scene_manager_update(game, dt)
 }
 
 level_gate_update :: proc(game: ^Game) {
@@ -327,13 +330,15 @@ game_draw:: proc(game: ^Game, dt: f32) {
     }
     
 }
-game_ui_draw:: proc(game: ^Game, dt: f32) {
+game_ui_draw:: proc(game: ^Game) {
     ui_rect := get_ui_scene_rect(game.player.body.position, game.camera)
 
     player_ui_draw(game)
-    particls_systems_draw(game.game_sprite_atlas, game.particle_system, dt)
+    particles_systems_draw(game.game_sprite_atlas, game.particle_system, .LOW)
     
-    game_ui_scene_draw(game, dt)
+    game_ui_scene_draw(game)
+    particles_systems_draw(game.game_sprite_atlas, game.particle_system, .HIGH)
+
     if game.game_options.is_menu {
         game_menu_render(game, ui_rect)
     }
