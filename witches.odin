@@ -75,7 +75,7 @@ witch_update :: proc(witch: ^Witch, game: ^Game, dt: f32) {
             }
             if witch.spell_tick_timer.current <= 0 {
                 for &e_unit in game.enemy_side.enemy_units {
-                    if get_distance(e_unit.body.position, witch.cast_position) < WITCH_CAST_RADIUS {
+                    if get_distance(e_unit.body.position, witch.cast_position) < WITCH_CAST_RADIUS && e_unit.status == .ALIVE {
                         e_unit.stats.dmg += 1
                         add_particle(&game.particle_system, {
                             is_blur = true,
