@@ -2,6 +2,7 @@ package main
 import rl "vendor:raylib"
 import "core:fmt"
 import "core:math"
+import "core:reflect"
 
 UI_PADDING : rl.Vector2 : {1, 1}
 UI_BUFF_PICK_PADDING: rl.Vector2 : {4, 25}
@@ -124,7 +125,7 @@ player_ui_draw:: proc(game: ^Game) {
     temp_buff_attack_sprite_source := get_sprite_source_rect(SPRITE_MAP[UI_ITEM_ATK_SPRITE])
     temp_buff_speed_sprite_source := get_sprite_source_rect(SPRITE_MAP[UI_ITEM_SPD_SPRITE])
 
-    player := game.player
+    player := &game.player
     
     ui_rect := get_ui_scene_rect(game.player.body.position, game.camera)
 
@@ -306,9 +307,9 @@ pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Control
 
 
 
-skill_hud_draw :: proc(atlas: rl.Texture2D, font: rl.Font,  ui_rect: rl.Rectangle, player: Player) {
+skill_hud_draw :: proc(atlas: rl.Texture2D, font: rl.Font,  ui_rect: rl.Rectangle, player: ^Player) {
     bullet_cd := player.bullet_cd
-    controls := get_item_keycode_to_array(player.input_controler)
+    controls := get_item_keycode_to_array(&player.input_controler)
 
     hud_rect := rl.Rectangle{x = ui_rect.x + ui_rect.width / 2 - UI_SKILL_HUB_SIZE.x / 2, y = ui_rect.y + ui_rect.height - UI_SKILL_HUB_SIZE.y, width = UI_SKILL_HUB_SIZE.x, height = UI_SKILL_HUB_SIZE.y}
     rl.DrawRectangleRec(hud_rect, rl.Color{200,200,200, 180})
@@ -329,7 +330,7 @@ skill_hud_draw :: proc(atlas: rl.Texture2D, font: rl.Font,  ui_rect: rl.Rectangl
         item_slot := rl.Rectangle {x = items_rect.x + UI_SKILL_HUD_SLOT_SIZE.x * f32(item_idx), y = items_rect.y , width = UI_SKILL_HUD_SLOT_SIZE.x , height =  UI_SKILL_HUD_SLOT_SIZE.y }
         player_item_slot_draw(atlas, player.pocket_items[item_idx], item_slot)
         key_code_rect := rl.Rectangle {x = item_slot.x, y = item_slot.y + item_slot.height - 5, width = item_slot.width, height =  5.}
-        player_item_shortcut_draw(font, key_code_rect,  controls[item_idx])
+        player_item_shortcut_draw(font, key_code_rect,  controls[item_idx].key)
 
     }
 }
@@ -495,33 +496,61 @@ game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
     @static menu_size := rl.Vector2 {120, 160}
     @static is_full_screen_text := "Full screen option"
     @static menu_done_text := "Done"
+    @static key_binding_text := "Key binding"
+    fmt_done_text := fmt.ctprint(menu_done_text)
+    done_text_measure, font_size, spacing := get_text_to_ui(game.fonts[FONT_REG], fmt_done_text, 10,  0.2)
+
     menu_rect := rl.Rectangle {x = ui_rect.x + ui_rect.width / 2 - menu_size.x / 2, y = ui_rect.y + 10, width = menu_size.x, height = menu_size.y}
     rl.DrawTexturePro(game.game_sprite_atlas, get_sprite_source_rect(SPRITE_MAP[UI_BUFF_SLOT_SPRITE]), menu_rect, 0, 0, rl.Color {100,100,100, 255})
     // full screen
     full_screen_input_rect := rl.Rectangle {x = menu_rect.x + 10, y = menu_rect.y + 20, width = 16, height = 16}
     rl.DrawTexturePro(game.game_sprite_atlas, get_sprite_source_rect(SPRITE_MAP[UI_CHECK_INPUT_SPRITE]), full_screen_input_rect, 0,0, rl.WHITE)
     is_full_screen_hover := is_ui_component_hover(game.game_options, full_screen_input_rect)
-    if is_full_screen_hover && rl.IsMouseButtonPressed(.LEFT) {
+    if is_full_screen_hover && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding_controller.is_binding {
         toggle_full_screen(game)
     }
     if game.screen_mode == .FULLSCREEN {
         rl.DrawTexturePro(game.game_sprite_atlas, get_sprite_source_rect(SPRITE_MAP[UI_CHECKED_SPRITE]), full_screen_input_rect, 0,0, rl.WHITE)
     }
     fmt_full_screen_text := fmt.ctprint(is_full_screen_text)
-    full_screen_text_measure, font_size, spacing := get_text_to_ui(game.fonts[FONT_REG], fmt_full_screen_text, 10, 0.2)
+    full_screen_text_measure, _, _ := get_text_to_ui(game.fonts[FONT_REG], fmt_full_screen_text, font_size, spacing)
     rl.DrawTextPro(game.fonts[FONT_REG], fmt_full_screen_text, {full_screen_input_rect.x + 20, full_screen_input_rect.y + full_screen_input_rect.height / 2}, {0, full_screen_text_measure.y / 2}, 0, font_size, spacing, rl.WHITE)
-    
+    // Key bind
+    fmt_key_binding_text := fmt.ctprint(key_binding_text)
+    key_binding_text_measure, _, _ := get_text_to_ui(game.fonts[FONT_REG], fmt_key_binding_text, font_size, spacing)
+    key_binding_rect := rl.Rectangle{x = menu_rect.x + 10, y = full_screen_input_rect.y + full_screen_input_rect.height + 10, width = key_binding_text_measure.x + 10, height = key_binding_text_measure.y + 5}
+    is_key_bind_hover := is_ui_component_hover(game.game_options, key_binding_rect)
+    ui_box_draw(game.game_sprite_atlas, key_binding_rect, is_key_bind_hover, rl.Color {80, 80, 150, 255}, rl.Color {80,80,255, 255})
+    rl.DrawTextPro(game.fonts[FONT_REG], fmt_key_binding_text, get_rect_center(key_binding_rect), key_binding_text_measure / 2, 0, font_size, spacing, rl.WHITE)
+    if is_key_bind_hover && rl.IsMouseButtonPressed(.LEFT) {
+        game.game_options.key_binding_controller.is_binding = true
+    }
+   
     // Menu done button
     menu_done_rect := rl.Rectangle {x = menu_rect.x + menu_rect.width / 2 - 30, y = menu_rect.y + menu_rect.height - 40, width = 60, height = 20}
     is_menu_done_hover := is_ui_component_hover(game.game_options, menu_done_rect)
     ui_box_draw(game.game_sprite_atlas, menu_done_rect, is_menu_done_hover, rl.Color {80, 80, 150, 255}, rl.Color {80,80,255, 255})
-    fmt_done_text := fmt.ctprint(menu_done_text)
-    done_text_measure, _, _ := get_text_to_ui(game.fonts[FONT_REG], fmt_done_text, font_size, spacing)
+    
     rl.DrawTextPro(game.fonts[FONT_REG], fmt_done_text, get_rect_center(menu_done_rect), done_text_measure / 2, 0, font_size, spacing, rl.WHITE)
-    if is_menu_done_hover && rl.IsMouseButtonPressed(.LEFT) {
+    if is_menu_done_hover && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding_controller.is_binding {
         game.game_options.is_menu = false
         if game.ui_controller.ui_scene == .NONE {
             game.game_options.is_paused = false
+        }
+    }
+
+    // key_binding ui
+    if game.game_options.key_binding_controller.is_binding {
+        binding_ui_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - 50, y = min(ui_rect.y + 20, get_rect_center(ui_rect).y - 40), width = 100, height = 150}
+        rl.DrawRectangleRec(binding_ui_rect, rl.GRAY)
+        rl.DrawRectangleLinesEx(binding_ui_rect, 0.5, rl.BLACK)
+        binding_done_rect := rl.Rectangle {x = get_rect_center(binding_ui_rect).x - 15, y = binding_ui_rect.y + binding_ui_rect.height - 30, width = 30, height = 20}
+        is_binding_done_hover := is_ui_component_hover(game.game_options, binding_done_rect)
+        ui_box_draw(game.game_sprite_atlas, binding_done_rect, is_binding_done_hover, rl.Color {80, 80, 150, 255}, rl.Color {80,80,255, 255})
+
+        rl.DrawTextPro(game.fonts[FONT_REG], fmt_done_text, get_rect_center(binding_done_rect), done_text_measure / 2, 0, font_size, spacing, rl.WHITE)
+        if is_binding_done_hover && rl.IsMouseButtonPressed(.LEFT) {
+            game.game_options.key_binding_controller.is_binding = false
         }
     }
 }

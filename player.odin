@@ -235,7 +235,7 @@ get_player_pocket_empty_slot :: proc(player_items: [PLAYER_ITEM_SLOT_NUMB]Player
 player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Rectangle, dt: f32) {
     // player.body.vel.x = 0
 
-    if rl.IsKeyDown(.LEFT) || rl.IsKeyDown(.A) {
+    if rl.IsKeyDown(get_input_from_controller(.MOVE_LEFT, player.input_controler).key) {
         player.direction = .LEFT
         player.body.is_flip = true
         // player.body.vel.x = -(PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
@@ -245,7 +245,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
             player.anim_controller.current_frame = 0
             player.anim_controller.current_timer = Player_animations[RUN_ANI].frame_timer
         }
-    } else if rl.IsKeyDown(.RIGHT) || rl.IsKeyDown(.D) {
+    } else if rl.IsKeyDown(get_input_from_controller(.MOVE_RIGHT, player.input_controler).key)  {
         player.direction = .RIGHT
         player.body.is_flip = false
 
@@ -283,14 +283,14 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
     player.body.position.x = clamp(player.body.position.x , 0, f32(SCREEN_WIDTH) - PLAYER_SIZE.x)
    
-    jump_pressed := rl.IsKeyPressed(.SPACE) || rl.IsKeyPressed(.UP) || rl.IsKeyPressed(.W)
+    jump_input := get_input_from_controller(.JUMP, player.input_controler).key
 
-    if jump_pressed && player.body.is_on_ground {
+    if rl.IsKeyPressed(jump_input) && player.body.is_on_ground {
         player.body.vel.y = PlAYER_JUMP_VEL
         player.body.is_on_ground = false
     }
     
-    stomp_pressed := rl.IsKeyDown(.S) || rl.IsKeyDown(.DOWN)
+    stomp_pressed := rl.IsKeyDown(get_input_from_controller(.MOVE_DOWN, player.input_controler).key) 
 
     if stomp_pressed && !player.body.is_on_ground {
         player.body.acc.y = 50
@@ -327,7 +327,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.bullet_cd.current -= dt
     }
 
-    if rl.IsKeyPressed(get_input_from_controller(.SHOOT, player.input_controler)) {
+    if rl.IsKeyPressed(get_input_from_controller(.SHOOT, player.input_controler).key) {
         if player.bullet_cd.current < 0.01 {
             player.bullet_cd.current = player.bullet_cd.max_time * (1. - (player.stats.buffes.at_spd / 100))
             _, dmg_buff := get_player_is_boosted_by(player.stats.temp_buffes[:], .ATTACK) 
@@ -344,7 +344,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     }
 
     if player.stats.health_stats.current_hp > 0 && game.ui_controller.ui_scene == .NONE {
-        resolve_using_item_from_keyboard(player.input_controler, &player.pocket_items, player, &game.particle_system)
+        resolve_using_item_from_keyboard(&player.input_controler, &player.pocket_items, player, &game.particle_system)
     }
 }
 
@@ -427,12 +427,12 @@ resolve_player_temp_buff_update:: proc(player: ^Player, dt: f32) {
     }
 }
 
-resolve_using_item_from_keyboard :: proc(input_controler: Player_input_controler, pocket_items: ^[PLAYER_ITEM_SLOT_NUMB] Player_item, player: ^Player, particle_system: ^Particles_systems) {
+resolve_using_item_from_keyboard :: proc(input_controler: ^Player_input_controler, pocket_items: ^[PLAYER_ITEM_SLOT_NUMB] Player_item, player: ^Player, particle_system: ^Particles_systems) {
 
     keycodes := get_item_keycode_to_array(input_controler)
 
     for i:= 0; i < PLAYER_ITEM_SLOT_NUMB; i += 1 {
-        resolve_using_item_by_key(keycodes[i], &pocket_items[i], player, particle_system)
+        resolve_using_item_by_key(keycodes[i].key, &pocket_items[i], player, particle_system)
     }
 }
 

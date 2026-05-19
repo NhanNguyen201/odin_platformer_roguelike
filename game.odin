@@ -41,8 +41,10 @@ Game_Options :: struct {
     is_hub : bool,
     is_menu: bool,
     is_mini_map: bool,
-    is_health_bar: bool
+    is_health_bar: bool,
+    key_binding_controller: Player_key_binding_controller
 }
+
 
 FONT_THIN :: "Font_thin"
 FONT_REG :: "Font_regular"
@@ -495,6 +497,9 @@ drop_game_mem:: proc(game : ^Game) {
     rl.UnloadFont(game.fonts[FONT_BOLD])
     rl.UnloadFont(game.fonts[FONT_REG])
     rl.UnloadFont(game.fonts[FONT_THIN])
+    rl.UnloadTexture(game.game_background)
+    rl.UnloadTexture(game.game_cloud_background)
+    rl.UnloadTexture(game.game_sprite_atlas)
     delete(game.fonts)
 }
 
