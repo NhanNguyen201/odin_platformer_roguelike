@@ -58,29 +58,29 @@ get_default_input_controler :: proc() -> Player_input_controler {
 } 
 
 
-get_input_from_controller :: proc(control_dest: Player_action_name, p_i_controler : Player_input_controler) -> Action_key{
-    key : Action_key
-
-    switch(control_dest) {
-        case .JUMP : key = p_i_controler.jump
-        case .MOVE_DOWN : key = p_i_controler.move_down
-        case .MOVE_LEFT : key = p_i_controler.move_left
-        case .MOVE_RIGHT : key = p_i_controler.move_right
-        case .SHOOT : key = p_i_controler.shoot
-        case .ITEM_1 : key = p_i_controler.item_1
-        case .ITEM_2 : key = p_i_controler.item_2
-        case .ITEM_3 : key = p_i_controler.item_3
-        case .ITEM_4 : key = p_i_controler.item_4
-        case .ITEM_5 : key = p_i_controler.item_5
-        case .ITEM_6 : key = p_i_controler.item_6
-    }
-    return key
-}
-
 get_keycode_name:: proc(key: rl.KeyboardKey) -> string {
     return reflect.enum_string(key)
 }
 
 get_item_keycode_to_array :: proc (input_ctrl: ^Player_input_controler) -> [PLAYER_ITEM_SLOT_NUMB] ^Action_key {
     return {&input_ctrl.item_1, &input_ctrl.item_2, &input_ctrl.item_3, &input_ctrl.item_4, &input_ctrl.item_5, &input_ctrl.item_6}
+}
+
+get_action_key_ref_from_name:: proc(controller: ^Player_input_controler, action_name: Player_action_name) -> ^Action_key {
+    key : ^Action_key
+
+    switch(action_name) {
+        case .JUMP : key = &controller.jump
+        case .MOVE_DOWN : key = &controller.move_down
+        case .MOVE_LEFT : key = &controller.move_left
+        case .MOVE_RIGHT : key = &controller.move_right
+        case .SHOOT : key = &controller.shoot
+        case .ITEM_1 : key = &controller.item_1
+        case .ITEM_2 : key = &controller.item_2
+        case .ITEM_3 : key = &controller.item_3
+        case .ITEM_4 : key = &controller.item_4
+        case .ITEM_5 : key = &controller.item_5
+        case .ITEM_6 : key = &controller.item_6
+    }
+    return key
 }

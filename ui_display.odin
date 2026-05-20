@@ -541,16 +541,57 @@ game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
 
     // key_binding ui
     if game.game_options.key_binding_controller.is_binding {
-        binding_ui_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - 50, y = min(ui_rect.y + 20, get_rect_center(ui_rect).y - 40), width = 100, height = 150}
+        player_input_id := typeid_of(Player_action_name)
+        player_action_names := reflect.enum_field_names(player_input_id)
+        player_input_fields := reflect.struct_field_names(Player_input_controler)
+        binding_ui_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - 70, y = min(ui_rect.y + 10, get_rect_center(ui_rect).y - 60), width = 140, height = 160}
         rl.DrawRectangleRec(binding_ui_rect, rl.GRAY)
         rl.DrawRectangleLinesEx(binding_ui_rect, 0.5, rl.BLACK)
+        for name, idx in player_input_fields {
+            get_field := reflect.struct_field_value_by_name(game.player.input_controler, name)
+            field_value := get_field.(Action_key)
+            
+            rl.DrawTextEx(game.fonts[FONT_REG], fmt.ctprint(reflect.enum_string(field_value.action_name)), {binding_ui_rect.x + 5, 10 + binding_ui_rect.y + 10 * f32(idx)}, 6, spacing, rl.BLACK)
+            fmt_keycode := fmt.ctprint(reflect.enum_string(field_value.key))
+            measured_fmt_keycode,_,_ := get_text_to_ui(game.fonts[FONT_REG], fmt_keycode, 6, spacing)
+            key_code_rect_with := max(measured_fmt_keycode.x, 30)
+            keycode_rect := rl.Rectangle {x = binding_ui_rect.x + binding_ui_rect.width - (key_code_rect_with + 10), y = 10 + binding_ui_rect.y + 10 * f32(idx) - 2, width = key_code_rect_with, height = measured_fmt_keycode.y + 2}
+            is_keycode_rect_hovered := is_ui_component_hover(game.game_options, keycode_rect)
+            rl.DrawRectangleRec(keycode_rect, is_keycode_rect_hovered ?  rl.Color {50,50,250,200} : rl.Color {220,220,220, 200})
+            rl.DrawRectangleLinesEx(keycode_rect, 0.2, rl.BLACK)
+
+            rl.DrawTextEx(game.fonts[FONT_REG], fmt_keycode, {keycode_rect.x + keycode_rect.width / 2 - measured_fmt_keycode.x / 2, keycode_rect.y + 1}, 6,spacing, rl.BLACK)
+            if is_keycode_rect_hovered && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding_controller.is_picking {
+                game.game_options.key_binding_controller.is_picking = true
+                game.game_options.key_binding_controller.current_action_key = get_action_key_ref_from_name(&game.player.input_controler, field_value.action_name)
+            }
+        }
         binding_done_rect := rl.Rectangle {x = get_rect_center(binding_ui_rect).x - 15, y = binding_ui_rect.y + binding_ui_rect.height - 30, width = 30, height = 20}
         is_binding_done_hover := is_ui_component_hover(game.game_options, binding_done_rect)
         ui_box_draw(game.game_sprite_atlas, binding_done_rect, is_binding_done_hover, rl.Color {80, 80, 150, 255}, rl.Color {80,80,255, 255})
 
         rl.DrawTextPro(game.fonts[FONT_REG], fmt_done_text, get_rect_center(binding_done_rect), done_text_measure / 2, 0, font_size, spacing, rl.WHITE)
-        if is_binding_done_hover && rl.IsMouseButtonPressed(.LEFT) {
+        if is_binding_done_hover && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding_controller.is_picking  {
             game.game_options.key_binding_controller.is_binding = false
+        }
+        if game.game_options.key_binding_controller.is_picking {
+            // if rl.IsKeyPressed(.ESCAPE) {
+            //     game.game_options.key_binding_controller.is_picking = false
+            // }
+            key_picking_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - 25, y = get_rect_center(ui_rect).y - 15, width = 50, height = 30}
+            rl.DrawRectangleRec(key_picking_rect, rl.Color {220,200,200,200})
+            fmt_keycode := fmt.ctprint(reflect.enum_string(game.game_options.key_binding_controller.current_action_key.key))
+            measured_keycode, _, _ := get_text_to_ui(game.fonts[FONT_BOLD],fmt_keycode, 12, 0.2)
+            rl.DrawTextEx(game.fonts[FONT_BOLD], fmt_keycode, {key_picking_rect.x + key_picking_rect.width / 2 - measured_keycode.x / 2, key_picking_rect.y + key_picking_rect.height / 2 - measured_keycode.y / 2}, 12, 0.2, rl.BLACK)
+            get_user_key_press := rl.GetKeyPressed()
+            if get_user_key_press != .ESCAPE && get_user_key_press != .ENTER {
+                if get_user_key_press != .KEY_NULL {
+                    game.game_options.key_binding_controller.current_action_key.key = get_user_key_press
+                    game.game_options.key_binding_controller.is_picking = false
+                }
+            } else if get_user_key_press != .ESCAPE || get_user_key_press != .ENTER {
+                game.game_options.key_binding_controller.is_picking = false
+            }
         }
     }
 }
