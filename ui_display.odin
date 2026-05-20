@@ -492,7 +492,7 @@ get_text_to_ui :: proc(font: rl.Font, text: cstring, font_size: f32, spacing: f3
     return text_size, font_size, spacing
 }
 
-game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
+game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle, dt: f32) {
     @static menu_size := rl.Vector2 {120, 160}
     @static is_full_screen_text := "Full screen option"
     @static menu_done_text := "Done"
@@ -506,7 +506,7 @@ game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
     full_screen_input_rect := rl.Rectangle {x = menu_rect.x + 10, y = menu_rect.y + 20, width = 16, height = 16}
     rl.DrawTexturePro(game.game_sprite_atlas, get_sprite_source_rect(SPRITE_MAP[UI_CHECK_INPUT_SPRITE]), full_screen_input_rect, 0,0, rl.WHITE)
     is_full_screen_hover := is_ui_component_hover(game.game_options, full_screen_input_rect)
-    if is_full_screen_hover && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding_controller.is_binding {
+    if is_full_screen_hover && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding.is_binding {
         toggle_full_screen(game)
     }
     if game.screen_mode == .FULLSCREEN {
@@ -523,7 +523,7 @@ game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
     ui_box_draw(game.game_sprite_atlas, key_binding_rect, is_key_bind_hover, rl.Color {80, 80, 150, 255}, rl.Color {80,80,255, 255})
     rl.DrawTextPro(game.fonts[FONT_REG], fmt_key_binding_text, get_rect_center(key_binding_rect), key_binding_text_measure / 2, 0, font_size, spacing, rl.WHITE)
     if is_key_bind_hover && rl.IsMouseButtonPressed(.LEFT) {
-        game.game_options.key_binding_controller.is_binding = true
+        game.game_options.key_binding.is_binding = true
     }
    
     // Menu done button
@@ -532,7 +532,7 @@ game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
     ui_box_draw(game.game_sprite_atlas, menu_done_rect, is_menu_done_hover, rl.Color {80, 80, 150, 255}, rl.Color {80,80,255, 255})
     
     rl.DrawTextPro(game.fonts[FONT_REG], fmt_done_text, get_rect_center(menu_done_rect), done_text_measure / 2, 0, font_size, spacing, rl.WHITE)
-    if is_menu_done_hover && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding_controller.is_binding {
+    if is_menu_done_hover && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding.is_binding {
         game.game_options.is_menu = false
         if game.ui_controller.ui_scene == .NONE {
             game.game_options.is_paused = false
@@ -540,7 +540,7 @@ game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
     }
 
     // key_binding ui
-    if game.game_options.key_binding_controller.is_binding {
+    if game.game_options.key_binding.is_binding {
         player_input_id := typeid_of(Player_action_name)
         player_action_names := reflect.enum_field_names(player_input_id)
         player_input_fields := reflect.struct_field_names(Player_input_controler)
@@ -561,9 +561,9 @@ game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
             rl.DrawRectangleLinesEx(keycode_rect, 0.2, rl.BLACK)
 
             rl.DrawTextEx(game.fonts[FONT_REG], fmt_keycode, {keycode_rect.x + keycode_rect.width / 2 - measured_fmt_keycode.x / 2, keycode_rect.y + 1}, 6,spacing, rl.BLACK)
-            if is_keycode_rect_hovered && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding_controller.is_picking {
-                game.game_options.key_binding_controller.is_picking = true
-                game.game_options.key_binding_controller.current_action_key = get_action_key_ref_from_name(&game.player.input_controler, field_value.action_name)
+            if is_keycode_rect_hovered && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding.is_picking {
+                game.game_options.key_binding.is_picking = true
+                game.game_options.key_binding.current_action_key = get_action_key_ref_from_name(&game.player.input_controler, field_value.action_name)
             }
         }
         binding_done_rect := rl.Rectangle {x = get_rect_center(binding_ui_rect).x - 15, y = binding_ui_rect.y + binding_ui_rect.height - 30, width = 30, height = 20}
@@ -571,26 +571,48 @@ game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle) {
         ui_box_draw(game.game_sprite_atlas, binding_done_rect, is_binding_done_hover, rl.Color {80, 80, 150, 255}, rl.Color {80,80,255, 255})
 
         rl.DrawTextPro(game.fonts[FONT_REG], fmt_done_text, get_rect_center(binding_done_rect), done_text_measure / 2, 0, font_size, spacing, rl.WHITE)
-        if is_binding_done_hover && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding_controller.is_picking  {
-            game.game_options.key_binding_controller.is_binding = false
+        if is_binding_done_hover && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.key_binding.is_picking  {
+            game.game_options.key_binding.is_binding = false
         }
-        if game.game_options.key_binding_controller.is_picking {
-            // if rl.IsKeyPressed(.ESCAPE) {
-            //     game.game_options.key_binding_controller.is_picking = false
-            // }
-            key_picking_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - 25, y = get_rect_center(ui_rect).y - 15, width = 50, height = 30}
+        if game.game_options.key_binding.is_picking {
+            @static quit_picking_text := "Press Esc or Enter to cancel"
+            @static key_already_used_error_text := "Key has been used !!"
+            @static key_picking_ui_size := rl.Vector2 {60, 40}
+            fmt_quit_text := fmt.ctprint(quit_picking_text)
+            measured_quit,_,_ := get_text_to_ui(game.fonts[FONT_REG], fmt_quit_text, 4, spacing)
+            key_picking_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - key_picking_ui_size.x / 2, y = get_rect_center(ui_rect).y - key_picking_ui_size.y / 2, width = key_picking_ui_size.x , height = key_picking_ui_size.y}
             rl.DrawRectangleRec(key_picking_rect, rl.Color {220,200,200,200})
-            fmt_keycode := fmt.ctprint(reflect.enum_string(game.game_options.key_binding_controller.current_action_key.key))
+            fmt_keycode := fmt.ctprint(reflect.enum_string(game.game_options.key_binding.current_action_key.key))
             measured_keycode, _, _ := get_text_to_ui(game.fonts[FONT_BOLD],fmt_keycode, 12, 0.2)
-            rl.DrawTextEx(game.fonts[FONT_BOLD], fmt_keycode, {key_picking_rect.x + key_picking_rect.width / 2 - measured_keycode.x / 2, key_picking_rect.y + key_picking_rect.height / 2 - measured_keycode.y / 2}, 12, 0.2, rl.BLACK)
+            rl.DrawTextEx(game.fonts[FONT_REG], fmt_quit_text, {key_picking_rect.x + key_picking_rect.width / 2 - measured_quit.x / 2, key_picking_rect.y + 5}, 4, spacing, rl.BLACK)
+            rl.DrawTextEx(game.fonts[FONT_BOLD], fmt_keycode, {key_picking_rect.x + key_picking_rect.width / 2 - measured_keycode.x / 2, key_picking_rect.y + key_picking_rect.height / 2 - measured_keycode.y / 2}, 12, spacing, rl.BLACK)
             get_user_key_press := rl.GetKeyPressed()
             if get_user_key_press != .ESCAPE && get_user_key_press != .ENTER {
+                if game.game_options.key_binding.binding_error.error_type == .ALREADY_USED  {
+                    fmt_error := fmt.ctprint(key_already_used_error_text)
+                    measured, _, _ := get_text_to_ui(game.fonts[FONT_REG], fmt_error, 6, spacing)
+                    rl.DrawTextEx(game.fonts[FONT_REG], fmt_error, {key_picking_rect.x + key_picking_rect.width / 2 - measured.x / 2, key_picking_rect.y + key_picking_rect.height - 12}, 6, spacing, rl.Color{240,50,50, 240})
+
+                    if game.game_options.key_binding.binding_error.timer.current > 0 {
+                         game.game_options.key_binding.binding_error.timer.current -= dt
+                    } else {
+                        game.game_options.key_binding.binding_error.error_type = .NONE
+                    }
+                }
                 if get_user_key_press != .KEY_NULL {
-                    game.game_options.key_binding_controller.current_action_key.key = get_user_key_press
-                    game.game_options.key_binding_controller.is_picking = false
+                    bind_error := get_can_bind_key(game.player.input_controler, get_user_key_press)
+                    if bind_error == .NONE {
+                        game.game_options.key_binding.current_action_key.key = get_user_key_press
+                        game.game_options.key_binding.is_picking = false
+                    } else {
+                        game.game_options.key_binding.binding_error = {
+                            error_type = .ALREADY_USED,
+                            timer = make_timer_from(1.)
+                        }
+                    }
                 }
             } else if get_user_key_press != .ESCAPE || get_user_key_press != .ENTER {
-                game.game_options.key_binding_controller.is_picking = false
+                game.game_options.key_binding.is_picking = false
             }
         }
     }

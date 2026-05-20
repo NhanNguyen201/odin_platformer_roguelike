@@ -42,7 +42,7 @@ Game_Options :: struct {
     is_menu: bool,
     is_mini_map: bool,
     is_health_bar: bool,
-    key_binding_controller: Player_key_binding_controller
+    key_binding: Player_key_binding_controller
 }
 
 
@@ -332,7 +332,7 @@ game_draw:: proc(game: ^Game, dt: f32) {
     }
     
 }
-game_ui_draw:: proc(game: ^Game) {
+game_ui_draw:: proc(game: ^Game, dt: f32) {
     ui_rect := get_ui_scene_rect(game.player.body.position, game.camera)
 
     player_ui_draw(game)
@@ -342,7 +342,7 @@ game_ui_draw:: proc(game: ^Game) {
     particles_systems_draw(game.game_sprite_atlas, game.particle_system, .HIGH)
 
     if game.game_options.is_menu {
-        game_menu_render(game, ui_rect)
+        game_menu_render(game, ui_rect, dt)
     }
     render_cursor(game.game_sprite_atlas, game.game_options)
 }

@@ -102,7 +102,7 @@ main :: proc() {
         )
         rl.EndShaderMode()
         rl.BeginMode2D(game.camera)
-        game_ui_draw(&game)
+        game_ui_draw(&game, slow_dt)
         rl.EndMode2D()
 
         rl.EndDrawing()

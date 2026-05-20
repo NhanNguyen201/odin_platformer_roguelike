@@ -16,6 +16,16 @@ Player_action_name :: enum {
     ITEM_6,
 }
 
+Key_binding_error_type :: enum {
+    NONE,
+    ALREADY_USED
+}
+
+Key_binding_error :: struct {
+    timer: Timer,
+    error_type: Key_binding_error_type
+}
+
 Action_key :: struct {
     action_name: Player_action_name,
     key: rl.KeyboardKey
@@ -24,7 +34,8 @@ Action_key :: struct {
 Player_key_binding_controller :: struct {
     is_binding : bool,
     is_picking: bool,
-    current_action_key : ^Action_key 
+    current_action_key : ^Action_key,
+    binding_error: Key_binding_error 
 }
 
 Player_input_controler :: struct {
@@ -83,4 +94,19 @@ get_action_key_ref_from_name:: proc(controller: ^Player_input_controler, action_
         case .ITEM_6 : key = &controller.item_6
     }
     return key
+}
+
+get_can_bind_key :: proc(controller: Player_input_controler, key : rl.KeyboardKey) -> Key_binding_error_type {
+    // type_id := reflect.type(Player_input_controler)
+    field_names := reflect.struct_field_names(Player_input_controler)
+    for i in 0..<len(field_names) {
+        name := field_names[i]
+        value := reflect.struct_field_value_by_name(controller, name)
+        parsed := value.(Action_key)
+        if parsed.key == key {
+            return .ALREADY_USED
+        }
+    }
+    // binded_keys := reflect.str
+    return .NONE
 }
