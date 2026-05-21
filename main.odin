@@ -21,16 +21,16 @@ main :: proc() {
     rl.SetExitKey(.KEY_NULL)
     fullscreen := false
     game := game_init()
-    game.shader = rl.LoadShader("", "shaders/shader.frag")
+    game.shader_manager.shader = rl.LoadShader("", "shaders/shader.frag")
      // Create render texture
-    game.shader_args.target = rl.LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT)
-    shader_loccations := get_shader_locs(game.shader)
+    game.shader_manager.shader_args.target = rl.LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT)
+    shader_loccations := get_shader_locs(game.shader_manager.shader)
     resolution := [2]f32 {
         f32(SCREEN_WIDTH),
         f32(SCREEN_HEIGHT),
     }
     rl.SetShaderValue(
-        game.shader,
+        game.shader_manager.shader,
         shader_loccations.screen_size_loc,
         &resolution[0],
         rl.ShaderUniformDataType.VEC2,
@@ -57,7 +57,7 @@ main :: proc() {
         }
         mem.tracking_allocator_destroy(&track)
         free_all(context.temp_allocator)
-        rl.UnloadShader(game.shader)
+        rl.UnloadShader(game.shader_manager.shader)
         rl.CloseWindow()
         
     }
@@ -65,7 +65,7 @@ main :: proc() {
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
         slow_dt := game.slow_motion_manager.is_slow_motion ? dt * 0.5 : dt 
-        shader_target := game.shader_args.target
+        shader_target := game.shader_manager.shader_args.target
         
 
        
@@ -88,7 +88,7 @@ main :: proc() {
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
         
-        rl.BeginShaderMode(game.shader)
+        rl.BeginShaderMode(game.shader_manager.shader)
         rl.DrawTextureRec(
             shader_target.texture,
             rl.Rectangle{

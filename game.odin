@@ -20,11 +20,13 @@ BULLET_DIRECTION :: enum {
     RIGHT
 }
 
-Game_screen_mode :: enum {
+Screen_mode :: enum {
     FIXED,
     FULLSCREEN
 }
-
+Game_screen_mode :: struct {
+    mode : Screen_mode
+}
 Enemy_side :: struct {
     enemy_units: [dynamic] Enemy_unit,
     enemy_spawners: [dynamic] Enemy_spawner_pot,
@@ -42,7 +44,9 @@ Game_Options :: struct {
     is_menu: bool,
     is_mini_map: bool,
     is_health_bar: bool,
-    key_binding: Player_key_binding_controller
+    key_binding: Player_key_binding_controller,
+    screen_mode: Game_screen_mode,
+
 }
 
 
@@ -83,9 +87,7 @@ Game :: struct {
     shop_manager: Shop_manager,
     level_vendor: Level_vendor,
     slow_motion_manager: Slow_motion,
-    shader: rl.Shader,
-    shader_args: Shader_args,
-    screen_mode: Game_screen_mode,
+    shader_manager: Shader_manager,
     game_witches: Game_witches_manager
 }
 
@@ -197,17 +199,17 @@ game_post_update:: proc(game: ^Game, dt: f32) {
         get_rect_center(get_body_rect(game.player.body)),
         game.camera,
     )
-    shader_locs := get_shader_locs(game.shader)
+    shader_locs := get_shader_locs(game.shader_manager.shader)
 
     rl.SetShaderValue(
-        game.shader,
+        game.shader_manager.shader,
         shader_locs.light_loc,
         &screenPos[0],
         rl.ShaderUniformDataType.VEC2,
     )
 
     rl.SetShaderValue(
-        game.shader,
+        game.shader_manager.shader,
         shader_locs.uTime,
         &game.game_options.game_time,
         rl.ShaderUniformDataType.FLOAT
@@ -245,7 +247,7 @@ game_pre_update:: proc(game: ^Game, dt: f32) {
         game.game_options.game_time += dt
     }
     if rl.IsKeyPressed(.F11) {
-        toggle_full_screen(game)
+        toggle_full_screen(game.shader_manager.shader, &game.shader_manager.shader_args, &game.game_options.screen_mode)
     }
     scene_manager_update(game, dt)
 }
@@ -518,12 +520,12 @@ clear_game_mem:: proc(game: ^Game) {
     game.player.stats.temp_buffes = nil
 }
 
-toggle_full_screen :: proc(game: ^Game) {
-    shader_loccations := get_shader_locs(game.shader)
+toggle_full_screen :: proc(shader: rl.Shader, shader_args: ^Shader_args, screen_mode: ^Game_screen_mode) {
+    shader_loccations := get_shader_locs(shader)
 
-    game.screen_mode = game.screen_mode == .FIXED ? .FULLSCREEN : .FIXED
+    screen_mode.mode = screen_mode.mode == .FIXED ? .FULLSCREEN : .FIXED
 
-    if game.screen_mode == .FULLSCREEN {
+    if screen_mode.mode == .FULLSCREEN {
 
         monitor := rl.GetCurrentMonitor()
 
@@ -536,11 +538,11 @@ toggle_full_screen :: proc(game: ^Game) {
         )
 
         rl.ToggleFullscreen()
-        game.shader_args.screen_resolution = [2]f32 {
+        shader_args.screen_resolution = [2]f32 {
             f32(monitorWidth),
             f32(monitorHeight),
         }
-    } else if game.screen_mode == .FIXED {
+    } else if screen_mode.mode == .FIXED {
 
         rl.ToggleFullscreen()
 
@@ -548,25 +550,25 @@ toggle_full_screen :: proc(game: ^Game) {
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
         )
-        game.shader_args.screen_resolution = [2]f32 {
+        shader_args.screen_resolution = [2]f32 {
             f32(SCREEN_WIDTH),
             f32(SCREEN_HEIGHT),
         }
     }
     rl.SetShaderValue(
-        game.shader,
+        shader,
         shader_loccations.screen_size_loc,
-        &game.shader_args.screen_resolution[0],
+        &shader_args.screen_resolution[0],
         rl.ShaderUniformDataType.VEC2,
     )
 
-    shader_target := game.shader_args.target
+    shader_target := &shader_args.target
 
-    rl.UnloadRenderTexture(shader_target)
+    rl.UnloadRenderTexture(shader_target^)
 
-    game.shader_args.target = rl.LoadRenderTexture(
-        i32(game.shader_args.screen_resolution[0]),
-        i32(game.shader_args.screen_resolution[1]),
+    shader_args.target = rl.LoadRenderTexture(
+        i32(shader_args.screen_resolution[0]),
+        i32(shader_args.screen_resolution[1]),
     )
 
            

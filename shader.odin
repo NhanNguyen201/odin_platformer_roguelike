@@ -16,6 +16,10 @@ Shader_args :: struct {
     screen_resolution: rl.Vector2
 }
 
+Shader_manager :: struct {
+    shader: rl.Shader,
+    shader_args: Shader_args
+}
 
 get_shader_locs :: proc(shader: rl.Shader) -> Shader_locations {
     resolutionLoc := rl.GetShaderLocation(shader, "resolution")
