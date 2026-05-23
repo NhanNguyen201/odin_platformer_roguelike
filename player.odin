@@ -2,6 +2,7 @@
 
 package main
 import rl "vendor:raylib"
+import "core:reflect"
 import "core:math/rand"
 import "core:math"
 PLAYER_SIZE: rl.Vector2: {12, 12}
@@ -91,7 +92,8 @@ Body :: struct {
 Experience_controller:: struct {
     require: Exp_require,
     current: f32,
-    level: int
+    level: int,
+    level_up_buffs : []Stat_buff
 }
 
 
@@ -108,7 +110,7 @@ Bullet :: struct {
 }
 
 
-Player_buffes :: struct {
+Player_buffs :: struct {
     hp: f32,
     damage: f32,
     armor: f32,
@@ -120,8 +122,8 @@ Player_buffes :: struct {
 Player_stats :: struct {
     health_stats: Health_stats,
     dmg: f32,
-    buffes: Player_buffes,
-    temp_buffes: [dynamic] Player_temp_buff
+    buffs: Player_buffs,
+    temp_buffs: [dynamic] Player_temp_buff
 }
 
 Player_coins :: struct {
@@ -152,11 +154,11 @@ Temp_buff_types :: enum {
     // FREEZED
 }
 
-MAX_LEVEL: int :10
+MAX_LEVEL: int : 10
 EXPERIENCE_BUFF_AMOUNT:f32 : 20
 EXPERIENCE_BUFF_SIZE: rl.Vector2: {12, 12}
 
-EXPERIENCE_PER_LEVEL: [MAX_LEVEL]Exp_require = {
+LEVE_EXP_REQUIRE: [13] Exp_require = {
     {val = 20},
     {val = 30},
     {val = 45},
@@ -167,27 +169,26 @@ EXPERIENCE_PER_LEVEL: [MAX_LEVEL]Exp_require = {
     {val = 210},
     {val = 250},
     {val = 300},
+    {val = 300},
+    {val = 300},
+    {val = 300},
 
 }
 
-KEYBOARD_KEYS := map[string] rl.KeyboardKey{
-    "k" = .K ,
-}
+EXPERIENCE_PER_LEVEL: [] Exp_require = LEVE_EXP_REQUIRE[0:MAX_LEVEL]
 
-get_key_to_keycode :: proc (key: string) -> rl.KeyboardKey {
-    return KEYBOARD_KEYS[key]
-} 
 
-can_key_to_keycode :: proc(key: string) -> bool {
-    return type_of(KEYBOARD_KEYS[key]) == rl.KeyboardKey  
-}
 
 refresh_shop:: proc(shop: ^Shop_manager) {
-    new_item_for_shop : [3]Player_item_type = {.HEAL, .ATK_DMG, .SPEED}
+    // new_item_for_shop : [3]Player_item_type = {.HEAL, .ATK_DMG, .SPEED}
+    shop_items := reflect.enum_field_values(Player_item_type)
+    // for 
+    // parsed_shop_items := ([]Player_item_type)(shop_items)
     for i := 0; i < SHOP_ITEM_SLOT_NUM; i += 1 {
-        new_item: Player_item_type= rand.choice(new_item_for_shop[:])
+        new_item: reflect.Type_Info_Enum_Value = rand.choice(shop_items[1:])
+        parsed_new_item := Player_item_type(new_item)
         shop.items[i] = {
-            item_type = new_item,
+            item_type = parsed_new_item,
             item_status = .AVAILABLE,
             price = SHOP_ITEM_COST
         }
@@ -238,7 +239,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
     if rl.IsKeyDown(get_action_key_ref_from_name( &player.input_controler, .MOVE_LEFT).key) {
         player.direction = .LEFT
         player.body.is_flip = true
-        // player.body.vel.x = -(PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
+        // player.body.vel.x = -(PLAYER_MOVE_SPD * (1. + player.stats.buffs.mv_spd / 100))
         player.body.acc.x = -PLAYER_MAX_ACC
          if player.anim_controller.animation_name != RUN_ANI {
             player.anim_controller.animation_name = RUN_ANI
@@ -249,7 +250,7 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
         player.direction = .RIGHT
         player.body.is_flip = false
 
-        // player.body.vel.x = (PLAYER_MOVE_SPD * (1. + player.stats.buffes.mv_spd / 100))
+        // player.body.vel.x = (PLAYER_MOVE_SPD * (1. + player.stats.buffs.mv_spd / 100))
         player.body.acc.x = PLAYER_MAX_ACC
 
         if player.anim_controller.animation_name != RUN_ANI {
@@ -275,8 +276,8 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
     player.body.vel.x += player.body.acc.x
 
-    _, amount_speed_boost := get_player_is_boosted_by(player.stats.temp_buffes[:], .SPEED)
-    bounded_speed := (100 + amount_speed_boost + player.stats.buffes.mv_spd) / 100
+    _, amount_speed_boost := get_player_is_boosted_by(player.stats.temp_buffs[:], .SPEED)
+    bounded_speed := (100 + amount_speed_boost + player.stats.buffs.mv_spd) / 100
     player.body.vel.x = clamp(player.body.vel.x, -PLAYER_MAX_HORIZONTAL_SPD * bounded_speed, PLAYER_MAX_HORIZONTAL_SPD * bounded_speed)
     
     player.body.position.x += player.body.vel.x  * dt
@@ -329,16 +330,16 @@ player_update :: proc(player: ^Player, game: ^Game, game_collider_block: []rl.Re
 
     if rl.IsKeyPressed(get_action_key_ref_from_name( &player.input_controler, .SHOOT).key) {
         if player.bullet_cd.current < 0.01 {
-            player.bullet_cd.current = player.bullet_cd.max_time * (1. - (player.stats.buffes.at_spd / 100))
-            _, dmg_buff := get_player_is_boosted_by(player.stats.temp_buffes[:], .ATTACK) 
-            bullet := Bullet {direction = player.direction, dmg = player.stats.dmg + player.stats.buffes.damage + dmg_buff, position = player.body.position}
+            player.bullet_cd.current = player.bullet_cd.max_time 
+            _, dmg_buff := get_player_is_boosted_by(player.stats.temp_buffs[:], .ATTACK) 
+            bullet := Bullet {direction = player.direction, dmg = player.stats.dmg + player.stats.buffs.damage + dmg_buff, position = player.body.position}
             append(&game.player_bullets, bullet)
         }
 
 
     }
 
-    resolve_player_and_bullet(player.body, player.stats.buffes, &player.stats.health_stats, &game.enemy_side.enemy_bullets)
+    resolve_player_and_bullet(player.body, player.stats.buffs, &player.stats.health_stats, &game.enemy_side.enemy_bullets)
     if player.stats.health_stats.current_hp > 0 && game.ui_controller.ui_scene != .GAME_OVER{
         resolve_player_temp_buff_update(player, dt)
     }
@@ -358,8 +359,8 @@ player_draw :: proc(atlas: rl.Texture2D, player: ^Player, dt: f32) {
     // rl.DrawRectangleRec(body_rect, rl.WHITE)
 }
 
-exp_buff_collect:: proc(player: ^Player, game: ^Game) {
-    player_rect := get_body_rect(player.body)
+exp_buff_collect:: proc(player_body: Body, exp_controller: ^Experience_controller, game: ^Game) {
+    player_rect := get_body_rect(player_body)
     for &buff in game.level_data.exp_buffs {
         if buff.collected do continue
 
@@ -369,24 +370,32 @@ exp_buff_collect:: proc(player: ^Player, game: ^Game) {
 
         buff.collected = true
 
-        player.exp_controller.current += EXPERIENCE_BUFF_AMOUNT
-        
-        if player.exp_controller.current >= player.exp_controller.require.val {
-            game.game_options.is_paused = true
-            game.ui_controller.ui_scene = .BUFFES_PICK
-
-            player.exp_controller.current -= player.exp_controller.require.val
-            player.exp_controller.level += 1
-            player.exp_controller.require = EXPERIENCE_PER_LEVEL[player.exp_controller.level]
-
-
-        }
+        player_gain_exp(exp_controller, EXPERIENCE_BUFF_AMOUNT, game)
 
     }
 }
 
+player_gain_exp :: proc (exp_controller: ^Experience_controller, exp_amount: f32, game: ^Game) {
+    exp_controller.current += exp_amount
+        
+    if exp_controller.current >= exp_controller.require.val {
+        if exp_controller.level < MAX_LEVEL - 1 {
+            
+            exp_controller.current =  exp_controller.current  - exp_controller.require.val
+            exp_controller.level += 1
+            exp_controller.require = EXPERIENCE_PER_LEVEL[exp_controller.level]
+            game.game_options.is_paused = true
+            game.ui_controller.ui_scene = .buffs_PICK
+
+        } else {
+            exp_controller.current = exp_controller.require.val
+        }
+
+    } 
+}
+
 player_apply_temp_buff :: proc(temp_buff: Player_temp_buff, player: ^Player) {
-    for &current_temp_buff in player.stats.temp_buffes {
+    for &current_temp_buff in player.stats.temp_buffs {
         if current_temp_buff.temp_buff_type == temp_buff.temp_buff_type {
             current_temp_buff.time = temp_buff.time
             current_temp_buff.value = max(current_temp_buff.value, temp_buff.value)
@@ -396,22 +405,22 @@ player_apply_temp_buff :: proc(temp_buff: Player_temp_buff, player: ^Player) {
     }
     if temp_buff.temp_buff_type == .BURNING {
        
-        append(&player.stats.temp_buffes, Player_temp_buff {temp_buff_type = .BURNING, value = temp_buff.value, time = temp_buff.time, tick_time = Player_temp_buff_TICK_TIME})
+        append(&player.stats.temp_buffs, Player_temp_buff {temp_buff_type = .BURNING, value = temp_buff.value, time = temp_buff.time, tick_time = Player_temp_buff_TICK_TIME})
     } else if temp_buff.temp_buff_type == .ATTACK {
-        append(&player.stats.temp_buffes, Player_temp_buff {temp_buff_type = .ATTACK, value = temp_buff.value, time = temp_buff.time})
+        append(&player.stats.temp_buffs, Player_temp_buff {temp_buff_type = .ATTACK, value = temp_buff.value, time = temp_buff.time})
 
     } else if temp_buff.temp_buff_type == .SPEED {
-        append(&player.stats.temp_buffes, Player_temp_buff {temp_buff_type = .SPEED, value = temp_buff.value, time = temp_buff.time})
+        append(&player.stats.temp_buffs, Player_temp_buff {temp_buff_type = .SPEED, value = temp_buff.value, time = temp_buff.time})
 
     }
 }
 
 resolve_player_temp_buff_update:: proc(player: ^Player, dt: f32) {
-    for i := len(player.stats.temp_buffes) - 1; i >= 0; i -= 1 {
-        temp_buff := &player.stats.temp_buffes[i]
+    for i := len(player.stats.temp_buffs) - 1; i >= 0; i -= 1 {
+        temp_buff := &player.stats.temp_buffs[i]
 
         if temp_buff.time.current <= 0 {
-            unordered_remove(&player.stats.temp_buffes, i)
+            unordered_remove(&player.stats.temp_buffs, i)
             continue
         } else {
             temp_buff.time.current -= dt
@@ -419,7 +428,7 @@ resolve_player_temp_buff_update:: proc(player: ^Player, dt: f32) {
             if temp_buff.temp_buff_type == .BURNING {
                 temp_buff.tick_time -= dt 
                 if temp_buff.tick_time < 0  && temp_buff.time.current > 0 {
-                    player_take_dmg(&player.stats.health_stats, player.stats.buffes, temp_buff.value)
+                    player_take_dmg(&player.stats.health_stats, player.stats.buffs, temp_buff.value)
                     temp_buff.tick_time = Player_temp_buff_TICK_TIME
                 }
             } 
@@ -466,7 +475,7 @@ resolve_using_item :: proc(item: Player_item, player: ^Player, particle_system: 
     }
 }
 
-player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffes,dmg: f32) {
+player_take_dmg :: proc(health: ^Health_stats, player_buff: Player_buffs,dmg: f32) {
     reduced_dmg := dmg * (1 - (player_buff.armor / 100))
 
     if health.current_hp > reduced_dmg {

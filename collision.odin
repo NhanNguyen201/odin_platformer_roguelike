@@ -116,7 +116,7 @@ resolve_boss_and_bullet:: proc(b_body: Body, health_stats: ^Health_stats, bullet
         break
     }
 }
-resolve_player_and_bullet:: proc(body: Body, player_buffes: Player_buffes, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
+resolve_player_and_bullet:: proc(body: Body, player_buffs: Player_buffs, health_stats: ^Health_stats, bullets: ^[dynamic]Bullet ) {
     pr := get_body_rect(body)
 
     for bullet, idx in bullets {
@@ -124,7 +124,7 @@ resolve_player_and_bullet:: proc(body: Body, player_buffes: Player_buffes, healt
 
         if !rl.CheckCollisionRecs(pr, bullet_rect) do continue 
 
-        player_take_dmg(health_stats, player_buffes, bullet.dmg)
+        player_take_dmg(health_stats, player_buffs, bullet.dmg)
         unordered_remove(bullets, idx)
 
         break

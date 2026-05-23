@@ -70,7 +70,7 @@ level_vendor_draw:: proc(atlas: rl.Texture2D, body: Body, disabled: bool, is_nea
     }
 }
 
-resolve_accept_vendor_deal :: proc(vendor_item: Player_item_type, vendor_enemy_buff: Vendor_enemy_buff, player: ^Player, enemy_buff_stats: ^Enemy_buffes, particle_system: ^Particles_systems) {
+resolve_accept_vendor_deal :: proc(vendor_item: Player_item_type, vendor_enemy_buff: Vendor_enemy_buff, player: ^Player, enemy_buff_stats: ^Enemy_buffs, particle_system: ^Particles_systems) {
     switch vendor_enemy_buff {
         case .HP : {
             enemy_buff_stats.hp += 15

@@ -42,7 +42,7 @@ Enemy_types :: enum {
     SNIPER
 }
 
-Enemy_buffes :: struct {
+Enemy_buffs :: struct {
     hp: f32,
     attack: f32,
     cooldown: f32
@@ -263,7 +263,7 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                         enemy.body.position.x += enemy.body.vel.x
 
                         if rl.CheckCollisionRecs(get_body_rect(get_player(game^).body), get_body_rect(enemy.body)) {
-                            player_take_dmg(&game.player.stats.health_stats, get_player(game^).stats.buffes,enemy.stats.dmg)
+                            player_take_dmg(&game.player.stats.health_stats, get_player(game^).stats.buffs,enemy.stats.dmg)
                             resolve_e_mele_attack(&game.player, enemy, ENEMY_MELEE_PUSH_FORCE * remain_scale, dt)
                         }
                         
@@ -355,7 +355,7 @@ enemy_unit_update::proc (game: ^Game, dt: f32) {
                         sprite_source := get_sprite_source_rect(sprite)
                         if enemy.targeting.trigger.current <=0 {
                             if rl.CheckCollisionPointCircle(get_player(game^).body.position, enemy.targeting.current_aiming_point, ENEMY_AIMING_RADIUS) {
-                                player_take_dmg(&game.player.stats.health_stats, get_player(game^).stats.buffes, enemy.stats.dmg)
+                                player_take_dmg(&game.player.stats.health_stats, get_player(game^).stats.buffs, enemy.stats.dmg)
                             }
             
                             add_particle(&game.particle_system, Particle {
@@ -544,7 +544,7 @@ enemy_unit_draw::proc (atlas: rl.Texture2D, game_options: Game_Options, e_unit: 
 
 
 spawn_enemy:: proc(game: ^Game, enemy_spawner: Enemy_spawner_pot) {
-    buffs := game.enemy_side.enemy_stat_buffes
+    buffs := game.enemy_side.enemy_stat_buffs
     stats := Enemy_unit_stats {
         health_stats = {
             max_hp = ENEMY_BASE_HP * (1 + buffs.hp / 100),

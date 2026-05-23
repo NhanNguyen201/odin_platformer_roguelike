@@ -31,7 +31,7 @@ Enemy_side :: struct {
     enemy_units: [dynamic] Enemy_unit,
     enemy_spawners: [dynamic] Enemy_spawner_pot,
     enemy_bullets: [dynamic] Bullet,
-    enemy_stat_buffes: Enemy_buffes
+    enemy_stat_buffs: Enemy_buffs
 } 
 
 Game_Options :: struct {
@@ -168,7 +168,7 @@ game_update:: proc(game: ^Game, dt: f32) {
     
         key_collect(game.player, game)
       
-        exp_buff_collect(&game.player, game)
+        exp_buff_collect(game.player.body, &game.player.exp_controller, game)
         if game.boss_manager.is_boss_level {
 
             boss_update(&game.boss_manager.boss, game, dt)
@@ -243,11 +243,14 @@ game_pre_update:: proc(game: ^Game, dt: f32) {
     if rl.IsKeyPressed(.SLASH) {
         game.slow_motion_manager.is_slow_motion = !game.slow_motion_manager.is_slow_motion
     }
-    if game.ui_controller.ui_scene == .NONE && !game.game_options.is_paused{
-        game.game_options.game_time += dt
-    }
     if rl.IsKeyPressed(.F11) {
         toggle_full_screen(game.shader_manager.shader, &game.shader_manager.shader_args, &game.game_options.screen_mode)
+    }
+    if rl.IsKeyPressed(.B) && game.game_options.is_debug {
+        player_gain_exp(&game.player.exp_controller, 30, game)
+    }
+    if game.ui_controller.ui_scene == .NONE && !game.game_options.is_paused{
+        game.game_options.game_time += dt
     }
     scene_manager_update(game, dt)
 }
@@ -471,7 +474,7 @@ game_restart :: proc(game: ^Game) {
     // Ensure we clean up existing memory before overwriting pointers
     clear_game_mem(game)
 
-    game.player.stats.buffes = {}
+    game.player.stats.buffs = {}
     game.player.stats = {health_stats = {max_hp = 100, current_hp = 100}, dmg = 25}
     game.player.exp_controller = {
         current = 0,
@@ -481,7 +484,7 @@ game_restart :: proc(game: ^Game) {
     game.player.pocket_items = {{type = .HEAL}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}, {type = .NONE}}
     game.player.money_coins.val = 0
     game.game_options.is_menu = false
-    game.enemy_side.enemy_stat_buffes = {}
+    game.enemy_side.enemy_stat_buffs = {}
     game.current_level = start_level
     load_level(game, start_level)
 }
@@ -495,7 +498,7 @@ drop_game_mem:: proc(game : ^Game) {
     delete(game.level_data.keys)
     delete(game.level_data.exp_buffs)
     delete(game.boss_manager.boss.skill_queue)
-    delete(game.player.stats.temp_buffes)
+    delete(game.player.stats.temp_buffs)
     rl.UnloadFont(game.fonts[FONT_BOLD])
     rl.UnloadFont(game.fonts[FONT_REG])
     rl.UnloadFont(game.fonts[FONT_THIN])
@@ -516,8 +519,8 @@ clear_game_mem:: proc(game: ^Game) {
     delete(game.boss_manager.boss.skill_queue)
     game.boss_manager.boss.skill_queue = nil
 
-    delete(game.player.stats.temp_buffes)
-    game.player.stats.temp_buffes = nil
+    delete(game.player.stats.temp_buffs)
+    game.player.stats.temp_buffs = nil
 }
 
 toggle_full_screen :: proc(shader: rl.Shader, shader_args: ^Shader_args, screen_mode: ^Game_screen_mode) {

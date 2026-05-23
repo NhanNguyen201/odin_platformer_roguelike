@@ -177,7 +177,15 @@ game_ui_scene_draw::proc(game: ^Game) {
         if is_next_level_hover && rl.IsMouseButtonPressed(.LEFT) {
             load_level(game, game.current_level + 1)
         }
-    } else if game.ui_controller.ui_scene == .BUFFES_PICK {
+        if game.game_options.is_debug {
+            refresh_rect := rl.Rectangle {x = get_rect_center(ui_rect).x - 100, y  = ui_rect.y + ui_rect.height - 30, width = 30, height = 20}
+            is_refresh_hover := is_ui_component_hover(game.game_options, refresh_rect)
+            ui_box_draw(game.game_sprite_atlas, refresh_rect, is_refresh_hover)
+            if is_refresh_hover && rl.IsMouseButtonPressed(.LEFT) {
+                refresh_shop(&game.shop_manager)
+            }
+        }
+    } else if game.ui_controller.ui_scene == .buffs_PICK {
         rl.DrawRectangleRec(ui_rect, rl.Color {184, 226, 217, 160})
         player_buff_picking_scene_draw(game.game_sprite_atlas, game.fonts ,ui_rect, &game.game_options, &game.ui_controller, &game.player)
     } else if game.ui_controller.ui_scene == .VENDOR {
@@ -227,7 +235,7 @@ game_ui_scene_draw::proc(game: ^Game) {
         }
 
         if is_accept_hovered && rl.IsMouseButtonPressed(.LEFT) && !game.game_options.is_menu {
-            resolve_accept_vendor_deal(game.level_vendor.item, game.level_vendor.enemy_buff, &game.player, &game.enemy_side.enemy_stat_buffes, &game.particle_system)
+            resolve_accept_vendor_deal(game.level_vendor.item, game.level_vendor.enemy_buff, &game.player, &game.enemy_side.enemy_stat_buffs, &game.particle_system)
             game.game_options.is_paused = false
             game.ui_controller.ui_scene = .NONE
             game.level_vendor.is_disabled = true

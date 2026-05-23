@@ -39,7 +39,7 @@ MAX_AR_BUFF_AMOUNT: f32: 80
 
 UI_scenes :: enum  {
     NONE,
-    BUFFES_PICK,
+    buffs_PICK,
     MENU,
     BOSS_ENTRANCE,
     END_LEVEL,
@@ -134,7 +134,7 @@ player_ui_draw:: proc(game: ^Game) {
     
     if game.game_options.is_debug {
         rl.DrawRectangleLinesEx(ui_rect, 0.5, rl.WHITE)
-        state_text := fmt.ctprintf("Paused :%t, \n is_ui : %t, \n is_buff_pick: %t", game.game_options.is_paused, game.ui_controller.ui_scene != .NONE, game.ui_controller.ui_scene == .BUFFES_PICK) 
+        state_text := fmt.ctprintf("Paused :%t, \n is_ui : %t, \n is_buff_pick: %t", game.game_options.is_paused, game.ui_controller.ui_scene != .NONE, game.ui_controller.ui_scene == .buffs_PICK) 
         rl.DrawTextPro(game.fonts[FONT_REG], state_text, {ui_rect.x + ui_rect.width - 150, ui_rect.y + ui_rect.height - 50}, 0,0, 6, 0.32, rl.WHITE)
         // rl.DrawText(pause, i32(ui_rect.x) + 10, i32(ui_rect.y) + 10, 10, rl.BLACK)
     }
@@ -167,7 +167,7 @@ player_ui_draw:: proc(game: ^Game) {
     rl.DrawTextEx(game.fonts[FONT_REG], hp_text, {health_bar_dest.x + 2, health_bar_dest.y + 1}, 5, 0.2, rl.WHITE)
     // is_mouse_hover := rl.CheckCollisionPointRec(game.game_options.ui_mouse_pos, charactor_ui_rect)
     
-    for temp_buff, idx in player.stats.temp_buffes {
+    for temp_buff, idx in player.stats.temp_buffs {
         temp_buff_dest := rl.Rectangle {x = ui_rect.x + 15 + f32(idx) * 11, y = ui_rect.y + 15, width = UI_MINI_MAP_ICON_SIZE, height = UI_MINI_MAP_ICON_SIZE}
         if temp_buff.temp_buff_type == .BURNING {
             rl.DrawTexturePro(game.game_sprite_atlas, temp_buff_burned_sprite_source, temp_buff_dest, 0, 0, rl.WHITE )
@@ -269,11 +269,20 @@ player_buff_picking_scene_draw:: proc(atlas: rl.Texture2D, fonts: map[string] rl
         
         pick_rect := rl.Rectangle {x = get_rect_center(slot_rect).x - 10, y = slot_rect.y + slot_rect.height - 15, width = 20, height = 10}
         is_pick_rect_hover := is_ui_component_hover(game_options^, pick_rect)
-        ui_box_draw(atlas, pick_rect, is_pick_rect_hover, rl.Color{220,220,220,255}, rl.Color{50,50,150,255})
-        rl.DrawTextPro(fonts[FONT_REG], choose_text, {pick_rect.x + 3, pick_rect.y + 3}, {0, 0}, 0, 5, 0.01, rl.BLACK)
-
-        if is_pick_rect_hover && rl.IsMouseButtonDown(.LEFT) && !game_options.is_menu  {
-            pick_buff_handle(game_options, ui_controller, player, buff.buff, buff.val)
+        if !is_buff_capped(buff.buff, player.stats.buffs) {
+            ui_box_draw(atlas, pick_rect, is_pick_rect_hover, rl.Color{220,220,220,255}, rl.Color{50,50,150,255})
+            rl.DrawTextPro(fonts[FONT_REG], choose_text, {pick_rect.x + 3, pick_rect.y + 3}, {0, 0}, 0, 5, 0.01, rl.BLACK)
+    
+            if is_pick_rect_hover && rl.IsMouseButtonDown(.LEFT) && !game_options.is_menu  {
+                pick_buff_handle(game_options, ui_controller, player, buff.buff, buff.val)
+            }
+        } else {
+            ui_box_draw(atlas, pick_rect, is_pick_rect_hover, rl.Color{50,50,50,255}, rl.Color{50,50,50,255})
+            rl.DrawTextPro(fonts[FONT_REG], fmt.ctprint("Max"), {pick_rect.x + 3, pick_rect.y + 3}, {0, 0}, 0, 5, 0.01, rl.WHITE)
+    
+            // if is_pick_rect_hover && rl.IsMouseButtonDown(.LEFT) && !game_options.is_menu  {
+            //     pick_buff_handle(game_options, ui_controller, player, buff.buff, buff.val)
+            // }
         }
     }
 }
@@ -285,17 +294,18 @@ pick_buff_handle :: proc(game_options: ^Game_Options, ui_controller: ^UI_Control
             player.stats.health_stats.current_hp += 0.25 * player.stats.health_stats.max_hp
         }
         case .AD: { 
-            player.stats.buffes.damage += amount
+            player.stats.buffs.damage += amount
         }
         case .ATS: {
-            player.stats.buffes.at_spd = min(MAX_ATS_BUFF_AMOUNT, player.stats.buffes.at_spd + amount)
+            player.stats.buffs.at_spd = min(MAX_ATS_BUFF_AMOUNT, player.stats.buffs.at_spd + amount)
+            player.bullet_cd.max_time = PLAYER_BULLET_CD * (1. - (player.stats.buffs.at_spd / 100))
         }
 
         case .AR: {
-            player.stats.buffes.armor = min(MAX_AR_BUFF_AMOUNT, player.stats.buffes.armor + amount)
+            player.stats.buffs.armor = min(MAX_AR_BUFF_AMOUNT, player.stats.buffs.armor + amount)
         }
         case .MVSPD : {
-            player.stats.buffes.mv_spd = min(MAX_AR_BUFF_AMOUNT, player.stats.buffes.mv_spd + amount)
+            player.stats.buffs.mv_spd = min(MAX_AR_BUFF_AMOUNT, player.stats.buffs.mv_spd + amount)
 
         }
 
@@ -618,4 +628,23 @@ game_menu_render :: proc(game: ^Game, ui_rect : rl.Rectangle, dt: f32) {
             }
         }
     }
+}
+
+is_buff_capped :: proc(buff: Stat_buff, player_buffs: Player_buffs) -> bool {
+    is_capped : bool = false
+    switch buff {
+        case .HP, .AD : return false
+        case .ATS : {
+            is_capped = player_buffs.at_spd >= MAX_ATS_BUFF_AMOUNT
+        }
+        case .MVSPD : {
+            is_capped = player_buffs.mv_spd >= MAX_MVSP_BUFF_AMOUNT
+
+        }
+        case .AR : {
+            is_capped = player_buffs.armor >= MAX_AR_BUFF_AMOUNT
+
+        }
+    }
+    return is_capped
 }
